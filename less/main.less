@@ -1,0 +1,93 @@
+@import "normalize-3.0.1.less";
+@import "elements-0.9.less";
+@import "font-awesome-4.1.0.less";
+
+//------------------------------------------------------------------------------
+// Fonts
+//------------------------------------------------------------------------------
+
+@font-face {
+  font-family: 'Open Sans Light';
+  font-style: normal;
+  font-weight: 300;
+  src: url('../fonts/OpenSans-Light.eot');
+  src: local('Open Sans Light'), local('OpenSans-Light'),
+    url('../fonts/OpenSans-Light.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/OpenSans.eot');
+  src: local('Open Sans'), local('OpenSans'),
+    url('../fonts/OpenSans.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 600;
+  src: url('../fonts/OpenSans-Semibold.eot');
+  src: local('Open Sans Semibold'), local('OpenSans-Semibold'),
+    url('../fonts/OpenSans-Semibold.woff') format('woff');
+}
+
+
+.font-light(@size) {
+  font-family: 'Open Sans Light';
+  font-size: @size;
+  font-weight: 300;
+}
+
+.font-normal(@size) {
+  font-family: 'Open Sans';
+  font-size: @size;
+  font-weight: 400;
+}
+
+.font-bold(@size) {
+  font-family: 'Open Sans';
+  font-size: @size;
+  font-weight: 600;
+}
+
+body {
+  color: #444;
+  font-family: "Open Sans";
+}
+
+.project-row-1b83a {
+  border-bottom: 1px solid #ccc;
+  padding: 20px;
+}
+
+.project-name-6c702 {
+
+}
+
+.error-56f38 {
+  background: #ffffcc;
+  margin-bottom: 2px;
+  padding: 10px;
+
+  .fa {
+    margin-right: 5px;
+  }
+}
+
+.compiling-9cc92 {
+
+
+  .fa {
+    margin-right: 5px;
+  }
+}
+
+.success-5c065 {
+  color: green;
+
+  .fa {
+    margin-right: 5px;
+  }
+}
