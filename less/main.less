@@ -92,6 +92,7 @@ body {
 
 .app-ca3cd {
   margin: 20px;
+  max-width: 1200px;
   min-width: 800px;
 }
 
@@ -229,10 +230,10 @@ body {
 
 .header-row-50e32 {
   background: #f2f6ff;
+  border-bottom: 1px solid @borderGrey;
 }
 
 .th-92ca4 {
-  border-bottom: 1px solid @borderGrey;
   color: #8e8e8e;
   .font-bold(11px);
   padding: 12px;
@@ -240,8 +241,29 @@ body {
   text-transform: uppercase;
 }
 
+.checkbox-b5e5b {
+  color: #444;
+  font-size: 14px;
+  width: 18px;
+}
+
 .build-row-fdd97 {
 
+}
+
+.odd-c27e6 {
+  background-color: #fafafa;
+}
+
+.even-158a9 {
+  background-color: #fff;
+}
+
+// if you apply opacity to the tr directly you'll get a border bug
+.not-selected-a8d35 {
+  td {
+    opacity: 0.75;
+  }
 }
 
 .warning-row-097c8 {

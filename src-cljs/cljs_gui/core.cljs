@@ -12,6 +12,20 @@
 (defn- by-id [id]
   (.getElementById js/document id))
 
+(defn- num-builds [p]
+  (-> p
+    :builds
+    keys
+    count))
+
+(defn- selected-builds-count [p]
+  (->> p
+    :builds
+    vals
+    (map :checked?)
+    (remove false?)
+    count))
+
 ;;------------------------------------------------------------------------------
 ;; App State
 ;;------------------------------------------------------------------------------
@@ -20,6 +34,7 @@
   :projects {
     "~/t3tr0s/project.clj" {
       :name "t3tr0s"
+      :state :dormant
       :builds {
         :client {
           :checked? true
@@ -108,16 +123,22 @@
   }))
 
 ;;------------------------------------------------------------------------------
-;; Misc
+;; State-effecting
 ;;------------------------------------------------------------------------------
 
-(defn- selected-builds-count [p]
-  (->> p
-    :builds
-    vals
-    (map :checked?)
-    (remove false?)
-    count))
+(defn- mark-checked [builds build-key]
+  (assoc-in builds [build-key :checked?] true))
+
+(defn- select-all-builds! [project-key]
+  (swap! state update-in [:projects project-key :builds] (fn [builds]
+    (reduce mark-checked builds (keys builds)))))
+
+(defn- mark-unchecked [builds build-key]
+  (assoc-in builds [build-key :checked?] false))
+
+(defn- unselect-all-builds! [project-key]
+  (swap! state update-in [:projects project-key :builds] (fn [builds]
+    (reduce mark-unchecked builds (keys builds)))))
 
 ;;------------------------------------------------------------------------------
 ;; Events
@@ -134,6 +155,14 @@
 (defn- click-clean-btn []
 
   )
+
+(defn- click-checkbox-header [project-key]
+  (let [p (get-in @state [:projects project-key])
+        num-builds (num-builds p)
+        num-selected-builds (selected-builds-count p)]
+    (if (zero? num-selected-builds)
+      (select-all-builds! project-key)
+      (unselect-all-builds! project-key))))
 
 (defn- click-build-row [project-key build-key]
   (swap! state update-in [:projects project-key :builds build-key :checked?] not))
@@ -192,11 +221,16 @@
     [:td.warning-cell-b9f12 {:col-span "6"}
       [:i.fa.fa-exclamation-triangle] w]])
 
+(defn- build-row-class [idx checked?]
+  (str "build-row-fdd97"
+    (if (zero? (mod idx 2))
+      " odd-c27e6" " even-158a9")
+    (if-not checked?
+      " not-selected-a8d35")))
+
 (sablono/defhtml build-row [idx [build-key b] project-key]
-  [:tr.build-row-fdd97
-    {:on-click #(click-build-row project-key build-key)
-     :style {:background-color (row-color idx)
-             :opacity (if-not (:checked? b) "0.75")}}
+  [:tr {:class (build-row-class idx (:checked? b))
+        :on-click #(click-build-row project-key build-key)}
     [:td.cell-9ad24 (checked-cell (:checked? b))]
     [:td.cell-9ad24 (-> b :cljsbuild :source-paths first)] ;; TODO: print the vector here
     [:td.cell-9ad24 (-> b :cljsbuild :compiler :output-to)]
@@ -205,9 +239,9 @@
     [:td.cell-9ad24 (-> b :cljsbuild :compiler :optimizations name)]
     ;;[:td.cell-9ad24 "Actions" [:i.fa.fa-caret-down]]
     ]
-  (if (:warnings b)
+  (when (:warnings b)
     (map warning-row (:warnings b)))
-  (if (:errors b)
+  (when (:errors b)
     (map error-row (:errors b))))
 
 ;; NOTE: these two functions could be combined
@@ -234,8 +268,15 @@
 ;; Quiescent Components
 ;;------------------------------------------------------------------------------
 
+(sablono/defhtml checkbox-header [num-selected-builds num-builds]
+  (cond
+    (= num-selected-builds num-builds) [:i.fa.fa-check-square-o]
+    (zero? num-selected-builds) [:i.fa.fa-square-o]
+    :else [:i.fa.fa-minus-square-o]))
+
 (quiescent/defcomponent Project [[project-key p]]
-  (let [num-selected-builds (selected-builds-count p)]
+  (let [num-builds (num-builds p)
+        num-selected-builds (selected-builds-count p)]
     (sablono/html
       [:div.project-1b83a
         [:div.wrapper-714e4
@@ -250,7 +291,9 @@
         [:table.tbl-bdf39
           [:thead
             [:tr.header-row-50e32
-              [:th.th-92ca4 "Compile"]
+              [:th.th-92ca4.checkbox-b5e5b
+                {:on-click #(click-checkbox-header project-key)}
+                (checkbox-header num-selected-builds num-builds)]
               [:th.th-92ca4 "Source"]
               [:th.th-92ca4 "Output"]
               [:th.th-92ca4 "Status"]
