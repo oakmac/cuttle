@@ -34,7 +34,7 @@
   :projects {
     "~/t3tr0s/project.clj" {
       :name "t3tr0s"
-      :state :dormant
+      :state :idle
       :builds {
         :client {
           :checked? true
@@ -234,7 +234,7 @@
     [:td.cell-9ad24 (checked-cell (:checked? b))]
     [:td.cell-9ad24 (-> b :cljsbuild :source-paths first)] ;; TODO: print the vector here
     [:td.cell-9ad24 (-> b :cljsbuild :compiler :output-to)]
-    [:td.cell-9ad24 (status-cell  b)]
+    [:td.cell-9ad24 (status-cell b)]
     [:td.cell-9ad24 (last-compile-cell (:last-compile-time b))]
     [:td.cell-9ad24 (-> b :cljsbuild :compiler :optimizations name)]
     ;;[:td.cell-9ad24 "Actions" [:i.fa.fa-caret-down]]
