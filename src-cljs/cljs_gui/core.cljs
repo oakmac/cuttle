@@ -12,19 +12,25 @@
 (defn- by-id [id]
   (.getElementById js/document id))
 
-(defn- num-builds [p]
-  (-> p
+(defn- num-builds [prj]
+  (-> prj
     :builds
     keys
     count))
 
-(defn- selected-builds-count [p]
-  (->> p
-    :builds
-    vals
-    (map :checked?)
-    (remove false?)
-    count))
+(defn- checked-builds
+  "Returns a set of the keys of builds that have :checked? = true"
+  [prj]
+  (reduce
+    (fn [checked-keys [bld-key bld]]
+      (if (:checked? bld)
+        (conj checked-keys bld-key)
+        checked-keys))
+    #{}
+    (:builds prj)))
+
+(defn- selected-builds-count [prj]
+  (count (checked-builds prj)))
 
 ;;------------------------------------------------------------------------------
 ;; App State
@@ -127,6 +133,8 @@
 ;; State-effecting
 ;;------------------------------------------------------------------------------
 
+;; NOTE: I'm sure these functions could be cleaned up / combined
+
 (defn- mark-checked [builds build-key]
   (assoc-in builds [build-key :checked?] true))
 
@@ -141,6 +149,9 @@
   (swap! state update-in [:projects project-key :builds] (fn [builds]
     (reduce mark-unchecked builds (keys builds)))))
 
+(defn- mark-compiling [builds build-key]
+  (assoc-in builds [build-key :status] :compiling))
+
 ;;------------------------------------------------------------------------------
 ;; Events
 ;;------------------------------------------------------------------------------
@@ -151,11 +162,29 @@
 (defn- click-stop-auto-btn [project-key]
   (swap! state assoc-in [:projects project-key :state] :idle))
 
-(defn- click-once-btn [project-key]
-  (swap! state assoc-in [:projects project-key :state] :build-once)
+(defn- demo-done-1 []
+  (swap! state assoc-in [:projects "~/t3tr0s/project.clj" :builds :client :status] :done)
+  )
 
-  ;; DEMO CODE
-  (js/setTimeout #(click-stop-auto-btn project-key) 1500))
+(defn- demo-done-2 []
+  (swap! state assoc-in [:projects "~/t3tr0s/project.clj" :builds :client-adv :status] :done)
+  (click-stop-auto-btn "~/t3tr0s/project.clj")
+  )
+
+(defn- click-once-btn [project-key]
+  (let [prj1 (get-in @state [:projects project-key])
+        checked-builds-keys (checked-builds prj1)
+        prj2 (assoc prj1 :state :build-once)
+        new-builds (reduce mark-compiling (:builds prj2) checked-builds-keys)
+        prj3 (assoc prj2 :builds new-builds)]
+    (swap! state assoc-in [:projects project-key] prj3)
+
+    ;; DEMO CODE
+    (if (= project-key "~/t3tr0s/project.clj")
+      (do
+        (js/setTimeout demo-done-1 600)
+        (js/setTimeout demo-done-2 4700))
+      (js/setTimeout #(click-stop-auto-btn project-key) 1500))))
 
 (defn- click-clean-btn [project-key]
   (swap! state assoc-in [:projects project-key :state] :clean)
@@ -248,9 +277,7 @@
     [:td.cell-9ad24 (-> bld :cljsbuild :compiler :output-to)]
     [:td.cell-9ad24 (status-cell bld)]
     [:td.cell-9ad24 (last-compile-cell (:last-compile-time bld))]
-    [:td.cell-9ad24 (-> bld :cljsbuild :compiler :optimizations name)]
-    ;;[:td.cell-9ad24 "Actions" [:i.fa.fa-caret-down]]
-    ]
+    [:td.cell-9ad24 (-> bld :cljsbuild :compiler :optimizations name)]]
   (when (:warnings bld)
     (map warning-row (:warnings bld)))
   (when (:errors bld)
@@ -334,11 +361,9 @@
                   [:i.fa.fa-check.small-check-7b3d7] "Compile?"])
               [:th.th-92ca4 "Source"]
               [:th.th-92ca4 "Output"]
-              [:th.th-92ca4 "Status"]
+              [:th.th-92ca4 {:style {:width "30%"}} "Status"]
               [:th.th-92ca4 "Last Compile"]
-              [:th.th-92ca4 "Optimizations"]
-              ;;[:th.th-92ca4 "Actions"]
-              ]]
+              [:th.th-92ca4 "Optimizations"]]]
           [:tbody
             (map-indexed #(build-row %1 %2 project-key prj) (:builds prj))]]])))
 
