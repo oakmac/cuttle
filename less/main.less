@@ -206,11 +206,18 @@ body {
 
 }
 
+.status-b8614 {
+  color: @inactiveGrey;
+  display: inline-block;
+  .font-light(18px);
+  margin-left: 8px;
+}
+
 .edit-c0ba4 {
   color: @inactiveGrey;
   cursor: pointer;
   display: inline-block;
-  .font-normal(16px);
+  .font-light(18px);
   margin-left: 8px;
 }
 
@@ -239,12 +246,16 @@ body {
   padding: 12px;
   text-align: left;
   text-transform: uppercase;
+
+  .fa {
+    color: #444;
+    font-size: 14px;
+    width: 14px;
+  }
 }
 
-.checkbox-b5e5b {
-  color: #444;
-  font-size: 14px;
-  width: 18px;
+.small-check-7b3d7 {
+  font-size: 12px !important;
 }
 
 .build-row-fdd97 {
@@ -259,7 +270,7 @@ body {
   background-color: #fff;
 }
 
-// if you apply opacity to the tr directly you'll get a border bug
+// NOTE: if you apply opacity to the tr directly you'll get a border bug
 .not-selected-a8d35 {
   td {
     opacity: 0.75;

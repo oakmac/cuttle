@@ -57,7 +57,7 @@
           :compile-time 4.7
           :last-compile-time nil
           :errors nil
-          :status :compiling
+          :status :done
           :warnings nil
 
           ;; copied directly from project.clj
@@ -89,6 +89,7 @@
 
     "~/project2/project.clj" {
       :name "project2"
+      :state :auto
       :builds {
         :main {
           :checked? true
@@ -145,16 +146,22 @@
 ;;------------------------------------------------------------------------------
 
 (defn- click-auto-btn [project-key]
-  ;; TODO: start "lein cljsbuild auto" here
-  )
+  (swap! state assoc-in [:projects project-key :state] :auto))
+
+(defn- click-stop-auto-btn [project-key]
+  (swap! state assoc-in [:projects project-key :state] :idle))
 
 (defn- click-once-btn [project-key]
-  ;; TODO: start "lein cljsbuild once" here
-  )
+  (swap! state assoc-in [:projects project-key :state] :build-once)
 
-(defn- click-clean-btn []
+  ;; DEMO CODE
+  (js/setTimeout #(click-stop-auto-btn project-key) 1500))
 
-  )
+(defn- click-clean-btn [project-key]
+  (swap! state assoc-in [:projects project-key :state] :clean)
+
+  ;; DEMO CODE
+  (js/setTimeout #(click-stop-auto-btn project-key) 1500))
 
 (defn- click-checkbox-header [project-key]
   (let [p (get-in @state [:projects project-key])
@@ -184,10 +191,14 @@
     "Done with " n " warning"
     (if (> n 1) "s")))
 
-(sablono/defhtml checked-cell [c]
-  (if c
-    [:i.fa.fa-check-square-o]
-    [:i.fa.fa-square-o]))
+(sablono/defhtml checked-cell [prj bld]
+  (if (= :idle (:state prj))
+    (if (:checked? bld)
+      [:i.fa.fa-check-square-o]
+      [:i.fa.fa-square-o])
+    (if (:checked? bld)
+      [:i.fa.fa-check.small-check-7b3d7]
+      "-")))
 
 (sablono/defhtml status-cell [{:keys [compile-time status warnings]}]
   (case status
@@ -228,21 +239,22 @@
     (if-not checked?
       " not-selected-a8d35")))
 
-(sablono/defhtml build-row [idx [build-key b] project-key]
-  [:tr {:class (build-row-class idx (:checked? b))
-        :on-click #(click-build-row project-key build-key)}
-    [:td.cell-9ad24 (checked-cell (:checked? b))]
-    [:td.cell-9ad24 (-> b :cljsbuild :source-paths first)] ;; TODO: print the vector here
-    [:td.cell-9ad24 (-> b :cljsbuild :compiler :output-to)]
-    [:td.cell-9ad24 (status-cell b)]
-    [:td.cell-9ad24 (last-compile-cell (:last-compile-time b))]
-    [:td.cell-9ad24 (-> b :cljsbuild :compiler :optimizations name)]
+(sablono/defhtml build-row [idx [build-key bld] project-key prj]
+  [:tr {:class (build-row-class idx (:checked? bld))
+        :on-click (if (= :idle (:state prj))
+                    #(click-build-row project-key build-key))}
+    [:td.cell-9ad24 (checked-cell prj bld)]
+    [:td.cell-9ad24 (-> bld :cljsbuild :source-paths first)] ;; TODO: print the vector here
+    [:td.cell-9ad24 (-> bld :cljsbuild :compiler :output-to)]
+    [:td.cell-9ad24 (status-cell bld)]
+    [:td.cell-9ad24 (last-compile-cell (:last-compile-time bld))]
+    [:td.cell-9ad24 (-> bld :cljsbuild :compiler :optimizations name)]
     ;;[:td.cell-9ad24 "Actions" [:i.fa.fa-caret-down]]
     ]
-  (when (:warnings b)
-    (map warning-row (:warnings b)))
-  (when (:errors b)
-    (map error-row (:errors b))))
+  (when (:warnings bld)
+    (map warning-row (:warnings bld)))
+  (when (:errors bld)
+    (map error-row (:errors bld))))
 
 ;; NOTE: these two functions could be combined
 
@@ -264,36 +276,62 @@
       {:on-click #(click-once-btn project-key)}
       "Build Once" [:span.count-cfa27 (str "[" num-builds "]")]]))
 
-;;------------------------------------------------------------------------------
-;; Quiescent Components
-;;------------------------------------------------------------------------------
-
 (sablono/defhtml checkbox-header [num-selected-builds num-builds]
   (cond
     (= num-selected-builds num-builds) [:i.fa.fa-check-square-o]
     (zero? num-selected-builds) [:i.fa.fa-square-o]
     :else [:i.fa.fa-minus-square-o]))
 
-(quiescent/defcomponent Project [[project-key p]]
-  (let [num-builds (num-builds p)
-        num-selected-builds (selected-builds-count p)]
+(sablono/defhtml idle-buttons [project-key num-selected-builds]
+  (start-auto-btn project-key num-selected-builds)
+  (build-once-btn project-key num-selected-builds)
+  [:button.btn-da85d
+    {:on-click #(click-clean-btn project-key)}
+    "Clean"])
+
+(sablono/defhtml auto-buttons [project-key]
+  [:button.btn-da85d
+    {:on-click #(click-stop-auto-btn project-key)}
+    "Stop Auto"])
+
+(sablono/defhtml project-status [st]
+  (cond
+    (= :auto st) [:span.status-b8614 "auto compiling..."]
+    (= :build-once st) [:span.status-b8614 "building once..."]
+    (= :clean st) [:span.status-b8614 "cleaning..."]
+    :else [:span.edit-c0ba4 "edit"]))
+
+;;------------------------------------------------------------------------------
+;; Quiescent Components
+;;------------------------------------------------------------------------------
+
+;; TODO: should probably make the TableHeader and BuildRow components
+
+(quiescent/defcomponent Project [[project-key prj]]
+  (let [num-builds (num-builds prj)
+        num-selected-builds (selected-builds-count prj)]
     (sablono/html
       [:div.project-1b83a
         [:div.wrapper-714e4
           [:div.project-name-ba9e7
-            (:name p)
-            [:span.edit-c0ba4 "edit"]]
+            (:name prj)
+            (project-status (:state prj))]
           [:div.project-btns-f5656
-            (start-auto-btn project-key num-selected-builds)
-            (build-once-btn project-key num-selected-builds)
-            [:button.btn-da85d "Clean"]]
+            (cond
+              (= :idle (:state prj))
+                (idle-buttons project-key num-selected-builds)
+              (= :auto (:state prj))
+                (auto-buttons project-key))]
           [:div.clr-737fa]]
         [:table.tbl-bdf39
           [:thead
             [:tr.header-row-50e32
-              [:th.th-92ca4.checkbox-b5e5b
-                {:on-click #(click-checkbox-header project-key)}
-                (checkbox-header num-selected-builds num-builds)]
+              (if (= :idle (:state prj))
+                [:th.th-92ca4
+                  {:on-click #(click-checkbox-header project-key)}
+                  (checkbox-header num-selected-builds num-builds) "Compile?"]
+                [:th.th-92ca4
+                  [:i.fa.fa-check.small-check-7b3d7] "Compile?"])
               [:th.th-92ca4 "Source"]
               [:th.th-92ca4 "Output"]
               [:th.th-92ca4 "Status"]
@@ -302,7 +340,7 @@
               ;;[:th.th-92ca4 "Actions"]
               ]]
           [:tbody
-            (map-indexed #(build-row %1 %2 project-key) (:builds p))]]])))
+            (map-indexed #(build-row %1 %2 project-key prj) (:builds prj))]]])))
 
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
