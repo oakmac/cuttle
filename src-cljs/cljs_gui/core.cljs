@@ -22,7 +22,9 @@
       :name "t3tr0s"
       :builds {
         :client {
+          :checked? true
           :compile-time 0.6
+          :last-compile-time 1413048033
           :errors nil
           :status :done
           :warnings nil
@@ -36,7 +38,9 @@
               :optimizations :whitespace }}}
 
         :client-adv {
+          :checked? true
           :compile-time 4.7
+          :last-compile-time nil
           :errors nil
           :status :compiling
           :warnings nil
@@ -51,7 +55,9 @@
               :pretty-print false }}}
 
         :server {
-          :compile-time 2.2
+          :checked? false
+          :compile-time nil
+          :last-compile-time nil
           :errors nil
           :status :missing
           :warnings nil
@@ -70,7 +76,9 @@
       :name "project2"
       :builds {
         :main {
+          :checked? true
           :errors nil
+          :last-compile-time 1413048033
           :status :done-with-warnings
           :warnings [
             "Use of undeclared Var project2.core/foo at line 79 src-cljs/project2/core.cljs"
@@ -84,8 +92,10 @@
               :output-to "public/js/main.js"}}}
 
         :main-min {
+          :checked? true
           ;; will there ever be more than one error?
           :errors ["EOF while reading, starting at line 7"]
+          :last-compile-time nil
           :status :errors
           :warnings nil
 
@@ -98,29 +108,57 @@
   }))
 
 ;;------------------------------------------------------------------------------
+;; Misc
+;;------------------------------------------------------------------------------
+
+(defn- selected-builds-count [p]
+  (->> p
+    :builds
+    vals
+    (map :checked?)
+    (remove false?)
+    count))
+
+;;------------------------------------------------------------------------------
 ;; Events
 ;;------------------------------------------------------------------------------
 
-(defn- click-auto-btn []
-
+(defn- click-auto-btn [project-key]
+  ;; TODO: start "lein cljsbuild auto" here
   )
 
-(defn- click-once-btn []
-
+(defn- click-once-btn [project-key]
+  ;; TODO: start "lein cljsbuild once" here
   )
 
 (defn- click-clean-btn []
 
   )
 
+(defn- click-build-row [project-key build-key]
+  (swap! state update-in [:projects project-key :builds build-key :checked?] not))
+
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
 ;;------------------------------------------------------------------------------
+
+;; TODO: ts should be a timestamp, use moment.js to produce a relative time
+;; string from the last compile time, ie:
+;; "a few seconds ago", "an hour ago", "2 days ago", etc
+(sablono/defhtml last-compile-cell [ts]
+  (if ts
+    "a few seconds ago"
+    "-"))
 
 (defn- warnings-status [n]
   (str
     "Done with " n " warning"
     (if (> n 1) "s")))
+
+(sablono/defhtml checked-cell [c]
+  (if c
+    [:i.fa.fa-check-square-o]
+    [:i.fa.fa-square-o]))
 
 (sablono/defhtml status-cell [{:keys [compile-time status warnings]}]
   (case status
@@ -154,46 +192,74 @@
     [:td.warning-cell-b9f12 {:col-span "6"}
       [:i.fa.fa-exclamation-triangle] w]])
 
-(sablono/defhtml build-row [idx [k b]]
-  [:tr.build-row-fdd97 {:style {:background-color (row-color idx)}}
-    [:td.cell-9ad24 [:i.fa.fa-square-o]]
+(sablono/defhtml build-row [idx [build-key b] project-key]
+  [:tr.build-row-fdd97
+    {:on-click #(click-build-row project-key build-key)
+     :style {:background-color (row-color idx)
+             :opacity (if-not (:checked? b) "0.75")}}
+    [:td.cell-9ad24 (checked-cell (:checked? b))]
     [:td.cell-9ad24 (-> b :cljsbuild :source-paths first)] ;; TODO: print the vector here
     [:td.cell-9ad24 (-> b :cljsbuild :compiler :output-to)]
     [:td.cell-9ad24 (status-cell  b)]
-    [:td.cell-9ad24 "a few seconds ago"]
-    [:td.cell-9ad24 (-> b :cljsbuild :compiler :optimizations name)]]
+    [:td.cell-9ad24 (last-compile-cell (:last-compile-time b))]
+    [:td.cell-9ad24 (-> b :cljsbuild :compiler :optimizations name)]
+    ;;[:td.cell-9ad24 "Actions" [:i.fa.fa-caret-down]]
+    ]
   (if (:warnings b)
     (map warning-row (:warnings b)))
   (if (:errors b)
     (map error-row (:errors b))))
 
+;; NOTE: these two functions could be combined
+
+(sablono/defhtml start-auto-btn [project-key num-builds]
+  (if (zero? num-builds)
+    [:button.disabled-btn-1884b
+      {:disabled true}
+      "Start Auto" [:span.count-cfa27 (str "[" num-builds "]")]]
+    [:button.btn-da85d
+      {:on-click #(click-auto-btn project-key)}
+      "Start Auto" [:span.count-cfa27 (str "[" num-builds "]")]]))
+
+(sablono/defhtml build-once-btn [project-key num-builds]
+  (if (zero? num-builds)
+    [:button.disabled-btn-1884b
+      {:disabled true}
+      "Build Once" [:span.count-cfa27 (str "[" num-builds "]")]]
+    [:button.btn-da85d
+      {:on-click #(click-once-btn project-key)}
+      "Build Once" [:span.count-cfa27 (str "[" num-builds "]")]]))
+
 ;;------------------------------------------------------------------------------
 ;; Quiescent Components
 ;;------------------------------------------------------------------------------
 
-(quiescent/defcomponent Project [[k p]]
-  (sablono/html
-    [:div.project-1b83a
-      [:div.wrapper-714e4
-        [:div.project-name-ba9e7
-          (:name p)
-          [:span.edit-c0ba4 "edit"]]
-        [:div.project-btns-f5656
-          [:button.btn-da85d "Start Auto"]
-          [:button.btn-da85d "Build Once"]
-          [:button.btn-da85d "Clean"]]
-        [:div.clr-737fa]]
-      [:table.tbl-bdf39
-        [:thead
-          [:tr.header-row-50e32
-            [:th.th-92ca4 "Compile"]
-            [:th.th-92ca4 "Source"]
-            [:th.th-92ca4 "Output"]
-            [:th.th-92ca4 "Status"]
-            [:th.th-92ca4 "Last Compile"]
-            [:th.th-92ca4 "Optimizations"]]]
-        [:tbody
-          (map-indexed build-row (:builds p))]]]))
+(quiescent/defcomponent Project [[project-key p]]
+  (let [num-selected-builds (selected-builds-count p)]
+    (sablono/html
+      [:div.project-1b83a
+        [:div.wrapper-714e4
+          [:div.project-name-ba9e7
+            (:name p)
+            [:span.edit-c0ba4 "edit"]]
+          [:div.project-btns-f5656
+            (start-auto-btn project-key num-selected-builds)
+            (build-once-btn project-key num-selected-builds)
+            [:button.btn-da85d "Clean"]]
+          [:div.clr-737fa]]
+        [:table.tbl-bdf39
+          [:thead
+            [:tr.header-row-50e32
+              [:th.th-92ca4 "Compile"]
+              [:th.th-92ca4 "Source"]
+              [:th.th-92ca4 "Output"]
+              [:th.th-92ca4 "Status"]
+              [:th.th-92ca4 "Last Compile"]
+              [:th.th-92ca4 "Optimizations"]
+              ;;[:th.th-92ca4 "Actions"]
+              ]]
+          [:tbody
+            (map-indexed #(build-row %1 %2 project-key) (:builds p))]]])))
 
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
