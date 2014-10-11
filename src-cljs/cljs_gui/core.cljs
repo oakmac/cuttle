@@ -22,10 +22,8 @@
       :name "t3tr0s"
       :builds {
         :client {
-          :errors [
-            "WARNING: Use of undeclared Var cljs-gui.core/foo at line 80 src-cljs/cljs_gui/core.cljs"
-            "WARNING: Use of undeclared Var cljs-gui.core/bar at line 80 src-cljs/cljs_gui/core.cljs"
-          ]
+          :compile-time 0.6
+          :errors nil
           :status :done
           :warnings nil
 
@@ -38,6 +36,7 @@
               :optimizations :whitespace }}}
 
         :client-adv {
+          :compile-time 4.7
           :errors nil
           :status :compiling
           :warnings nil
@@ -49,9 +48,10 @@
               :externs ["externs/jquery-1.9.js" "externs/socket.io.js"]
               :output-to "public/js/client.min.js"
               :optimizations :advanced
-              :pretty-print false}}}
+              :pretty-print false }}}
 
         :server {
+          :compile-time 2.2
           :errors nil
           :status :done
           :warnings nil
@@ -71,8 +71,11 @@
       :builds {
         :main {
           :errors nil
-          :status :done
-          :warnings nil
+          :status :done-with-warnings
+          :warnings [
+            "Use of undeclared Var project2.core/foo at line 79 src-cljs/project2/core.cljs"
+            "Use of undeclared Var project2.core/bar at line 80 src-cljs/project2/core.cljs"
+          ]
 
           :cljsbuild {
             :source-paths ["src-cljs"]
@@ -81,8 +84,9 @@
               :output-to "public/js/main.js"}}}
 
         :main-min {
-          :errors nil
-          :status :done
+          ;; will there ever be more than one error?
+          :errors ["EOF while reading, starting at line 7"]
+          :status :errors
           :warnings nil
 
           :cljsbuild {
@@ -129,26 +133,46 @@
     (if (:errors b)
       (map error-row (:errors b)))])
 
-(sablono/defhtml status-cell [st]
-  (case st
+(sablono/defhtml status-cell [{:keys [compile-time status]}]
+  (case status
+    :cleaning
+      [:span.cleaning-a1438 [:i.fa.fa-gear.fa-spin] "Cleaning..."]
     :compiling
       [:span.compiling-9cc92 [:i.fa.fa-gear.fa-spin] "Compiling..."]
     :done
-      [:span.success-5c065 [:i.fa.fa-check] "Done in 0.6 seconds"]
+      [:span.success-5c065 [:i.fa.fa-check] (str "Done in " compile-time " seconds")]
+    :done-with-warnings
+      [:span.with-warnings-4b105 [:i.fa.fa-exclamation-triangle] "Done with 2 warnings"]
+    :errors
+      [:span.errors-2718a [:i.fa.fa-times] "Compiling failed"]
     "*unknkown status*"))
 
 (defn- row-color [idx]
   (if (zero? (mod idx 2))
     "#fafafa" "#fff"))
 
+(sablono/defhtml error-row [err]
+  [:tr.error-row-b3028
+    [:td.error-cell-1ccea {:col-span "6"}
+      [:i.fa.fa-times] err]])
+
+(sablono/defhtml warning-row [w]
+  [:tr.warning-row-097c8
+    [:td.warning-cell-b9f12 {:col-span "6"}
+      [:i.fa.fa-exclamation-triangle] w]])
+
 (sablono/defhtml build-row [idx [k b]]
   [:tr.build-row-fdd97 {:style {:background-color (row-color idx)}}
     [:td.cell-9ad24 [:i.fa.fa-square-o]]
     [:td.cell-9ad24 (-> b :cljsbuild :source-paths first)] ;; TODO: print the vector here
     [:td.cell-9ad24 (-> b :cljsbuild :compiler :output-to)]
-    [:td.cell-9ad24 (status-cell (:status b))]
+    [:td.cell-9ad24 (status-cell  b)]
     [:td.cell-9ad24 "a few seconds ago"]
-    [:td.cell-9ad24 (-> b :cljsbuild :compiler :optimizations name)]])
+    [:td.cell-9ad24 (-> b :cljsbuild :compiler :optimizations name)]]
+  (if (:warnings b)
+    (map warning-row (:warnings b)))
+  (if (:errors b)
+    (map error-row (:errors b))))
 
 ;;------------------------------------------------------------------------------
 ;; Quiescent Components
@@ -156,10 +180,16 @@
 
 (quiescent/defcomponent Project [[k p]]
   (sablono/html
-    [:div.project-row-1b83a
-      [:div.project-name-ba9e7
-        (:name p)
-        [:span.edit-c0ba4 "edit"]]
+    [:div.project-1b83a
+      [:div.wrapper-714e4
+        [:div.project-name-ba9e7
+          (:name p)
+          [:span.edit-c0ba4 "edit"]]
+        [:div.project-btns-f5656
+          [:button.btn-da85d "Start Auto"]
+          [:button.btn-da85d "Build Once"]
+          [:button.btn-da85d "Clean"]]
+        [:div.clr-737fa]]
       [:table.tbl-bdf39
         [:thead
           [:tr.header-row-50e32
@@ -177,7 +207,6 @@
     [:div.app-ca3cd
       [:div.header-a4c14
         [:div.title-8749a "ClojureScript Compiler"]
-        ;;[:div.settings-link-c1709 [:i.fa.fa-gear]]
         [:div.title-links-42b06
           [:span.link-3d3ad [:i.fa.fa-plus] "Add project"]
           [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]]

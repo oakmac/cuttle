@@ -68,7 +68,9 @@
 
 @activeBlue: #0075ea;
 @borderGrey: #e1e1e1;
+@errorRed: red;
 @inactiveGrey: #888;
+@warningOrange: #c47f00;
 
 //------------------------------------------------------------------------------
 // Tags
@@ -129,21 +131,35 @@ body {
 
 .header-a4c14 {
   border-bottom: 1px solid @borderGrey;
+  margin-bottom: 25px;
   padding: 20px 0;
 }
 
-.project-row-1b83a {
-  //border-bottom: 1px solid @borderGrey;
-  padding: 20px 0;
+.btn-da85d {
+  background: #e6e6e6;
+  border: 0;
+  display: inline-block;
+  .font-normal(14px);
+  margin-right: 10px;
+  padding: 8px 12px;
+  .rounded(4px);
 }
 
-.project-name-6c702 {
-
+.project-1b83a {
+  margin-bottom: 50px;
 }
 
 .project-name-ba9e7 {
+  float: left;
   .font-bold(28px);
-  margin: 15px 0;
+}
+
+.wrapper-714e4 {
+  margin-bottom: 20px;
+}
+
+.project-btns-f5656 {
+  float: right;
 }
 
 .error-56f38 {
@@ -156,9 +172,13 @@ body {
   }
 }
 
+.cleaning-a1438 {
+  .fa {
+    margin-right: 5px;
+  }
+}
+
 .compiling-9cc92 {
-
-
   .fa {
     margin-right: 5px;
   }
@@ -166,6 +186,22 @@ body {
 
 .success-5c065 {
   color: green;
+
+  .fa {
+    margin-right: 5px;
+  }
+}
+
+.with-warnings-4b105 {
+  color: @warningOrange;
+
+  .fa {
+    margin-right: 5px;
+  }
+}
+
+.errors-2718a {
+  color: @errorRed;
 
   .fa {
     margin-right: 5px;
@@ -205,6 +241,34 @@ body {
 
 .build-row-fdd97 {
 
+}
+
+.warning-row-097c8 {
+  background-color: rgba(255, 255, 100, 0.5);
+}
+
+.warning-cell-b9f12 {
+  color: #000;
+  .font-normal(14px);
+  padding: 12px;
+
+  .fa {
+    margin-right: 6px;
+  }
+}
+
+.error-row-b3028 {
+  background-color: #e44545;
+}
+
+.error-cell-1ccea {
+  color: #fff;
+  .font-normal(14px);
+  padding: 12px;
+
+  .fa {
+    margin-right: 6px;
+  }
 }
 
 .cell-9ad24 {
