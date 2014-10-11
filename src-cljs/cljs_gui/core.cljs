@@ -53,7 +53,7 @@
         :server {
           :compile-time 2.2
           :errors nil
-          :status :done
+          :status :missing
           :warnings nil
 
           ;; copied directly from project.clj
@@ -117,34 +117,27 @@
 ;; Sablono Templates
 ;;------------------------------------------------------------------------------
 
-(sablono/defhtml error-row [err]
-  [:div.error-56f38
-    [:i.fa.fa-warning] err])
+(defn- warnings-status [n]
+  (str
+    "Done with " n " warning"
+    (if (> n 1) "s")))
 
-(sablono/defhtml project-build [[k b]]
-  [:div.build-fe180
-    [:code (-> b :compiler :output-to)]
-    (case (:status b)
-      :compiling
-        [:div.compiling-9cc92 [:i.fa.fa-gear.fa-spin] "Compiling..."]
-      :done
-        [:div.success-5c065 [:i.fa.fa-check] "Done"]
-      )
-    (if (:errors b)
-      (map error-row (:errors b)))])
-
-(sablono/defhtml status-cell [{:keys [compile-time status]}]
+(sablono/defhtml status-cell [{:keys [compile-time status warnings]}]
   (case status
     :cleaning
       [:span.cleaning-a1438 [:i.fa.fa-gear.fa-spin] "Cleaning..."]
     :compiling
       [:span.compiling-9cc92 [:i.fa.fa-gear.fa-spin] "Compiling..."]
     :done
-      [:span.success-5c065 [:i.fa.fa-check] (str "Done in " compile-time " seconds")]
+      [:span.success-5c065
+        [:i.fa.fa-check] (str "Done in " compile-time " seconds")]
     :done-with-warnings
-      [:span.with-warnings-4b105 [:i.fa.fa-exclamation-triangle] "Done with 2 warnings"]
+      [:span.with-warnings-4b105
+        [:i.fa.fa-exclamation-triangle] (warnings-status (count warnings))]
     :errors
       [:span.errors-2718a [:i.fa.fa-times] "Compiling failed"]
+    :missing
+      [:span.missing-f02af [:i.fa.fa-minus-circle] "Output missing"]
     "*unknkown status*"))
 
 (defn- row-color [idx]
