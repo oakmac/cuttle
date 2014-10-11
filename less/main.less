@@ -10,7 +10,6 @@
   font-family: 'Open Sans Light';
   font-style: normal;
   font-weight: 300;
-  src: url('../fonts/OpenSans-Light.eot');
   src: local('Open Sans Light'), local('OpenSans-Light'),
     url('../fonts/OpenSans-Light.woff') format('woff');
 }
@@ -19,7 +18,6 @@
   font-family: 'Open Sans';
   font-style: normal;
   font-weight: 400;
-  src: url('../fonts/OpenSans.eot');
   src: local('Open Sans'), local('OpenSans'),
     url('../fonts/OpenSans.woff') format('woff');
 }
@@ -28,11 +26,17 @@
   font-family: 'Open Sans';
   font-style: normal;
   font-weight: 600;
-  src: url('../fonts/OpenSans-Semibold.eot');
   src: local('Open Sans Semibold'), local('OpenSans-Semibold'),
     url('../fonts/OpenSans-Semibold.woff') format('woff');
 }
 
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Ubuntu Mono'), local('UbuntuMono-Regular'), url('../fonts/UbuntuMono-Regular.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+}
 
 .font-light(@size) {
   font-family: 'Open Sans Light';
@@ -52,18 +56,94 @@
   font-weight: 600;
 }
 
+.font-mono(@size) {
+  font-family: 'Ubuntu Mono';
+  font-size: @size;
+  font-weight: 400;
+}
+
+//------------------------------------------------------------------------------
+// Variables
+//------------------------------------------------------------------------------
+
+@activeBlue: #0075ea;
+@borderGrey: #e1e1e1;
+@inactiveGrey: #888;
+
+//------------------------------------------------------------------------------
+// Tags
+//------------------------------------------------------------------------------
+
 body {
+  .box-sizing();
   color: #444;
   font-family: "Open Sans";
 }
 
+//------------------------------------------------------------------------------
+// Snowflake Classes
+//------------------------------------------------------------------------------
+
+.clr-737fa {
+  clear: both;
+}
+
+.app-ca3cd {
+  margin: 20px;
+  min-width: 800px;
+}
+
+.title-8749a {
+  .font-light(32px);
+  float: left;
+}
+
+.settings-link-c1709 {
+  border: 1px solid @borderGrey;
+  cursor: pointer;
+  float: right;
+  padding: 10px 20px;
+  .rounded(4px);
+}
+
+.title-links-42b06 {
+  float: right;
+}
+
+.link-3d3ad {
+  color: @inactiveGrey;
+  cursor: pointer;
+  display: inline-block;
+  .font-normal(18px);
+  margin: 15px 0 0 30px;
+
+  .fa {
+    margin-right: 5px;
+  }
+}
+
+.link-3d3ad:hover {
+  color: @activeBlue;
+  text-decoration: underline;
+}
+
+.header-a4c14 {
+  border-bottom: 1px solid @borderGrey;
+  padding: 20px 0;
+}
+
 .project-row-1b83a {
-  border-bottom: 1px solid #ccc;
-  padding: 20px;
+  //border-bottom: 1px solid @borderGrey;
+  padding: 20px 0;
 }
 
 .project-name-6c702 {
 
+}
+
+.project-name-ba9e7 {
+  .font-bold(28px);
+  margin: 15px 0;
 }
 
 .error-56f38 {
@@ -90,4 +170,45 @@ body {
   .fa {
     margin-right: 5px;
   }
+}
+
+.edit-c0ba4 {
+  color: @inactiveGrey;
+  cursor: pointer;
+  display: inline-block;
+  .font-normal(16px);
+  margin-left: 8px;
+}
+
+.edit-c0ba4:hover {
+  color: @activeBlue;
+  text-decoration: underline;
+}
+
+.tbl-bdf39 {
+  border: 1px solid @borderGrey;
+  width: 100%;
+}
+
+.header-row-50e32 {
+  background: #f2f6ff;
+}
+
+.th-92ca4 {
+  border-bottom: 1px solid @borderGrey;
+  color: #8e8e8e;
+  .font-bold(11px);
+  padding: 12px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.build-row-fdd97 {
+
+}
+
+.cell-9ad24 {
+  .font-normal(14px);
+  //.font-mono(14px);
+  padding: 12px;
 }

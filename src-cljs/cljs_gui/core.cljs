@@ -18,16 +18,61 @@
 
 (def state (atom {
   :projects {
-    "~/project1/project.clj" {
-      :name "project1"
+    "~/t3tr0s/project.clj" {
+      :name "t3tr0s"
       :builds {
-        :main {
+        :client {
           :errors [
             "WARNING: Use of undeclared Var cljs-gui.core/foo at line 80 src-cljs/cljs_gui/core.cljs"
             "WARNING: Use of undeclared Var cljs-gui.core/bar at line 80 src-cljs/cljs_gui/core.cljs"
           ]
-          :warnings nil
           :status :done
+          :warnings nil
+
+          ;; copied directly from project.clj
+          :cljsbuild {
+            :source-paths ["src/client"]
+            :compiler {
+              :output-to "public/js/client.js"
+              :output-dir "public/out"
+              :optimizations :whitespace }}}
+
+        :client-adv {
+          :errors nil
+          :status :compiling
+          :warnings nil
+
+          ;; copied directly from project.clj
+          :cljsbuild {
+            :source-paths ["src/client"]
+            :compiler {
+              :externs ["externs/jquery-1.9.js" "externs/socket.io.js"]
+              :output-to "public/js/client.min.js"
+              :optimizations :advanced
+              :pretty-print false}}}
+
+        :server {
+          :errors nil
+          :status :done
+          :warnings nil
+
+          ;; copied directly from project.clj
+          :cljsbuild {
+            :source-paths ["src/server"]
+            :compiler {
+              :language-in :ecmascript5
+              :language-out :ecmascript5
+              :target :nodejs
+              :output-to "server.js"
+              :optimizations :simple }}}}}
+
+    "~/project2/project.clj" {
+      :name "project2"
+      :builds {
+        :main {
+          :errors nil
+          :status :done
+          :warnings nil
 
           :cljsbuild {
             :source-paths ["src-cljs"]
@@ -37,33 +82,14 @@
 
         :main-min {
           :errors nil
-          :warnings nil
-          :status :compiling
-          :source-paths ["src-cljs"]
-          :compiler {
-            :optimizations :advanced
-            :output-to "public/js/main.min.js"}}}}
-
-    "~/project2/project.clj" {
-      :name "project2"
-      :builds {
-        :main {
-          :errors nil
-          :warnings nil
           :status :done
-          :source-paths ["src-cljs"]
-          :compiler {
-            :optimizations :whitespace
-            :output-to "public/js/main.js"}}
-
-        :main-min {
-          :errors nil
           :warnings nil
-          :status :done
-          :source-paths ["src-cljs"]
-          :compiler {
-            :optimizations :advanced
-            :output-to "public/js/main.min.js"}}}}
+
+          :cljsbuild {
+            :source-paths ["src-cljs"]
+            :compiler {
+              :optimizations :advanced
+              :output-to "public/js/main.min.js"}}}}}
   }
   }))
 
@@ -103,22 +129,60 @@
     (if (:errors b)
       (map error-row (:errors b)))])
 
+(sablono/defhtml status-cell [st]
+  (case st
+    :compiling
+      [:span.compiling-9cc92 [:i.fa.fa-gear.fa-spin] "Compiling..."]
+    :done
+      [:span.success-5c065 [:i.fa.fa-check] "Done in 0.6 seconds"]
+    "*unknkown status*"))
+
+(defn- row-color [idx]
+  (if (zero? (mod idx 2))
+    "#fafafa" "#fff"))
+
+(sablono/defhtml build-row [idx [k b]]
+  [:tr.build-row-fdd97 {:style {:background-color (row-color idx)}}
+    [:td.cell-9ad24 [:i.fa.fa-square-o]]
+    [:td.cell-9ad24 (-> b :cljsbuild :source-paths first)] ;; TODO: print the vector here
+    [:td.cell-9ad24 (-> b :cljsbuild :compiler :output-to)]
+    [:td.cell-9ad24 (status-cell (:status b))]
+    [:td.cell-9ad24 "a few seconds ago"]
+    [:td.cell-9ad24 (-> b :cljsbuild :compiler :optimizations name)]])
+
 ;;------------------------------------------------------------------------------
 ;; Quiescent Components
 ;;------------------------------------------------------------------------------
 
-(quiescent/defcomponent ProjectRow [[k p]]
+(quiescent/defcomponent Project [[k p]]
   (sablono/html
     [:div.project-row-1b83a
-      [:div.project-name-ba9e7 (:name p)]
-      [:div.builds-2ec4d
-        (map project-build (:builds p))]]))
+      [:div.project-name-ba9e7
+        (:name p)
+        [:span.edit-c0ba4 "edit"]]
+      [:table.tbl-bdf39
+        [:thead
+          [:tr.header-row-50e32
+            [:th.th-92ca4 "Compile"]
+            [:th.th-92ca4 "Source"]
+            [:th.th-92ca4 "Output"]
+            [:th.th-92ca4 "Status"]
+            [:th.th-92ca4 "Last Compile"]
+            [:th.th-92ca4 "Optimizations"]]]
+        [:tbody
+          (map-indexed build-row (:builds p))]]]))
 
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
     [:div.app-ca3cd
-      [:h1 "ClojureScript Compiler"]
-      (map ProjectRow (:projects app-state))]))
+      [:div.header-a4c14
+        [:div.title-8749a "ClojureScript Compiler"]
+        ;;[:div.settings-link-c1709 [:i.fa.fa-gear]]
+        [:div.title-links-42b06
+          [:span.link-3d3ad [:i.fa.fa-plus] "Add project"]
+          [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]]
+        [:div.clr-737fa]]
+      (map Project (:projects app-state))]))
 
 ;;------------------------------------------------------------------------------
 ;; State Change and Rendering
