@@ -15,8 +15,7 @@ grunt.initConfig({
 
     default: {
       files: {
-        'public/css/main.min.css': 'less/main.less',
-        'app/css/main.min.css': 'less/main.less'
+        'cljsbuild-ui/css/main.min.css': 'less/main.less'
       }
     }
   },

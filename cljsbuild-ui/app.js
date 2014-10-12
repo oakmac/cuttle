@@ -31,4 +31,7 @@ app.on('ready', function() {
     // when you should delete the corresponding element.
     mainWindow = null;
   });
+
+  // TODO: make this operate with a config
+  mainWindow.openDevTools();
 });

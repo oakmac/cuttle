@@ -15,10 +15,6 @@ pom.xml
 /cljsbuild-ui/js/main.min.js
 /cljsbuild-ui/js/main.js
 
-/public/css/main.min.css
-/public/js/main.js
-/public/js/main.min.js
-
 /node_modules
 
 *.diff
