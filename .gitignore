@@ -11,10 +11,14 @@ pom.xml
 .DS_Store
 *.swp
 
+/cljsbuild-ui/css/main.min.css
+/cljsbuild-ui/js/main.min.js
+/cljsbuild-ui/js/main.js
+
 /public/css/main.min.css
 /public/js/main.js
 /public/js/main.min.js
-/public/out/
+
 /node_modules
 
 *.diff

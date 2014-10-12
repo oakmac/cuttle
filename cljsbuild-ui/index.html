@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>ClojureScript Compiler UI</title>
+  <link rel="stylesheet" href="css/main.min.css">
+</head>
+<body>
+<div id="app"></div>
+<pre id="foo"></pre>
+<script src="js/react-0.11.2.min.js"></script>
+<script src="js/velocity-1.1.0.min.js"></script>
+<script src="js/main.js"></script>
+<script>
+var fs = require('fs');
+
+function byId(id) {
+  return document.getElementById(id);
+}
+
+// var exec = require('child_process').exec,
+//   child;
+
+// function execFinished(err, stdout, stderr) {
+//   byId("foo").innerHTML = stdout;
+// }
+
+// var childProcessOptions = {
+//   cwd : "/home/oakmac/t3tr0s/"
+// };
+
+// child = exec('lein cljsbuild clean', childProcessOptions, execFinished);
+
+
+// fs.readFile('/home/oakmac/t3tr0s/project.clj', function (err, data) {
+//   if (err) throw err;
+//   //document.write(data);
+
+//   document.getElementById("foo").innerHTML = data;
+// });
+
+
+
+
+// var spawn = require('child_process').spawn,
+//   auto = spawn('lein', ['cljsbuild', 'auto'], {
+//     cwd: "/home/oakmac/t3tr0s/"
+//   });
+
+
+// function receiveAutoData(data) {
+//   byId("foo").innerHTML += data + "\n--------------------\n";
+// }
+
+// auto.stdout.on("data", foo.bar);
+
+// function onAutoClose(code) {
+//   byId("foo").innerHTML += "closed!!!!!";
+// }
+
+// auto.on("close", onAutoClose);
+
+</script>
+</body>
+</html>

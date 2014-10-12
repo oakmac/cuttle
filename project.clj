@@ -14,13 +14,27 @@
   :cljsbuild {
     :builds {
 
-      :main {
+      :app-main {
+        :source-paths ["src-cljs"]
+        :compiler {
+          :optimizations :whitespace
+          :output-to "cljsbuild-ui/js/main.js"}}
+
+      :public-main {
         :source-paths ["src-cljs"]
         :compiler {
           :optimizations :whitespace
           :output-to "public/js/main.js"}}
 
-      :main-min {
+      :app-main-min {
+        :source-paths ["src-cljs"]
+        :compiler {
+          :externs ["externs/react-0.11.0.js"]
+          :output-to "cljsbuild-ui/js/main.min.js"
+          :optimizations :advanced
+          :pretty-print false }}
+
+      :public-main-min {
         :source-paths ["src-cljs"]
         :compiler {
           :externs ["externs/react-0.11.0.js"]
