@@ -61,11 +61,9 @@
 
 ;; TODO: capture better error results from this
 (defn clean [cwd success-fn error-fn]
-  (let [cwd2 (convert-cwd cwd)]
-    (log cwd2)
-    (exec "lein cljsbuild clean"
-      (js-obj "cwd" cwd2)
-      (fn [err _stdout _stderr]
-        (if err
-          (error-fn)
-          (success-fn))))))
+  (exec "lein cljsbuild clean"
+    (js-obj "cwd" (convert-cwd cwd))
+    (fn [err _stdout _stderr]
+      (if err
+        (error-fn)
+        (success-fn)))))

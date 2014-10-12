@@ -1,8 +1,15 @@
 var app = require('app'),
-  BrowserWindow = require('browser-window');
+  BrowserWindow = require('browser-window'),
+  config = {},
+  fs = require('fs');
 
 // report crashes to atom-shell
 require('crash-reporter').start();
+
+// load config
+if (fs.existsSync(__dirname + '/config.json')) {
+  config = require(__dirname + '/config.json');
+}
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the javascript object is GCed.
@@ -38,8 +45,10 @@ function startApp() {
   // Emitted when the window is closed.
   mainWindow.on('closed', onWindowClose);
 
-  // TODO: make this operate with a config
-  mainWindow.openDevTools();
+  // optionally launch dev tools
+  if (config.hasOwnProperty("dev-tools") && config["dev-tools"] === true) {
+    mainWindow.openDevTools();
+  }
 }
 
 // This method will be called when atom-shell has done everything

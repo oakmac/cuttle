@@ -11,6 +11,7 @@ pom.xml
 .DS_Store
 *.swp
 
+/cljsbuild-ui/config.json
 /cljsbuild-ui/css/main.min.css
 /cljsbuild-ui/js/main.min.js
 /cljsbuild-ui/js/main.js
