@@ -2,6 +2,7 @@
   (:require
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
+    [cljs-gui.lein :as lein]
     [cljs-gui.util :refer [log js-log uuid]]))
 
 ;;------------------------------------------------------------------------------
@@ -37,7 +38,7 @@
 
 (def state (atom {
   :projects {
-    "~/t3tr0s/project.clj" {
+    "/home/oakmac/t3tr0s/project.clj" {
       :name "t3tr0s"
       :state :idle
       :builds {
@@ -92,7 +93,7 @@
               :output-to "server.js"
               :optimizations :simple }}}}}
 
-    "~/project2/project.clj" {
+    "/home/oakmac/project2/project.clj" {
       :name "project2"
       :state :auto
       :builds {
@@ -151,6 +152,14 @@
 (defn- mark-compiling [builds build-key]
   (assoc-in builds [build-key :status] :compiling))
 
+(defn- mark-build-for-cleaning [blds bld-key]
+  (let [b (get blds bld-key)]
+    (assoc blds bld-key (assoc b :checked? true
+                                 :status :cleaning))))
+
+(defn- mark-builds-for-cleaning [blds]
+  (reduce mark-build-for-cleaning blds (keys blds)))
+
 ;;------------------------------------------------------------------------------
 ;; Events
 ;;------------------------------------------------------------------------------
@@ -162,12 +171,12 @@
   (swap! state assoc-in [:projects project-key :state] :idle))
 
 (defn- demo-done-1 []
-  (swap! state assoc-in [:projects "~/t3tr0s/project.clj" :builds :client :status] :done)
+  (swap! state assoc-in [:projects "/home/oakmac/t3tr0s/project.clj" :builds :client :status] :done)
   )
 
 (defn- demo-done-2 []
-  (swap! state assoc-in [:projects "~/t3tr0s/project.clj" :builds :client-adv :status] :done)
-  (click-stop-auto-btn "~/t3tr0s/project.clj")
+  (swap! state assoc-in [:projects "/home/oakmac/t3tr0s/project.clj" :builds :client-adv :status] :done)
+  (click-stop-auto-btn "/home/oakmac/t3tr0s/project.clj")
   )
 
 (defn- click-once-btn [project-key]
@@ -179,17 +188,34 @@
     (swap! state assoc-in [:projects project-key] prj3)
 
     ;; DEMO CODE
-    (if (= project-key "~/t3tr0s/project.clj")
+    (if (= project-key "/home/oakmac/t3tr0s/project.clj")
       (do
         (js/setTimeout demo-done-1 600)
         (js/setTimeout demo-done-2 4700))
       (js/setTimeout #(click-stop-auto-btn project-key) 1500))))
 
-(defn- click-clean-btn [project-key]
-  (swap! state assoc-in [:projects project-key :state] :clean)
+;; TODO: deal with clean errors
+(defn- clean-error [stderr]
+  (log "clean error!"))
 
-  ;; DEMO CODE
-  (js/setTimeout #(click-stop-auto-btn project-key) 1500))
+(defn- clean-success [project-key]
+  ;; set project state
+  (swap! state assoc-in [:projects project-key :state] :idle)
+
+  ;; set builds state
+  (doall (map
+    #(swap! state assoc-in [:projects project-key :builds % :status] :missing)
+    (keys (get-in @state [:projects project-key :builds])))))
+
+(defn- click-clean-btn [project-key]
+  (let [prj1 (get-in @state [:projects project-key])
+        prj2 (assoc prj1 :state :clean)
+        prj3 (assoc prj2 :builds (mark-builds-for-cleaning (:builds prj2)))]
+    ;; show the cleaning state
+    (swap! state assoc-in [:projects project-key] prj3)
+
+    ;; start the clean
+    (lein/clean project-key #(clean-success project-key) clean-error)))
 
 (defn- click-checkbox-header [project-key]
   (let [p (get-in @state [:projects project-key])
@@ -261,9 +287,10 @@
       [:i.fa.fa-exclamation-triangle] w]])
 
 (defn- build-row-class [idx checked?]
-  (str "build-row-fdd97"
+  (str "build-row-fdd97 "
     (if (zero? (mod idx 2))
-      " odd-c27e6" " even-158a9")
+      "odd-c27e6"
+      "even-158a9")
     (if-not checked?
       " not-selected-a8d35")))
 
@@ -313,7 +340,7 @@
   (build-once-btn project-key num-selected-builds)
   [:button.btn-da85d
     {:on-click #(click-clean-btn project-key)}
-    "Clean"])
+    "Clean All"])
 
 (sablono/defhtml auto-buttons [project-key]
   [:button.btn-da85d

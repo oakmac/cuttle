@@ -1,7 +1,7 @@
 var app = require('app'),
   BrowserWindow = require('browser-window');
 
-// Report crashes to our server.
+// report crashes to atom-shell
 require('crash-reporter').start();
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -15,23 +15,33 @@ app.on('window-all-closed', function() {
   }
 });
 
-// This method will be called when atom-shell has done everything
-// initialization and ready for creating browser windows.
-app.on('ready', function() {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({width: 800, height: 600});
+function onWindowClose() {
+  // dereference the window object
+  mainWindow = null;
+}
 
-  // and load the index.html of the app.
+// NOTE: a lot of the browserWindow options listed on the docs page aren't
+// working - need to investigate
+var browserWindowOptions = {
+  height: 850,
+  title: "ClojureScript Compiler",
+  width: 1000
+};
+
+function startApp() {
+  // create the browser window
+  mainWindow = new BrowserWindow(browserWindowOptions);
+
+  // load index.html
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
   // Emitted when the window is closed.
-  mainWindow.on('closed', function() {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null;
-  });
+  mainWindow.on('closed', onWindowClose);
 
   // TODO: make this operate with a config
   mainWindow.openDevTools();
-});
+}
+
+// This method will be called when atom-shell has done everything
+// initialization and ready for creating browser windows.
+app.on('ready', startApp);
