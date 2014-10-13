@@ -55,9 +55,11 @@
     float))
 
 (defn- extract-error-msg [s]
-  ;; TODO: write me
-  nil
-  )
+  (-> s
+    (replace "\n" " ")
+    (replace "\t" "")
+    (replace #"^.*Caused by: " "")
+    (replace #"} at .*$" "}")))
 
 (defn- extract-warning-msgs [s]
   ;; TODO: write me
@@ -98,6 +100,8 @@
 
   )
 
+(def current-build (atom nil))
+
 (defn- build-once-stdout [output-chunk]
   (let [chunk2 (trim output-chunk)
         type (output-type? chunk2)]
@@ -106,7 +110,8 @@
         (let [error-msg (extract-error-msg chunk2)]
           (log :error)
           (js-log chunk2)
-          (log error-msg)
+          (js-log "~~~~break~~~~")
+          (js-log error-msg)
           (js-log "-----------------------------"))
       (= type :start)
         (let [target (extract-target-from-start-msg chunk2)]
