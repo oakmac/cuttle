@@ -31,7 +31,8 @@ function onWindowClose() {
 // working - need to investigate
 var browserWindowOptions = {
   height: 850,
-  title: "ClojureScript Compiler",
+  icon: __dirname + '/img/clojure-logo.png',
+  title: 'ClojureScript Compiler',
   width: 1000
 };
 
