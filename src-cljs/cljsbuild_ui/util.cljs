@@ -1,4 +1,4 @@
-(ns cljs-gui.util)
+(ns cljsbuild-ui.util)
 
 (defn log
   "Log a Clojure thing."

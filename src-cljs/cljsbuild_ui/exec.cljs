@@ -1,10 +1,8 @@
-(ns cljs-gui.lein
-  (:require-macros
-    [cljs.core.async.macros :refer [go]])
+(ns cljsbuild-ui.exec
   (:require
-    [cljs.core.async :refer [chan close! put!]]
     [clojure.string :refer [replace split-lines trim]]
-    [cljs-gui.util :refer [log js-log uuid]]))
+    [cljs.core.async :refer [chan close! put!]]
+    [cljsbuild-ui.util :refer [log js-log uuid]]))
 
 (declare extract-target-from-start-msg)
 

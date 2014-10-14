@@ -1,12 +1,12 @@
-(ns cljs-gui.pages.main
+(ns cljsbuild-ui.pages.main
   (:require-macros
     [cljs.core.async.macros :refer [go]])
   (:require
-    [cljs.core.async :refer [<! chan put!]]
+    [cljs.core.async :refer [<!]]
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
-    [cljs-gui.lein :as lein]
-    [cljs-gui.util :refer [log js-log uuid]]))
+    [cljsbuild-ui.exec :as exec]
+    [cljsbuild-ui.util :refer [log js-log uuid]]))
 
 ;;------------------------------------------------------------------------------
 ;; Util
@@ -240,7 +240,7 @@
     (swap! state assoc-in [:projects prj-key] prj3)
 
     ;; start the build
-    (let [compiler-chan (lein/build-once prj-key checked-builds-keys)]
+    (let [compiler-chan (exec/build-once prj-key checked-builds-keys)]
       (handle-compiler-output compiler-chan prj-key current-bld-key))))
 
 ;; TODO: deal with clean errors
@@ -264,7 +264,7 @@
     (swap! state assoc-in [:projects prj-key] prj3)
 
     ;; start the clean
-    (lein/clean prj-key #(clean-success prj-key) clean-error)))
+    (exec/clean prj-key #(clean-success prj-key) clean-error)))
 
 (defn- click-checkbox-header [prj-key]
   (let [p (get-in @state [:projects prj-key])

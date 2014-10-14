@@ -1,7 +1,7 @@
-(ns cljs-gui.core
+(ns cljsbuild-ui.core
   (:require
-    [cljs-gui.pages.main]
-    [cljs-gui.util :refer [log js-log uuid]]))
+    [cljsbuild-ui.pages.main]
+    [cljsbuild-ui.util :refer [log js-log uuid]]))
 
 ;;------------------------------------------------------------------------------
 ;; Require Modules
@@ -13,4 +13,4 @@
 ;; Global App Init
 ;;------------------------------------------------------------------------------
 
-(cljs-gui.pages.main/init!)
+(cljsbuild-ui.pages.main/init!)
