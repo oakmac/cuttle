@@ -1,6 +1,9 @@
 (ns cljs-gui.lein
+  (:require-macros
+    [cljs.core.async.macros :refer [go]])
   (:require
-    [clojure.string :refer [replace trim]]
+    [cljs.core.async :refer [chan close! put!]]
+    [clojure.string :refer [replace split-lines trim]]
     [cljs-gui.util :refer [log js-log uuid]]))
 
 (declare extract-target-from-start-msg)
@@ -36,7 +39,7 @@
 (defn- warning-line? [s]
   (not= -1 (.search s #"^WARNING: ")))
 
-(defn- output-type?
+(defn- determine-output-type
   "Returns the type of line output from the compiler.
    One of :error :start :success :warning
    nil if we do not recognize the line or don't care what it is"
@@ -61,20 +64,51 @@
     (replace #"^.*Caused by: " "")
     (replace #"} at .*$" "}")))
 
+(defn- clean-warning-line [s]
+  (-> s
+    (replace "WARNING: " "")
+    trim))
+
 (defn- extract-warning-msgs [s]
-  ;; TODO: write me
-  nil
-  )
+  (->> s
+    split-lines
+    (map clean-warning-line)
+    (into [])))
+
+(defn- on-console-output
+  "This function gets called with chunks of text from the compiler console output.
+   It parses them using regex and puts the results onto a core.async channel."
+  [text1 c]
+  (let [text2 (trim text1)
+        output-type (determine-output-type text2)]
+    (cond
+      (= output-type :error)
+        (let [error-msg (extract-error-msg text2)]
+          (put! c [:error error-msg]))
+      (= output-type :start)
+        (let [target (extract-target-from-start-msg text2)]
+          (put! c [:start target]))
+      (= output-type :success)
+        (let [compile-time (extract-time-from-success-msg text2)]
+          (put! c [:success compile-time]))
+      (= output-type :warning)
+        (let [warning-msgs (extract-warning-msgs text2)]
+          (put! c [:warning warning-msgs]))
+      :else nil)))
+
+(defn- on-close-child [c]
+  (put! c [:finished])
+  (close! c))
 
 ;;------------------------------------------------------------------------------
 ;; Helper
 ;;------------------------------------------------------------------------------
 
 (defn- project-file->cwd [f]
-  (.replace f #"/[a-zA-Z0-9]+\.clj$" "/"))
+  (replace f #"project\.clj$" ""))
 
 (defn- project-file? [f]
-  (= -1 (.indexOf f #"\.clj$")))
+  (= -1 (.indexOf f #"project\.clj$")))
 
 ;; TODO: this function needs a better name
 ;; also we should probably do some checking on valid cwd format
@@ -93,70 +127,22 @@
   ;; spawned process
   )
 
-(defn- build-once-close []
-  (log "build-once process closed!"))
-
-(defn- show-start-build [project-key bld-key bld-target]
-
-  )
-
-(def current-build (atom nil))
-
-(defn- build-once-stdout [output-chunk]
-  (let [chunk2 (trim output-chunk)
-        type (output-type? chunk2)]
-    (cond
-      (= type :error)
-        (let [error-msg (extract-error-msg chunk2)]
-          (log :error)
-          (js-log chunk2)
-          (js-log "~~~~break~~~~")
-          (js-log error-msg)
-          (js-log "-----------------------------"))
-      (= type :start)
-        (let [target (extract-target-from-start-msg chunk2)]
-          (log :start)
-          (js-log chunk2)
-          (log target)
-          (js-log "-----------------------------"))
-      (= type :success)
-        (let [compile-time (extract-time-from-success-msg chunk2)]
-          (log :success)
-          (js-log chunk2)
-          (log compile-time)
-          (js-log "-----------------------------"))
-      (= type :warning)
-        (let [warning-msgs (extract-warning-msgs chunk2)]
-          (log :warning)
-          (js-log chunk2)
-          (log warning-msgs)
-          (js-log "-----------------------------"))
-      :else nil)))
-
-    ; (when (= type :start)
-    ;   (js-log "-----------------------------------")
-    ;   (log type)
-    ;   (js-log chunk2)
-    ;   (js-log (extract-target-from-start-msg chunk2)))
-    ; (when (= type :success)
-    ;   (js-log "-----------------------------------")
-    ;   (log type)
-    ;   (js-log chunk2)
-    ;   (js-log (extract-time-from-success-msg chunk2)))
-    ; (when type
-    ;   (js-log "----------------------------------------------")
-    ;   (log type)
-    ;   (js-log chunk2))))
-
-(defn build-once [cwd blds output-fn]
-  (let [child (spawn "lein"
+(defn build-once
+  "Start the build once process. This function returns a core.async channel
+   that receives the status of the build.
+   The channel is closed when the build is finished."
+  [project-key blds]
+  (let [c (chan)
+        child (spawn "lein"
                 (array "cljsbuild" "once")
-                (js-obj "cwd" (convert-cwd cwd)))]
+                (js-obj "cwd" (convert-cwd project-key)))]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
-    (.on (.-stderr child) "data" build-once-stdout)
-    (.on (.-stdout child) "data" build-once-stdout)
-    (.on child "close" build-once-close)))
+    (.on (.-stderr child) "data" #(on-console-output % c))
+    (.on (.-stdout child) "data" #(on-console-output % c))
+    (.on child "close" #(on-close-child c))
+    ;; return the channel
+    c))
 
 ;; TODO: capture better error results from this
 (defn clean [cwd success-fn error-fn]
@@ -180,7 +166,7 @@
 
 
 ;; NOTE: sublime text syntax highlighting chokes on this function, so I put it
-;; at the bottom of the file
+;; down here at the bottom so it doesn't mess up the rest of the file
 
 (defn- extract-target-from-start-msg [s]
   (-> s

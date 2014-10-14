@@ -1,5 +1,8 @@
 (ns cljs-gui.pages.main
+  (:require-macros
+    [cljs.core.async.macros :refer [go]])
   (:require
+    [cljs.core.async :refer [<! chan put!]]
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
     [cljs-gui.lein :as lein]
@@ -46,9 +49,9 @@
           :checked? true
           :compile-time 0.6
           :last-compile-time 1413048033
-          :errors nil
+          :error nil
           :status :done
-          :warnings nil
+          :warnings []
 
           ;; copied directly from project.clj
           :cljsbuild {
@@ -62,9 +65,9 @@
           :checked? true
           :compile-time 4.7
           :last-compile-time nil
-          :errors nil
+          :error nil
           :status :done
-          :warnings nil
+          :warnings []
 
           ;; copied directly from project.clj
           :cljsbuild {
@@ -79,9 +82,9 @@
           :checked? false
           :compile-time nil
           :last-compile-time nil
-          :errors nil
+          :error nil
           :status :missing
-          :warnings nil
+          :warnings []
 
           ;; copied directly from project.clj
           :cljsbuild {
@@ -99,7 +102,7 @@
       :builds {
         :main {
           :checked? true
-          :errors nil
+          :error nil
           :last-compile-time 1413048033
           :status :done-with-warnings
           :warnings [
@@ -116,10 +119,10 @@
         :main-min {
           :checked? true
           ;; will there ever be more than one error?
-          :errors ["EOF while reading, starting at line 7"]
+          :error "EOF while reading, starting at line 7"
           :last-compile-time nil
-          :status :errors
-          :warnings nil
+          :status :done-with-error
+          :warnings []
 
           :cljsbuild {
             :source-paths ["src-cljs"]
@@ -138,19 +141,19 @@
 (defn- mark-checked [builds build-key]
   (assoc-in builds [build-key :checked?] true))
 
-(defn- select-all-builds! [project-key]
-  (swap! state update-in [:projects project-key :builds] (fn [builds]
+(defn- select-all-builds! [prj-key]
+  (swap! state update-in [:projects prj-key :builds] (fn [builds]
     (reduce mark-checked builds (keys builds)))))
 
 (defn- mark-unchecked [builds build-key]
   (assoc-in builds [build-key :checked?] false))
 
-(defn- unselect-all-builds! [project-key]
-  (swap! state update-in [:projects project-key :builds] (fn [builds]
+(defn- unselect-all-builds! [prj-key]
+  (swap! state update-in [:projects prj-key :builds] (fn [builds]
     (reduce mark-unchecked builds (keys builds)))))
 
-(defn- mark-compiling [builds build-key]
-  (assoc-in builds [build-key :status] :compiling))
+(defn- mark-waiting [builds build-key]
+  (assoc-in builds [build-key :status] :waiting))
 
 (defn- mark-build-for-cleaning [blds bld-key]
   (let [b (get blds bld-key)]
@@ -164,73 +167,115 @@
 ;; Events
 ;;------------------------------------------------------------------------------
 
-(defn- click-auto-btn [project-key]
-  (swap! state assoc-in [:projects project-key :state] :auto))
+(defn- click-auto-btn [prj-key]
+  (swap! state assoc-in [:projects prj-key :state] :auto))
 
-(defn- click-stop-auto-btn [project-key]
-  (swap! state assoc-in [:projects project-key :state] :idle))
+(defn- click-stop-auto-btn [prj-key]
+  (swap! state assoc-in [:projects prj-key :state] :idle))
 
-(defn- demo-done-1 []
-  (swap! state assoc-in [:projects "/home/oakmac/t3tr0s/project.clj" :builds :client :status] :done)
-  )
+(defn- show-start-compiling! [prj-key bld-key]
+  (swap! state assoc-in [:projects prj-key :builds bld-key :status] :compiling))
 
-(defn- demo-done-2 []
-  (swap! state assoc-in [:projects "/home/oakmac/t3tr0s/project.clj" :builds :client-adv :status] :done)
-  (click-stop-auto-btn "/home/oakmac/t3tr0s/project.clj")
-  )
+;; TODO: this could be cleaner
+(defn- show-done-compiling! [prj-key bld-key compile-time]
+  (swap! state assoc-in [:projects prj-key :builds bld-key :status] :done)
+  (swap! state assoc-in [:projects prj-key :builds bld-key :compile-time] compile-time))
 
-(defn- click-once-btn [project-key]
-  (let [prj1 (get-in @state [:projects project-key])
+(defn- show-warnings! [prj-key bld-key warnings]
+  (swap! state update-in [:projects prj-key :builds bld-key :warnings] (fn [w]
+    (into [] (concat w warnings)))))
+
+(defn- show-error! [prj-key bld-key err-msg]
+  (swap! state assoc-in [:projects prj-key :builds bld-key :error] err-msg)
+  (swap! state assoc-in [:projects prj-key :builds bld-key :status] :done-with-error))
+
+(defn- show-finished!
+  "Mark a project as being finished with compiling. ie: idle state"
+  [prj-key]
+  (swap! state assoc-in [:projects prj-key :state] :idle))
+
+;; NOTE: this function is definitely a little weird; makes me wonder if we have
+;; the right data structure
+;; There are probably bugs here.
+(defn- output-to->bld-key [prj-key output-to]
+  (let [blds (get-in @state [:projects prj-key :builds])
+        matches (filter
+                  (fn [[k v]]
+                    (= output-to (-> v :cljsbuild :compiler :output-to)))
+                  blds)]
+    (-> matches first first)))
+
+(defn- handle-compiler-output
+  "This function reads from the console output channel and updates the UI.
+   NOTE: recursive function, terminating case is when the channel is closed"
+  [c prj-key current-bld-key]
+  (go
+    (when-let [[type data] (<! c)]
+      (cond
+        (= type :start)
+          (let [bld-key (output-to->bld-key prj-key data)]
+            (reset! current-bld-key bld-key)
+            (show-start-compiling! prj-key bld-key))
+        (= type :success)
+          (do (show-done-compiling! prj-key @current-bld-key data)
+              (reset! current-bld-key nil))
+        (= type :warning)
+          (show-warnings! prj-key @current-bld-key data)
+        (= type :finished)
+          (show-finished! prj-key)
+        (= type :error)
+          (show-error! prj-key @current-bld-key data)
+        :else nil)
+      ;; loop back
+      (handle-compiler-output c prj-key current-bld-key))))
+
+(defn- click-once-btn [prj-key]
+  (let [prj1 (get-in @state [:projects prj-key])
         checked-builds-keys (checked-builds prj1)
         prj2 (assoc prj1 :state :build-once)
-        new-builds (reduce mark-compiling (:builds prj2) checked-builds-keys)
-        prj3 (assoc prj2 :builds new-builds)]
-    (swap! state assoc-in [:projects project-key] prj3)
+        new-builds (reduce mark-waiting (:builds prj2) checked-builds-keys)
+        prj3 (assoc prj2 :builds new-builds)
+        current-bld-key (atom nil)]
+    ;; show starting state
+    (swap! state assoc-in [:projects prj-key] prj3)
 
-    (lein/build-once project-key {} (fn [] nil))
-
-    ))
-
-    ;; DEMO CODE
-    ; (if (= project-key "/home/oakmac/t3tr0s/project.clj")
-    ;   (do
-    ;     (js/setTimeout demo-done-1 600)
-    ;     (js/setTimeout demo-done-2 4700))
-    ;   (js/setTimeout #(click-stop-auto-btn project-key) 1500))))
+    ;; start the build
+    (let [compiler-chan (lein/build-once prj-key checked-builds-keys)]
+      (handle-compiler-output compiler-chan prj-key current-bld-key))))
 
 ;; TODO: deal with clean errors
 (defn- clean-error [stderr]
   (log "clean error!"))
 
-(defn- clean-success [project-key]
+(defn- clean-success [prj-key]
   ;; set project state
-  (swap! state assoc-in [:projects project-key :state] :idle)
+  (swap! state assoc-in [:projects prj-key :state] :idle)
 
   ;; set builds state
   (doall (map
-    #(swap! state assoc-in [:projects project-key :builds % :status] :missing)
-    (keys (get-in @state [:projects project-key :builds])))))
+    #(swap! state assoc-in [:projects prj-key :builds % :status] :missing)
+    (keys (get-in @state [:projects prj-key :builds])))))
 
-(defn- click-clean-btn [project-key]
-  (let [prj1 (get-in @state [:projects project-key])
+(defn- click-clean-btn [prj-key]
+  (let [prj1 (get-in @state [:projects prj-key])
         prj2 (assoc prj1 :state :clean)
         prj3 (assoc prj2 :builds (mark-builds-for-cleaning (:builds prj2)))]
     ;; show the cleaning state
-    (swap! state assoc-in [:projects project-key] prj3)
+    (swap! state assoc-in [:projects prj-key] prj3)
 
     ;; start the clean
-    (lein/clean project-key #(clean-success project-key) clean-error)))
+    (lein/clean prj-key #(clean-success prj-key) clean-error)))
 
-(defn- click-checkbox-header [project-key]
-  (let [p (get-in @state [:projects project-key])
+(defn- click-checkbox-header [prj-key]
+  (let [p (get-in @state [:projects prj-key])
         num-builds (num-builds p)
         num-selected-builds (selected-builds-count p)]
     (if (zero? num-selected-builds)
-      (select-all-builds! project-key)
-      (unselect-all-builds! project-key))))
+      (select-all-builds! prj-key)
+      (unselect-all-builds! prj-key))))
 
-(defn- click-build-row [project-key build-key]
-  (swap! state update-in [:projects project-key :builds build-key :checked?] not))
+(defn- click-build-row [prj-key build-key]
+  (swap! state update-in [:projects prj-key :builds build-key :checked?] not))
 
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
@@ -270,10 +315,12 @@
     :done-with-warnings
       [:span.with-warnings-4b105
         [:i.fa.fa-exclamation-triangle] (warnings-status (count warnings))]
-    :errors
+    :done-with-error
       [:span.errors-2718a [:i.fa.fa-times] "Compiling failed"]
     :missing
       [:span.missing-f02af [:i.fa.fa-minus-circle] "Output missing"]
+    :waiting
+      [:span.waiting-e22c3 [:i.fa.fa-clock-o] "Waiting..."]
     "*unknkown status*"))
 
 (defn- row-color [idx]
@@ -298,39 +345,40 @@
     (if-not checked?
       " not-selected-a8d35")))
 
-(sablono/defhtml build-row [idx [build-key bld] project-key prj]
+(sablono/defhtml build-row [idx [build-key bld] prj-key prj]
   [:tr {:class (build-row-class idx (:checked? bld))
         :on-click (if (= :idle (:state prj))
-                    #(click-build-row project-key build-key))}
+                    #(click-build-row prj-key build-key))}
     [:td.cell-9ad24 (checked-cell prj bld)]
     [:td.cell-9ad24 (-> bld :cljsbuild :source-paths first)] ;; TODO: print the vector here
     [:td.cell-9ad24 (-> bld :cljsbuild :compiler :output-to)]
     [:td.cell-9ad24 (status-cell bld)]
     [:td.cell-9ad24 (last-compile-cell (:last-compile-time bld))]
     [:td.cell-9ad24 (-> bld :cljsbuild :compiler :optimizations name)]]
-  (when (:warnings bld)
-    (map warning-row (:warnings bld)))
-  (when (:errors bld)
-    (map error-row (:errors bld))))
+  (when (:error bld)
+    (error-row (:error bld)))
+  (when (and (:warnings bld)
+             (not (zero? (:warnings bld))))
+    (map warning-row (:warnings bld))))
 
 ;; NOTE: these two functions could be combined
 
-(sablono/defhtml start-auto-btn [project-key num-builds]
+(sablono/defhtml start-auto-btn [prj-key num-builds]
   (if (zero? num-builds)
     [:button.disabled-btn-1884b
       {:disabled true}
       "Start Auto" [:span.count-cfa27 (str "[" num-builds "]")]]
     [:button.btn-da85d
-      {:on-click #(click-auto-btn project-key)}
+      {:on-click #(click-auto-btn prj-key)}
       "Start Auto" [:span.count-cfa27 (str "[" num-builds "]")]]))
 
-(sablono/defhtml build-once-btn [project-key num-builds]
+(sablono/defhtml build-once-btn [prj-key num-builds]
   (if (zero? num-builds)
     [:button.disabled-btn-1884b
       {:disabled true}
       "Build Once" [:span.count-cfa27 (str "[" num-builds "]")]]
     [:button.btn-da85d
-      {:on-click #(click-once-btn project-key)}
+      {:on-click #(click-once-btn prj-key)}
       "Build Once" [:span.count-cfa27 (str "[" num-builds "]")]]))
 
 (sablono/defhtml checkbox-header [num-selected-builds num-builds]
@@ -339,16 +387,16 @@
     (zero? num-selected-builds) [:i.fa.fa-square-o]
     :else [:i.fa.fa-minus-square-o]))
 
-(sablono/defhtml idle-buttons [project-key num-selected-builds]
-  (start-auto-btn project-key num-selected-builds)
-  (build-once-btn project-key num-selected-builds)
+(sablono/defhtml idle-buttons [prj-key num-selected-builds]
+  (start-auto-btn prj-key num-selected-builds)
+  (build-once-btn prj-key num-selected-builds)
   [:button.btn-da85d
-    {:on-click #(click-clean-btn project-key)}
+    {:on-click #(click-clean-btn prj-key)}
     "Clean All"])
 
-(sablono/defhtml auto-buttons [project-key]
+(sablono/defhtml auto-buttons [prj-key]
   [:button.btn-da85d
-    {:on-click #(click-stop-auto-btn project-key)}
+    {:on-click #(click-stop-auto-btn prj-key)}
     "Stop Auto"])
 
 (sablono/defhtml project-status [st]
@@ -368,7 +416,7 @@
 
 ;; TODO: should probably make the TableHeader and BuildRow components
 
-(quiescent/defcomponent Project [[project-key prj]]
+(quiescent/defcomponent Project [[prj-key prj]]
   (let [num-builds (num-builds prj)
         num-selected-builds (selected-builds-count prj)]
     (sablono/html
@@ -380,16 +428,16 @@
           [:div.project-btns-f5656
             (cond
               (= :idle (:state prj))
-                (idle-buttons project-key num-selected-builds)
+                (idle-buttons prj-key num-selected-builds)
               (= :auto (:state prj))
-                (auto-buttons project-key))]
+                (auto-buttons prj-key))]
           [:div.clr-737fa]]
         [:table.tbl-bdf39
           [:thead
             [:tr.header-row-50e32
               (if (= :idle (:state prj))
                 [:th.th-92ca4
-                  {:on-click #(click-checkbox-header project-key)}
+                  {:on-click #(click-checkbox-header prj-key)}
                   (checkbox-header num-selected-builds num-builds) "Compile?"]
                 [:th.th-92ca4
                   [:i.fa.fa-check.small-check-7b3d7] "Compile?"])
@@ -399,7 +447,7 @@
               [:th.th-92ca4 "Last Compile"]
               [:th.th-92ca4 "Optimizations"]]]
           [:tbody
-            (map-indexed #(build-row %1 %2 project-key prj) (:builds prj))]]])))
+            (map-indexed #(build-row %1 %2 prj-key prj) (:builds prj))]]])))
 
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
