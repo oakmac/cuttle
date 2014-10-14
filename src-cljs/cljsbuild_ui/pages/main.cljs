@@ -205,6 +205,7 @@
                   blds)]
     (-> matches first first)))
 
+;; NOTE: this could be simplified with a go-loop?
 (defn- handle-compiler-output
   "This function reads from the console output channel and updates the UI.
    NOTE: recursive function, terminating case is when the channel is closed"
