@@ -184,10 +184,13 @@
 (defn- show-start-compiling! [prj-key bld-key]
   (swap! state assoc-in [:projects prj-key :builds bld-key :status] :compiling))
 
-;; TODO: this could be cleaner
 (defn- show-done-compiling! [prj-key bld-key compile-time]
-  (swap! state assoc-in [:projects prj-key :builds bld-key :status] :done)
-  (swap! state assoc-in [:projects prj-key :builds bld-key :compile-time] compile-time))
+  (let [map-path [:projects prj-key :builds bld-key]
+        bld (get-in @state map-path)
+        new-status (if (-> bld :warnings empty?) :done :done-with-warnings)
+        new-bld (assoc bld :compile-time compile-time
+                           :status new-status)]
+    (swap! state assoc-in map-path new-bld)))
 
 (defn- show-warnings! [prj-key bld-key warnings]
   (swap! state update-in [:projects prj-key :builds bld-key :warnings] (fn [w]
