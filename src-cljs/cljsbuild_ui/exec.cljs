@@ -24,7 +24,7 @@
 
 (defn- error-line? [s]
   (and (not= -1 (.search s #"Caused by: "))
-       (not= -1 (.search s #"at c"))))
+       (not= -1 (.search s #"clojure.lang.ExceptionInfo"))))
 
 (defn- start-line? [s]
   (and (not= -1 (.search s #"^Compiling "))
@@ -77,6 +77,8 @@
   "This function gets called with chunks of text from the compiler console output.
    It parses them using regex and puts the results onto a core.async channel."
   [text1 c]
+  (js-log text1)
+  (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
   (let [text2 (trim text1)
         output-type (determine-output-type text2)]
     (cond
@@ -119,21 +121,36 @@
 ;; Public Methods
 ;;------------------------------------------------------------------------------
 
-(defn auto []
-  ;; TODO: write this
-  ;; punting on this for now because I'm having trouble killing a long-running
-  ;; spawned process
+(defn start-auto
+  "Start auto-compile. This function returns a core.async channel."
+  [prj-key bld-keys]
+  (let [c (chan)
+        child (spawn "lein"
+                (array "cljsbuild" "auto")
+                (js-obj "cwd" (convert-cwd prj-key)))]
+    (.setEncoding (.-stderr child) "utf8")
+    (.setEncoding (.-stdout child) "utf8")
+    (.on (.-stderr child) "data" #(on-console-output % c))
+    (.on (.-stdout child) "data" #(on-console-output % c))
+    (.on child "close" #(on-close-child c))
+    ;; return the channel
+    c))
+
+(defn stop-auto
+  "Kill an auto-compile process."
+  [prj-key]
+  ;; TODO: write me
   )
 
 (defn build-once
   "Start the build once process. This function returns a core.async channel
    that receives the status of the build.
    The channel is closed when the build is finished."
-  [project-key blds]
+  [prj-key blds]
   (let [c (chan)
         child (spawn "lein"
                 (array "cljsbuild" "once")
-                (js-obj "cwd" (convert-cwd project-key)))]
+                (js-obj "cwd" (convert-cwd prj-key)))]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stderr child) "data" #(on-console-output % c))

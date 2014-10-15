@@ -6,7 +6,7 @@
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
     [cljsbuild-ui.exec :as exec]
-    [cljsbuild-ui.util :refer [log js-log now uuid]]))
+    [cljsbuild-ui.util :refer [date-format log js-log now uuid]]))
 
 ;;------------------------------------------------------------------------------
 ;; App State
@@ -166,8 +166,10 @@
                 bld-keys))))
         prj-keys))))
 
-;; update the now timestamps every 5 seconds
-(js/setInterval update-now! 5000)
+;; TODO: commenting this out until we figure out what to do with the last
+;; compile time display
+;; update the now timestamps every 0.25 second
+;; (js/setInterval update-now! 250)
 
 (defn- mark-checked [builds build-key]
   (assoc-in builds [build-key :checked?] true))
@@ -194,12 +196,16 @@
 (defn- mark-builds-for-cleaning [blds]
   (reduce mark-build-for-cleaning blds (keys blds)))
 
-(defn- remove-errors-and-warnings! [prj-key]
+(defn- remove-compiled-info!
+  "Removes compiled info from a build: last-compile-time, error, warnings"
+  [prj-key]
   (doall
     (map
       (fn [bld-key]
-        (swap! state assoc-in [:projects prj-key :builds bld-key :error] nil)
-        (swap! state assoc-in [:projects prj-key :builds bld-key :warnings] []))
+        (swap! state update-in [:projects prj-key :builds bld-key] (fn [b]
+          (assoc b :last-compile-time nil
+                   :error nil
+                   :warnings []))))
       (keys (get-in @state [:projects prj-key :builds])))))
 
 (defn- show-start-compiling! [prj-key bld-key]
@@ -231,13 +237,6 @@
 ;; Events
 ;;------------------------------------------------------------------------------
 
-(defn- click-auto-btn [prj-key]
-  (remove-errors-and-warnings! prj-key)
-  (swap! state assoc-in [:projects prj-key :state] :auto))
-
-(defn- click-stop-auto-btn [prj-key]
-  (swap! state assoc-in [:projects prj-key :state] :idle))
-
 ;; NOTE: this could be simplified with a go-loop?
 (defn- handle-compiler-output
   "This function reads from the console output channel and updates the UI.
@@ -245,6 +244,9 @@
   [c prj-key current-bld-key]
   (go
     (when-let [[type data] (<! c)]
+      ; (log type)
+      ; (log data)
+      ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
       (cond
         (= type :start)
           (let [bld-key (output-to->bld-key prj-key data)]
@@ -263,6 +265,21 @@
       ;; loop back
       (handle-compiler-output c prj-key current-bld-key))))
 
+(defn- click-auto-btn [prj-key]
+  (let [current-bld-key (atom nil)]
+    (remove-compiled-info! prj-key)
+
+    ;; show project loading state
+    (swap! state assoc-in [:projects prj-key :state] :auto)
+
+    ;; start the build
+    (let [compiler-chan (exec/start-auto prj-key #{})]
+      (handle-compiler-output compiler-chan prj-key current-bld-key))))
+
+(defn- click-stop-auto-btn [prj-key]
+  ;; TODO: figure out how to cancel the auto child
+  (swap! state assoc-in [:projects prj-key :state] :idle))
+
 (defn- click-once-btn [prj-key]
   (let [prj1 (get-in @state [:projects prj-key])
         checked-builds-keys (checked-builds prj1)
@@ -273,7 +290,7 @@
     ;; show starting state
     (swap! state assoc-in [:projects prj-key] prj3)
 
-    (remove-errors-and-warnings! prj-key)
+    (remove-compiled-info! prj-key)
 
     ;; start the build
     (let [compiler-chan (exec/build-once prj-key checked-builds-keys)]
@@ -299,7 +316,7 @@
     ;; show the cleaning state
     (swap! state assoc-in [:projects prj-key] prj3)
 
-    (remove-errors-and-warnings! prj-key)
+    (remove-compiled-info! prj-key)
 
     ;; start the clean
     (exec/clean prj-key #(clean-success prj-key) clean-error)))
@@ -323,11 +340,21 @@
 ;; display of the last compile and a relative "time ago" display, maybe just by
 ;; clicking on the field?
 (sablono/defhtml last-compile-cell [bld]
-  (if (:last-compile-time bld)
-    ;;(.from (js/moment (:last-compile-time bld)) (:now bld))
-    ;; (str (:last-compile-time bld) " - " (:now bld))
-    "a few seconds ago"
-    "-"))
+  (let [n (:now bld)
+        compile-time (:last-compile-time bld)
+        seconds-diff (- n compile-time)
+        minutes-diff (js/Math.floor (/ seconds-diff 60))
+        seconds-diff2 (- seconds-diff (* 60 minutes-diff))]
+    (if-not (:last-compile-time bld)
+      "-"
+      [:span.time-fc085 (date-format (:last-compile-time bld) "HH:mm:ss")]
+      ;; NOTE: the idea below is too distracting; need to come up with a better
+      ;; way
+      ; [:span.time-fc085
+      ;   (str (if-not (zero? minutes-diff)
+      ;          (str minutes-diff "m "))
+      ;        seconds-diff2 "s ago")]
+        )))
 
 (defn- warnings-status [n]
   (str

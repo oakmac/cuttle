@@ -15,6 +15,9 @@
   []
   (.unix (js/moment)))
 
+(defn date-format [ts frmt-str]
+  (.format (js/moment ts "X") frmt-str))
+
 (defn uuid []
   "Create a UUID."
   []
