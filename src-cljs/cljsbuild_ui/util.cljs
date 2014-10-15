@@ -10,6 +10,11 @@
   [js-thing]
   (js/console.log js-thing))
 
+(defn now
+  "Returns the current UNIX timestamp in seconds."
+  []
+  (.unix (js/moment)))
+
 (defn uuid []
   "Create a UUID."
   []

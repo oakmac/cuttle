@@ -6,7 +6,7 @@
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
     [cljsbuild-ui.exec :as exec]
-    [cljsbuild-ui.util :refer [log js-log uuid]]))
+    [cljsbuild-ui.util :refer [log js-log now uuid]]))
 
 ;;------------------------------------------------------------------------------
 ;; App State
@@ -21,7 +21,7 @@
         :client {
           :checked? true
           :compile-time 0.6
-          :last-compile-time 1413048033
+          :last-compile-time nil
           :error nil
           :status :done
           :warnings []
@@ -148,6 +148,27 @@
 
 ;; NOTE: I'm sure these functions could be cleaned up / combined
 
+;; NOTE: I'm fairly certain this could be written cleaner with a reduce
+(defn- update-now!
+  "Update the :now timestamp on every build so we can see relative time since
+   the last compile."
+  []
+  (let [n (now)
+        prj-keys (keys (:projects @state))]
+    (doall
+      (map
+        (fn [prj-key]
+          (let [bld-keys (keys (:builds (get-in @state [:projects prj-key])))]
+            (doall
+              (map
+                (fn [bld-key]
+                  (swap! state assoc-in [:projects prj-key :builds bld-key :now] n))
+                bld-keys))))
+        prj-keys))))
+
+;; update the now timestamps every 5 seconds
+(js/setInterval update-now! 5000)
+
 (defn- mark-checked [builds build-key]
   (assoc-in builds [build-key :checked?] true))
 
@@ -189,6 +210,7 @@
         bld (get-in @state map-path)
         new-status (if (-> bld :warnings empty?) :done :done-with-warnings)
         new-bld (assoc bld :compile-time compile-time
+                           :last-compile-time (now)
                            :status new-status)]
     (swap! state assoc-in map-path new-bld)))
 
@@ -297,11 +319,13 @@
 ;; Sablono Templates
 ;;------------------------------------------------------------------------------
 
-;; TODO: ts should be a timestamp, use moment.js to produce a relative time
-;; string from the last compile time, ie:
-;; "a few seconds ago", "an hour ago", "2 days ago", etc
-(sablono/defhtml last-compile-cell [ts]
-  (if ts
+;; TODO: this is unfinished; I think we should toggle between a date/time
+;; display of the last compile and a relative "time ago" display, maybe just by
+;; clicking on the field?
+(sablono/defhtml last-compile-cell [bld]
+  (if (:last-compile-time bld)
+    ;;(.from (js/moment (:last-compile-time bld)) (:now bld))
+    ;; (str (:last-compile-time bld) " - " (:now bld))
     "a few seconds ago"
     "-"))
 
@@ -369,7 +393,7 @@
     [:td.cell-9ad24 (-> bld :cljsbuild :source-paths first)] ;; TODO: print the vector here
     [:td.cell-9ad24 (-> bld :cljsbuild :compiler :output-to)]
     [:td.cell-9ad24 (status-cell bld)]
-    [:td.cell-9ad24 (last-compile-cell (:last-compile-time bld))]
+    [:td.cell-9ad24 (last-compile-cell bld)]
     [:td.cell-9ad24 (-> bld :cljsbuild :compiler :optimizations name)]]
   (when (:error bld)
     (error-row (:error bld)))
