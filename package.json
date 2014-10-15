@@ -1,5 +1,5 @@
 {
-  "name": "cljs-gui",
+  "name": "cljsbuild-ui",
   "dependencies": {
     "express": "4.1.x",
     "grunt": "0.4.5",
