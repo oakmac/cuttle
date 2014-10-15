@@ -9,33 +9,6 @@
     [cljsbuild-ui.util :refer [log js-log uuid]]))
 
 ;;------------------------------------------------------------------------------
-;; Util
-;;------------------------------------------------------------------------------
-
-(defn- by-id [id]
-  (.getElementById js/document id))
-
-(defn- num-builds [prj]
-  (-> prj
-    :builds
-    keys
-    count))
-
-(defn- checked-builds
-  "Returns a set of the keys of builds that have :checked? = true"
-  [prj]
-  (reduce
-    (fn [checked-keys [bld-key bld]]
-      (if (:checked? bld)
-        (conj checked-keys bld-key)
-        checked-keys))
-    #{}
-    (:builds prj)))
-
-(defn- selected-builds-count [prj]
-  (count (checked-builds prj)))
-
-;;------------------------------------------------------------------------------
 ;; App State
 ;;------------------------------------------------------------------------------
 
@@ -118,7 +91,6 @@
 
         :main-min {
           :checked? true
-          ;; will there ever be more than one error?
           :error "EOF while reading, starting at line 7"
           :last-compile-time nil
           :status :done-with-error
@@ -131,6 +103,44 @@
               :output-to "public/js/main.min.js"}}}}}
   }
   }))
+
+;;------------------------------------------------------------------------------
+;; Util
+;;------------------------------------------------------------------------------
+
+(defn- by-id [id]
+  (.getElementById js/document id))
+
+(defn- num-builds [prj]
+  (-> prj
+    :builds
+    keys
+    count))
+
+(defn- checked-builds
+  "Returns a set of the keys of builds that have :checked? = true"
+  [prj]
+  (reduce
+    (fn [checked-keys [bld-key bld]]
+      (if (:checked? bld)
+        (conj checked-keys bld-key)
+        checked-keys))
+    #{}
+    (:builds prj)))
+
+(defn- selected-builds-count [prj]
+  (count (checked-builds prj)))
+
+;; NOTE: this function is definitely a little weird; makes me wonder if we have
+;; the right data structure
+;; There are probably bugs here.
+(defn- output-to->bld-key [prj-key output-to]
+  (let [blds (get-in @state [:projects prj-key :builds])
+        matches (filter
+                  (fn [[k v]]
+                    (= output-to (-> v :cljsbuild :compiler :output-to)))
+                  blds)]
+    (-> matches first first)))
 
 ;;------------------------------------------------------------------------------
 ;; State-effecting
@@ -163,15 +173,13 @@
 (defn- mark-builds-for-cleaning [blds]
   (reduce mark-build-for-cleaning blds (keys blds)))
 
-;;------------------------------------------------------------------------------
-;; Events
-;;------------------------------------------------------------------------------
-
-(defn- click-auto-btn [prj-key]
-  (swap! state assoc-in [:projects prj-key :state] :auto))
-
-(defn- click-stop-auto-btn [prj-key]
-  (swap! state assoc-in [:projects prj-key :state] :idle))
+(defn- remove-errors-and-warnings! [prj-key]
+  (doall
+    (map
+      (fn [bld-key]
+        (swap! state assoc-in [:projects prj-key :builds bld-key :error] nil)
+        (swap! state assoc-in [:projects prj-key :builds bld-key :warnings] []))
+      (keys (get-in @state [:projects prj-key :builds])))))
 
 (defn- show-start-compiling! [prj-key bld-key]
   (swap! state assoc-in [:projects prj-key :builds bld-key :status] :compiling))
@@ -194,16 +202,16 @@
   [prj-key]
   (swap! state assoc-in [:projects prj-key :state] :idle))
 
-;; NOTE: this function is definitely a little weird; makes me wonder if we have
-;; the right data structure
-;; There are probably bugs here.
-(defn- output-to->bld-key [prj-key output-to]
-  (let [blds (get-in @state [:projects prj-key :builds])
-        matches (filter
-                  (fn [[k v]]
-                    (= output-to (-> v :cljsbuild :compiler :output-to)))
-                  blds)]
-    (-> matches first first)))
+;;------------------------------------------------------------------------------
+;; Events
+;;------------------------------------------------------------------------------
+
+(defn- click-auto-btn [prj-key]
+  (remove-errors-and-warnings! prj-key)
+  (swap! state assoc-in [:projects prj-key :state] :auto))
+
+(defn- click-stop-auto-btn [prj-key]
+  (swap! state assoc-in [:projects prj-key :state] :idle))
 
 ;; NOTE: this could be simplified with a go-loop?
 (defn- handle-compiler-output
@@ -240,6 +248,8 @@
     ;; show starting state
     (swap! state assoc-in [:projects prj-key] prj3)
 
+    (remove-errors-and-warnings! prj-key)
+
     ;; start the build
     (let [compiler-chan (exec/build-once prj-key checked-builds-keys)]
       (handle-compiler-output compiler-chan prj-key current-bld-key))))
@@ -263,6 +273,8 @@
         prj3 (assoc prj2 :builds (mark-builds-for-cleaning (:builds prj2)))]
     ;; show the cleaning state
     (swap! state assoc-in [:projects prj-key] prj3)
+
+    (remove-errors-and-warnings! prj-key)
 
     ;; start the clean
     (exec/clean prj-key #(clean-success prj-key) clean-error)))
@@ -465,6 +477,7 @@
 ;; State Change and Rendering
 ;;------------------------------------------------------------------------------
 
+;; TODO: need to queue up RAF requests so we only render the most recent one
 (defn- on-change-state [_kwd _the-atom _old-state new-state]
   (let [raf (aget js/window "requestAnimationFrame")
         render-fn (fn []
