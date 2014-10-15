@@ -104,7 +104,7 @@
 ;; Helper
 ;;------------------------------------------------------------------------------
 
-(def on-windows? (.test js/process.platform #"^win"))
+(def on-windows? (.test #"^win" js/process.platform))
 
 (defn- project-file->cwd [f]
   (replace f #"project\.clj$" ""))
