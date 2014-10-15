@@ -1,6 +1,6 @@
 (ns cljsbuild-ui.exec
   (:require
-    [clojure.string :refer [replace split-lines trim]]
+    [clojure.string :refer [replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
     [cljsbuild-ui.util :refer [log js-log uuid]]))
 
@@ -11,8 +11,8 @@
 ;;------------------------------------------------------------------------------
 
 (def child-proc (js/require "child_process"))
-(def spawn (aget child-proc "spawn"))
-(def exec (aget child-proc "exec"))
+(def js-spawn (aget child-proc "spawn"))
+(def js-exec (aget child-proc "exec"))
 
 ;;------------------------------------------------------------------------------
 ;; Paser Compiler Output
@@ -104,6 +104,8 @@
 ;; Helper
 ;;------------------------------------------------------------------------------
 
+(def on-windows? (not= -1 (.search js/process.platform "^win")))
+
 (defn- project-file->cwd [f]
   (replace f #"project\.clj$" ""))
 
@@ -117,6 +119,15 @@
     (project-file->cwd cwd)
     cwd))
 
+;; https://github.com/joyent/node/issues/2318
+(defn- spawn [cmd cwd]
+  (if on-windows?
+    (js-spawn "cmd" (array "/c" cmd) (js-obj "cwd" cwd))
+    (let [cmd-arr (split cmd #" ")]
+      (js-spawn (first cmd-arr)
+        (apply array (rest cmd-arr))
+        (js-obj "cwd" cwd)))))
+
 ;;------------------------------------------------------------------------------
 ;; Public Methods
 ;;------------------------------------------------------------------------------
@@ -125,9 +136,7 @@
   "Start auto-compile. This function returns a core.async channel."
   [prj-key bld-keys]
   (let [c (chan)
-        child (spawn "lein"
-                (array "cljsbuild" "auto")
-                (js-obj "cwd" (convert-cwd prj-key)))]
+        child (spawn "lein cljsbuild auto" (convert-cwd prj-key))]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stderr child) "data" #(on-console-output % c))
@@ -148,9 +157,7 @@
    The channel is closed when the build is finished."
   [prj-key blds]
   (let [c (chan)
-        child (spawn "lein"
-                (array "cljsbuild" "once")
-                (js-obj "cwd" (convert-cwd prj-key)))]
+        child (spawn "lein cljsbuild once" (convert-cwd prj-key))]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stderr child) "data" #(on-console-output % c))
@@ -161,7 +168,7 @@
 
 ;; TODO: capture better error results from this
 (defn clean [cwd success-fn error-fn]
-  (exec "lein cljsbuild clean"
+  (js-exec "lein cljsbuild clean"
     (js-obj "cwd" (convert-cwd cwd))
     (fn [err _stdout _stderr]
       (if err

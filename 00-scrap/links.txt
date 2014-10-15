@@ -1,2 +1,10 @@
 http://www.raynes.me/logs/irc.freenode.net/leiningen/2012-10-04.txt
 
+npm package to kill a tree of processes (cross-platform)
+https://www.npmjs.org/package/tree-kill
+
+running command process on windows
+http://stackoverflow.com/questions/18334181/spawn-on-node-js-windows-server-2012
+
+long-running processes on Windows
+https://github.com/joyent/node/issues/2318#issuecomment-10549609
