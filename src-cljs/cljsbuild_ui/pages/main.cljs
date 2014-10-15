@@ -504,12 +504,20 @@
 ;; State Change and Rendering
 ;;------------------------------------------------------------------------------
 
-;; TODO: need to queue up RAF requests so we only render the most recent one
+(def request-anim-frame (aget js/window "requestAnimationFrame"))
+(def cancel-anim-frame (aget js/window "cancelAnimationFrame"))
+(def anim-frame-id nil)
+
 (defn- on-change-state [_kwd _the-atom _old-state new-state]
-  (let [raf (aget js/window "requestAnimationFrame")
-        render-fn (fn []
-                    (quiescent/render (AppRoot new-state) (by-id "app")))]
-    (raf render-fn)))
+  ;; cancel any previous render functions if they happen before the next
+  ;; animation frame
+  (when anim-frame-id
+    (cancel-anim-frame anim-frame-id)
+    (set! anim-frame-id nil))
+
+  ;; put the render function on the next animation frame
+  (let [render-fn #(quiescent/render (AppRoot new-state) (by-id "app"))]
+    (set! anim-frame-id (request-anim-frame render-fn))))
 
 (add-watch state :main on-change-state)
 
