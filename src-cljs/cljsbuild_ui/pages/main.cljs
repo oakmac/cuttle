@@ -196,19 +196,23 @@
 (defn- mark-builds-for-cleaning [blds]
   (reduce mark-build-for-cleaning blds (keys blds)))
 
+(defn- clear-compiled-info! [prj-key bld-key]
+  (swap! state update-in [:projects prj-key :builds bld-key] (fn [b]
+    (assoc b :last-compile-time nil
+             :error nil
+             :warnings []))))
+
 (defn- remove-compiled-info!
   "Removes compiled info from a build: last-compile-time, error, warnings"
   [prj-key]
   (doall
     (map
       (fn [bld-key]
-        (swap! state update-in [:projects prj-key :builds bld-key] (fn [b]
-          (assoc b :last-compile-time nil
-                   :error nil
-                   :warnings []))))
+        (clear-compiled-info! prj-key bld-key))
       (keys (get-in @state [:projects prj-key :builds])))))
 
 (defn- show-start-compiling! [prj-key bld-key]
+  (clear-compiled-info! prj-key bld-key)
   (swap! state assoc-in [:projects prj-key :builds bld-key :status] :compiling))
 
 (defn- show-done-compiling! [prj-key bld-key compile-time]
