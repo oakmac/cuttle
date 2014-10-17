@@ -1,5 +1,12 @@
 (ns cljsbuild-ui.util)
 
+;;------------------------------------------------------------------------------
+;; Util Functions
+;;------------------------------------------------------------------------------
+
+(def on-windows?
+  (.test #"^win" js/process.platform))
+
 (defn log
   "Log a Clojure thing."
   [clj-thing]

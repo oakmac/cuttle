@@ -2,7 +2,7 @@
   (:require
     [clojure.string :refer [replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
-    [cljsbuild-ui.util :refer [log js-log uuid]]))
+    [cljsbuild-ui.util :refer [log js-log on-windows? uuid]]))
 
 (declare extract-target-from-start-msg)
 
@@ -104,13 +104,11 @@
 ;; Helper
 ;;------------------------------------------------------------------------------
 
-(def on-windows? (.test #"^win" js/process.platform))
-
 (defn- project-file->cwd [f]
   (replace f #"project\.clj$" ""))
 
 (defn- project-file? [f]
-  (= -1 (.indexOf f #"project\.clj$")))
+  (.test #"project\.clj$" f))
 
 ;; TODO: this function needs a better name
 ;; also we should probably do some checking on valid cwd format

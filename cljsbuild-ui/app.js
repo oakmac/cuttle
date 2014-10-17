@@ -7,6 +7,7 @@ var app = require('app'),
 require('crash-reporter').start();
 
 // load config
+// NOTE: this is mostly for development purposes
 if (fs.existsSync(__dirname + '/config.json')) {
   config = require(__dirname + '/config.json');
 }
@@ -27,6 +28,12 @@ function onWindowClose() {
   mainWindow = null;
 }
 
+// send the OS-normalized app data path to the webpage
+// NOTE: this event triggers the "global app init" on the webpage side
+function onFinishLoad() {
+  mainWindow.webContents.send('config-file-location', app.getDataPath());
+}
+
 // NOTE: a lot of the browserWindow options listed on the docs page aren't
 // working - need to investigate
 var browserWindowOptions = {
@@ -42,6 +49,9 @@ function startApp() {
 
   // load index.html
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
+
+  // send info to the webpage
+  mainWindow.webContents.on('did-finish-load', onFinishLoad);
 
   // Emitted when the window is closed.
   mainWindow.on('closed', onWindowClose);
