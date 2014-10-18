@@ -82,6 +82,11 @@ body {
   font-family: "Open Sans";
 }
 
+// http://stackoverflow.com/a/3397158/2137320
+*:focus {
+  outline: 0;
+}
+
 //------------------------------------------------------------------------------
 // Snowflake Classes
 //------------------------------------------------------------------------------
@@ -271,9 +276,9 @@ body {
 }
 
 // NOTE: if you apply opacity to the tr directly you'll get a border bug
-.not-selected-a8d35 {
+.not-active-a8d35 {
   td {
-    opacity: 0.75;
+    opacity: 0.50;
   }
 }
 

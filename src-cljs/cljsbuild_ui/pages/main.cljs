@@ -15,15 +15,16 @@
 (def state (atom {
   :projects {
     "/home/oakmac/t3tr0s/project.clj" {
+      :compile-menu-showing? false
       :name "t3tr0s"
       :state :idle
-      :builds {
-        :client {
-          :checked? true
+      :builds [
+        { :id :client
+          :active? true
           :compile-time 0.6
           :last-compile-time nil
           :error nil
-          :status :done
+          :state :done
           :warnings []
 
           ;; copied directly from project.clj
@@ -34,12 +35,12 @@
               :output-dir "public/out"
               :optimizations :whitespace }}}
 
-        :client-adv {
-          :checked? true
+        { :id :client-adv
+          :active? true
           :compile-time 4.7
           :last-compile-time nil
           :error nil
-          :status :done
+          :state :done
           :warnings []
 
           ;; copied directly from project.clj
@@ -51,12 +52,12 @@
               :optimizations :advanced
               :pretty-print false }}}
 
-        :server {
-          :checked? false
+        { :id :server
+          :active? false
           :compile-time nil
           :last-compile-time nil
           :error nil
-          :status :missing
+          :state :missing
           :warnings []
 
           ;; copied directly from project.clj
@@ -67,17 +68,18 @@
               :language-out :ecmascript5
               :target :nodejs
               :output-to "server.js"
-              :optimizations :simple }}}}}
+              :optimizations :simple }}}]}
 
     "/home/oakmac/project2/project.clj" {
+      :compile-menu-showing? false
       :name "project2"
       :state :auto
-      :builds {
-        :main {
-          :checked? true
+      :builds [
+        { :id :main
+          :active? true
           :error nil
           :last-compile-time 1413048033
-          :status :done-with-warnings
+          :state :done-with-warnings
           :warnings [
             "Use of undeclared Var project2.core/foo at line 79 src-cljs/project2/core.cljs"
             "Use of undeclared Var project2.core/bar at line 80 src-cljs/project2/core.cljs"
@@ -89,18 +91,18 @@
               :optimizations :whitespace
               :output-to "public/js/main.js"}}}
 
-        :main-min {
-          :checked? true
+        { :id :main-min
+          :active? true
           :error "EOF while reading, starting at line 7"
           :last-compile-time nil
-          :status :done-with-error
+          :state :done-with-error
           :warnings []
 
           :cljsbuild {
             :source-paths ["src-cljs"]
             :compiler {
               :optimizations :advanced
-              :output-to "public/js/main.min.js"}}}}}
+              :output-to "public/js/main.min.js"}}}]}
   }
   }))
 
@@ -186,12 +188,12 @@
     (reduce mark-unchecked builds (keys builds)))))
 
 (defn- mark-waiting [builds build-key]
-  (assoc-in builds [build-key :status] :waiting))
+  (assoc-in builds [build-key :state] :waiting))
 
 (defn- mark-build-for-cleaning [blds bld-key]
   (let [b (get blds bld-key)]
     (assoc blds bld-key (assoc b :checked? true
-                                 :status :cleaning))))
+                                 :state :cleaning))))
 
 (defn- mark-builds-for-cleaning [blds]
   (reduce mark-build-for-cleaning blds (keys blds)))
@@ -213,15 +215,15 @@
 
 (defn- show-start-compiling! [prj-key bld-key]
   (clear-compiled-info! prj-key bld-key)
-  (swap! state assoc-in [:projects prj-key :builds bld-key :status] :compiling))
+  (swap! state assoc-in [:projects prj-key :builds bld-key :state] :compiling))
 
 (defn- show-done-compiling! [prj-key bld-key compile-time]
   (let [map-path [:projects prj-key :builds bld-key]
         bld (get-in @state map-path)
-        new-status (if (-> bld :warnings empty?) :done :done-with-warnings)
+        new-state (if (-> bld :warnings empty?) :done :done-with-warnings)
         new-bld (assoc bld :compile-time compile-time
                            :last-compile-time (now)
-                           :status new-status)]
+                           :state new-state)]
     (swap! state assoc-in map-path new-bld)))
 
 (defn- show-warnings! [prj-key bld-key warnings]
@@ -230,7 +232,7 @@
 
 (defn- show-error! [prj-key bld-key err-msg]
   (swap! state assoc-in [:projects prj-key :builds bld-key :error] err-msg)
-  (swap! state assoc-in [:projects prj-key :builds bld-key :status] :done-with-error))
+  (swap! state assoc-in [:projects prj-key :builds bld-key :state] :done-with-error))
 
 (defn- show-finished!
   "Mark a project as being finished with compiling. ie: idle state"
@@ -310,7 +312,7 @@
 
   ;; set builds state
   (doall (map
-    #(swap! state assoc-in [:projects prj-key :builds % :status] :missing)
+    #(swap! state assoc-in [:projects prj-key :builds % :state] :missing)
     (keys (get-in @state [:projects prj-key :builds])))))
 
 (defn- click-clean-btn [prj-key]
@@ -340,6 +342,16 @@
 ;; Sablono Templates
 ;;------------------------------------------------------------------------------
 
+(sablono/defhtml bld-tbl-hdr []
+  [:thead
+    [:tr.header-row-50e32
+      [:th.th-92ca4 "Build ID"]
+      [:th.th-92ca4 "Source"]
+      [:th.th-92ca4 "Output"]
+      [:th.th-92ca4 {:style {:width "30%"}} "Status"]
+      [:th.th-92ca4 "Last Compile"]
+      [:th.th-92ca4 "Optimizations"]]])
+
 ;; TODO: this is unfinished; I think we should toggle between a date/time
 ;; display of the last compile and a relative "time ago" display, maybe just by
 ;; clicking on the field?
@@ -360,7 +372,7 @@
       ;        seconds-diff2 "s ago")]
         )))
 
-(defn- warnings-status [n]
+(defn- warnings-state [n]
   (str
     "Done with " n " warning"
     (if (> n 1) "s")))
@@ -374,8 +386,8 @@
       [:i.fa.fa-check.small-check-7b3d7]
       "-")))
 
-(sablono/defhtml status-cell [{:keys [compile-time status warnings]}]
-  (case status
+(sablono/defhtml state-cell [{:keys [compile-time state warnings]}]
+  (case state
     :cleaning
       [:span.cleaning-a1438 [:i.fa.fa-gear.fa-spin] "Cleaning..."]
     :compiling
@@ -385,18 +397,14 @@
         [:i.fa.fa-check] (str "Done in " compile-time " seconds")]
     :done-with-warnings
       [:span.with-warnings-4b105
-        [:i.fa.fa-exclamation-triangle] (warnings-status (count warnings))]
+        [:i.fa.fa-exclamation-triangle] (warnings-state (count warnings))]
     :done-with-error
       [:span.errors-2718a [:i.fa.fa-times] "Compiling failed"]
     :missing
       [:span.missing-f02af [:i.fa.fa-minus-circle] "Output missing"]
     :waiting
       [:span.waiting-e22c3 [:i.fa.fa-clock-o] "Waiting..."]
-    "*unknkown status*"))
-
-(defn- row-color [idx]
-  (if (zero? (mod idx 2))
-    "#fafafa" "#fff"))
+    "*unknkown state*"))
 
 (sablono/defhtml error-row [err]
   [:tr.error-row-b3028
@@ -408,29 +416,13 @@
     [:td.warning-cell-b9f12 {:col-span "6"}
       [:i.fa.fa-exclamation-triangle] w]])
 
-(defn- build-row-class [idx checked?]
+(defn- build-row-class [{:keys [idx active?]}]
   (str "build-row-fdd97 "
     (if (zero? (mod idx 2))
       "odd-c27e6"
       "even-158a9")
-    (if-not checked?
-      " not-selected-a8d35")))
-
-(sablono/defhtml build-row [idx [build-key bld] prj-key prj]
-  [:tr {:class (build-row-class idx (:checked? bld))
-        :on-click (if (= :idle (:state prj))
-                    #(click-build-row prj-key build-key))}
-    [:td.cell-9ad24 (checked-cell prj bld)]
-    [:td.cell-9ad24 (-> bld :cljsbuild :source-paths first)] ;; TODO: print the vector here
-    [:td.cell-9ad24 (-> bld :cljsbuild :compiler :output-to)]
-    [:td.cell-9ad24 (status-cell bld)]
-    [:td.cell-9ad24 (last-compile-cell bld)]
-    [:td.cell-9ad24 (-> bld :cljsbuild :compiler :optimizations name)]]
-  (when (:error bld)
-    (error-row (:error bld)))
-  (when (and (:warnings bld)
-             (not (zero? (:warnings bld))))
-    (map warning-row (:warnings bld))))
+    (if-not active?
+      " not-active-a8d35")))
 
 ;; NOTE: these two functions could be combined
 
@@ -458,26 +450,34 @@
     (zero? num-selected-builds) [:i.fa.fa-square-o]
     :else [:i.fa.fa-minus-square-o]))
 
+(defn- click-compile-options [prj-key]
+  (log prj-key)
+  )
+
 (sablono/defhtml idle-buttons [prj-key num-selected-builds]
-  (start-auto-btn prj-key num-selected-builds)
-  (build-once-btn prj-key num-selected-builds)
+  ;(start-auto-btn prj-key num-selected-builds)
+  ;(build-once-btn prj-key num-selected-builds)
+  [:button "Compile"]
+  [:button
+    {:on-click #(click-compile-options prj-key)}
+    [:i.fa.fa-caret-down]]
   [:button.btn-da85d
-    {:on-click #(click-clean-btn prj-key)}
-    "Clean All"])
+    ;{:on-click #(click-clean-btn prj-key)}
+    "Clean"])
 
 (sablono/defhtml auto-buttons [prj-key]
   [:button.btn-da85d
     {:on-click #(click-stop-auto-btn prj-key)}
     "Stop Auto"])
 
-(sablono/defhtml project-status [st]
+(sablono/defhtml project-state [st]
   (cond
     (= :auto st)
-      [:span.status-b8614 "auto compiling..."]
+      [:span.state-b8614 "auto compiling..."]
     (= :build-once st)
-      [:span.status-b8614 "compiling..."]
+      [:span.state-b8614 "compiling..."]
     (= :clean st)
-      [:span.status-b8614 "deleting files generated by lein-cljsbuild..."]
+      [:span.state-b8614 "deleting files generated by lein-cljsbuild..."]
     :else
       [:span.edit-c0ba4 "edit"]))
 
@@ -485,17 +485,32 @@
 ;; Quiescent Components
 ;;------------------------------------------------------------------------------
 
-;; TODO: should probably make the TableHeader and BuildRow components
+(quiescent/defcomponent BuildRow [bld]
+  (sablono/html
+    [:tbody
+      [:tr {:class (build-row-class bld)}
+        [:td.cell-9ad24 (-> bld :id name)]
+        [:td.cell-9ad24 (-> bld :cljsbuild :source-paths first)] ;; TODO: need to print the vector here
+        [:td.cell-9ad24 (-> bld :cljsbuild :compiler :output-to)]
+        [:td.cell-9ad24 (state-cell bld)]
+        [:td.cell-9ad24 (last-compile-cell bld)]
+        [:td.cell-9ad24 (-> bld :cljsbuild :compiler :optimizations name)]]
+      (when (:error bld)
+        (error-row (:error bld)))
+      (when (and (:warnings bld)
+                 (not (zero? (:warnings bld))))
+        (map warning-row (:warnings bld)))]))
 
 (quiescent/defcomponent Project [[prj-key prj]]
-  (let [num-builds (num-builds prj)
-        num-selected-builds (selected-builds-count prj)]
+  (let [num-builds (-> prj :builds count)
+        ;; num-selected-builds (selected-builds-count prj)
+        num-selected-builds 7]
     (sablono/html
       [:div.project-1b83a
         [:div.wrapper-714e4
           [:div.project-name-ba9e7
             (:name prj)
-            (project-status (:state prj))]
+            (project-state (:state prj))]
           [:div.project-btns-f5656
             (cond
               (= :idle (:state prj))
@@ -504,21 +519,10 @@
                 (auto-buttons prj-key))]
           [:div.clr-737fa]]
         [:table.tbl-bdf39
-          [:thead
-            [:tr.header-row-50e32
-              (if (= :idle (:state prj))
-                [:th.th-92ca4
-                  {:on-click #(click-checkbox-header prj-key)}
-                  (checkbox-header num-selected-builds num-builds) "Compile?"]
-                [:th.th-92ca4
-                  [:i.fa.fa-check.small-check-7b3d7] "Compile?"])
-              [:th.th-92ca4 "Source"]
-              [:th.th-92ca4 "Output"]
-              [:th.th-92ca4 {:style {:width "30%"}} "Status"]
-              [:th.th-92ca4 "Last Compile"]
-              [:th.th-92ca4 "Optimizations"]]]
-          [:tbody
-            (map-indexed #(build-row %1 %2 prj-key prj) (:builds prj))]]])))
+          (bld-tbl-hdr)
+          (map-indexed
+            #(BuildRow (assoc %2 :idx %1 :prj-key prj-key))
+            (:builds prj))]])))
 
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
