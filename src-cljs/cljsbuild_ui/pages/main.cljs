@@ -289,6 +289,31 @@
       ;; loop back
       (handle-compiler-output c prj-key current-bld-key))))
 
+(defn- get-active-bld-ids [prj]
+  (->> prj
+    :builds
+    (filter #(true? (:active? %)))
+    (map :id)))
+
+(defn- start-auto-compile! [prj-key active-bld-ids]
+  (exec/start-auto prj-key active-bld-ids)
+  ;; TODO: finish me
+  )
+
+(defn- start-compile-once! [prj-key active-bld-ids]
+  (exec/build-once prj-key active-bld-ids)
+  ;; TODO: finish me
+  )
+
+(defn- click-compile-btn [prj-key]
+  (let [prj (get-in @state [:projects prj-key])
+        active-bld-ids (get-active-bld-ids prj)]
+    ;; safeguard
+    (when-not (zero? (count active-bld-ids))
+      (if (:auto-compile? prj)
+        (start-auto-compile! prj-key active-bld-ids)
+        (start-compile-once! prj-key active-bld-ids)))))
+
 (defn- click-auto-btn [prj-key]
   (let [current-bld-key (atom nil)]
     (remove-compiled-info! prj-key)
@@ -502,9 +527,8 @@
     (map-indexed #(build-option %1 %2 prj-key) (:builds prj))])
 
 (sablono/defhtml idle-buttons [prj-key prj]
-  ;(start-auto-btn prj-key num-selected-builds)
-  ;(build-once-btn prj-key num-selected-builds)
   [:button.compile-btn-17a78
+    {:on-click #(click-compile-btn prj-key)}
     (if (:auto-compile? prj)
       "Auto Compile"
       "Compile Once")
