@@ -16,6 +16,7 @@
   :projects {
     "/home/oakmac/t3tr0s/project.clj" {
       :compile-menu-showing? false
+      :auto-compile? true
       :name "t3tr0s"
       :state :idle
       :builds [
@@ -71,6 +72,7 @@
               :optimizations :simple }}}]}
 
     "/home/oakmac/project2/project.clj" {
+      :auto-compile? false
       :compile-menu-showing? false
       :name "project2"
       :state :auto
@@ -451,19 +453,50 @@
     :else [:i.fa.fa-minus-square-o]))
 
 (defn- click-compile-options [prj-key]
-  (log prj-key)
+  (swap! state update-in [:projects prj-key :compile-menu-showing?] not))
+
+(defn- toggle-auto-compile [prj-key]
+  (swap! state update-in [:projects prj-key :auto-compile?] not))
+
+(defn- toggle-build-active [prj-key bld-id]
+  ;; TODO: write me!
   )
 
-(sablono/defhtml idle-buttons [prj-key num-selected-builds]
+(sablono/defhtml build-option [prj-key bld]
+  [:div.bld-e7c4d
+    {:on-click #(toggle-build-active prj-key (:id bld))}
+    (if (:active? bld)
+      [:i.fa.fa-check-square-o]
+      [:i.fa.fa-square-o])
+    (-> bld :id name)])
+
+(sablono/defhtml compile-menu [prj-key prj]
+  [:div.menu-b4b27
+    [:div.auto-option-8a122
+      [:label.label-ec878
+        {:on-click #(toggle-auto-compile prj-key)}
+        (if (:auto-compile? prj)
+          [:i.fa.fa-check-square-o]
+          [:i.fa.fa-square-o])
+        "Auto Compile"]]
+    [:div.builds-selections-642a3
+      (map #(build-option prj-key %) (:builds prj))]])
+
+(sablono/defhtml idle-buttons [prj-key prj num-selected-builds]
   ;(start-auto-btn prj-key num-selected-builds)
   ;(build-once-btn prj-key num-selected-builds)
-  [:button "Compile"]
+  [:button
+    (if (:auto-compile? prj)
+      "Auto Compile"
+      "Compile Once")]
   [:button
     {:on-click #(click-compile-options prj-key)}
     [:i.fa.fa-caret-down]]
   [:button.btn-da85d
     ;{:on-click #(click-clean-btn prj-key)}
-    "Clean"])
+    "Clean"]
+  (when (:compile-menu-showing? prj)
+    (compile-menu prj-key prj)))
 
 (sablono/defhtml auto-buttons [prj-key]
   [:button.btn-da85d
@@ -514,7 +547,7 @@
           [:div.project-btns-f5656
             (cond
               (= :idle (:state prj))
-                (idle-buttons prj-key num-selected-builds)
+                (idle-buttons prj-key prj num-selected-builds)
               (= :auto (:state prj))
                 (auto-buttons prj-key))]
           [:div.clr-737fa]]
