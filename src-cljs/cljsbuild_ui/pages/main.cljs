@@ -458,13 +458,13 @@
 (defn- toggle-auto-compile [prj-key]
   (swap! state update-in [:projects prj-key :auto-compile?] not))
 
-(defn- toggle-build-active [prj-key bld-id]
+(defn- toggle-build-active [prj-key bld-idx]
   ;; TODO: write me!
-  )
+  (swap! state update-in [:projects prj-key :builds bld-idx :active?] not))
 
-(sablono/defhtml build-option [prj-key bld]
+(sablono/defhtml build-option [idx bld prj-key]
   [:div.bld-e7c4d
-    {:on-click #(toggle-build-active prj-key (:id bld))}
+    {:on-click #(toggle-build-active prj-key idx)}
     (if (:active? bld)
       [:i.fa.fa-check-square-o]
       [:i.fa.fa-square-o])
@@ -480,15 +480,23 @@
           [:i.fa.fa-square-o])
         "Auto Compile"]]
     [:div.builds-selections-642a3
-      (map #(build-option prj-key %) (:builds prj))]])
+      (map-indexed #(build-option %1 %2 prj-key) (:builds prj))]])
 
-(sablono/defhtml idle-buttons [prj-key prj num-selected-builds]
+(defn- num-selected-builds [prj]
+  (->> prj
+    :builds
+    (map :active?)
+    (remove false?)
+    count))
+
+(sablono/defhtml idle-buttons [prj-key prj]
   ;(start-auto-btn prj-key num-selected-builds)
   ;(build-once-btn prj-key num-selected-builds)
   [:button
     (if (:auto-compile? prj)
       "Auto Compile"
-      "Compile Once")]
+      "Compile Once")
+    [:span.count-cfa27 (str "[" (num-selected-builds prj) "]")]]
   [:button
     {:on-click #(click-compile-options prj-key)}
     [:i.fa.fa-caret-down]]
@@ -547,7 +555,7 @@
           [:div.project-btns-f5656
             (cond
               (= :idle (:state prj))
-                (idle-buttons prj-key prj num-selected-builds)
+                (idle-buttons prj-key prj)
               (= :auto (:state prj))
                 (auto-buttons prj-key))]
           [:div.clr-737fa]]
