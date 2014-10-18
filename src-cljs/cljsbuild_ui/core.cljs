@@ -46,7 +46,8 @@
     (let [prj-files (js->clj (js/require projects-file))
           projects (zipmap prj-files (map load-project-file prj-files))]
       ;; it works!
-      (log (:cljsbuild (first (vals projects))))
+      ;;(log (:cljsbuild (first (vals projects))))
+      nil
       )))
 
 ;; receive the OS-normalized app data path from app.js

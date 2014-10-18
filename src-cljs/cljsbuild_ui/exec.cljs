@@ -22,28 +22,31 @@
 ;; compiler itself
 ;; we can get by with regex and duct tape for now ;)
 
-(defn- error-line? [s]
-  (and (not= -1 (.search s #"Caused by: "))
-       (not= -1 (.search s #"clojure.lang.ExceptionInfo"))))
+(defn- start-error-line? [s]
+  (and (.test #"Compiling " s)
+       (.test #"failed\." s)))
+
+(defn- end-error-line? [s]
+  (.test #"Subprocess failed" s))
 
 (defn- start-line? [s]
-  (and (not= -1 (.search s #"^Compiling "))
-       (not= -1 (.search s #"]\.\.\.$"))))
+  (and (.test #"Compiling " s)
+       (.test #"]\.\.\.$" s)))
 
 (defn- success-line? [s]
-  (and (not= -1 (.search s #"Successfully compiled"))
-       (not= -1 (.search s #"seconds\."))))
+  (and (.test #"Successfully compiled" s)
+       (.test #"seconds\." s)))
 
 (defn- warning-line? [s]
-  (not= -1 (.search s #"^WARNING: ")))
+  (.test #"^WARNING: " s))
 
 (defn- determine-output-type
   "Returns the type of line output from the compiler.
-   One of :error :start :success :warning
    nil if we do not recognize the line or don't care what it is"
   [s]
   (cond
-    (error-line? s) :error
+    (start-error-line? s) :start-error
+    (end-error-line? s) :end-error
     (start-line? s) :start
     (success-line? s) :success
     (warning-line? s) :warning
@@ -55,12 +58,16 @@
     (replace #" seconds.+$" "")
     float))
 
+;; TODO: need to collect a list of all the possible error messages
+;; https://github.com/oakmac/cljsbuild-ui/issues/3
+;; TODO: if the error contains column and line information, we should extract
+;; that out of the file and show the user
 (defn- extract-error-msg [s]
   (-> s
     (replace "\n" " ")
     (replace "\t" "")
-    (replace #"^.*Caused by: " "")
-    (replace #"} at .*$" "}")))
+    (replace #"^.*Caused by: clojure.lang.ExceptionInfo: " "")
+    (replace #" at clojure.core.+$" "")))
 
 (defn- clean-warning-line [s]
   (-> s
@@ -76,15 +83,22 @@
 (defn- on-console-output
   "This function gets called with chunks of text from the compiler console output.
    It parses them using regex and puts the results onto a core.async channel."
-  [text1 c]
-  (js-log text1)
-  (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+  [text1 c error-msg inside-error?]
+
+  ; (js-log text1)
+  ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
   (let [text2 (trim text1)
         output-type (determine-output-type text2)]
     (cond
-      (= output-type :error)
-        (let [error-msg (extract-error-msg text2)]
-          (put! c [:error error-msg]))
+      (= output-type :start-error)
+        (do (reset! inside-error? true)
+            (reset! error-msg text2))
+      (= output-type :end-error)
+        (do (reset! inside-error? false)
+            (put! c [:error (extract-error-msg @error-msg)]))
+      @inside-error?
+        (swap! error-msg str text1)
       (= output-type :start)
         (let [target (extract-target-from-start-msg text2)]
           (put! c [:start target]))
@@ -134,11 +148,13 @@
   "Start auto-compile. This function returns a core.async channel."
   [prj-key bld-keys]
   (let [c (chan)
-        child (spawn "lein cljsbuild auto" (convert-cwd prj-key))]
+        child (spawn "lein cljsbuild auto" (convert-cwd prj-key))
+        error-msg (atom "")
+        inside-error? (atom false)]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
-    (.on (.-stderr child) "data" #(on-console-output % c))
-    (.on (.-stdout child) "data" #(on-console-output % c))
+    (.on (.-stderr child) "data" #(on-console-output % c error-msg inside-error?))
+    (.on (.-stdout child) "data" #(on-console-output % c error-msg inside-error?))
     (.on child "close" #(on-close-child c))
     ;; return the channel
     c))
@@ -155,11 +171,13 @@
    The channel is closed when the build is finished."
   [prj-key blds]
   (let [c (chan)
-        child (spawn "lein cljsbuild once" (convert-cwd prj-key))]
+        child (spawn "lein cljsbuild once" (convert-cwd prj-key))
+        error-msg (atom "")
+        inside-error? (atom false)]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
-    (.on (.-stderr child) "data" #(on-console-output % c))
-    (.on (.-stdout child) "data" #(on-console-output % c))
+    (.on (.-stderr child) "data" #(on-console-output % c error-msg inside-error?))
+    (.on (.-stdout child) "data" #(on-console-output % c error-msg inside-error?))
     (.on child "close" #(on-close-child c))
     ;; return the channel
     c))
@@ -190,5 +208,5 @@
 
 (defn- extract-target-from-start-msg [s]
   (-> s
-    (replace "Compiling \"" "")
+    (replace #"^.*Compiling \"" "")
     (replace #"\".+$" "")))
