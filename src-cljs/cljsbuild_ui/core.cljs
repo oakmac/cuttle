@@ -3,7 +3,8 @@
     [cljs.reader :refer [read-string]]
     [clojure.string :refer [join replace split trim]]
     [cljsbuild-ui.pages.main]
-    [cljsbuild-ui.util :refer [log js-log on-windows? uuid]]))
+    [cljsbuild-ui.util :refer [log js-log on-windows? uuid]]
+    [cljsbuild-ui.cljsbuild.config :refer [extract-options]]))
 
 (def fs (js/require "fs"))
 (def ipc (js/require "ipc"))
@@ -23,8 +24,10 @@
 ;; TODO: we probably need to add the name and version to our project map here
 (defn- parse-project-file [s1]
   (let [s2 (replace s1 "#(" "(") ;; prevent "Could not find tag parser for" error
-        prj1 (read-string s2)]
-    (apply hash-map (drop 3 prj1))))
+        prj1 (read-string s2)
+        project (apply hash-map (drop 3 prj1))
+        cljsbuild (extract-options project)]
+    (assoc project :cljsbuild cljsbuild)))
 
 ;; TODO:
 ;; - Need to handle files listed in projects.json that no longer exist on disk
