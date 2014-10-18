@@ -146,6 +146,13 @@
                   blds)]
     (-> matches first first)))
 
+(defn- num-selected-builds [prj]
+  (->> prj
+    :builds
+    (map :active?)
+    (remove false?)
+    count))
+
 ;;------------------------------------------------------------------------------
 ;; State-effecting
 ;;------------------------------------------------------------------------------
@@ -244,6 +251,15 @@
 ;;------------------------------------------------------------------------------
 ;; Events
 ;;------------------------------------------------------------------------------
+
+;; TODO: not sure this will work long-term if they click in whitespace outside
+;; the app root element
+(defn- click-root []
+  (doall
+    (map
+      (fn [prj-key]
+        (swap! state assoc-in [:projects prj-key :compile-menu-showing?] false))
+      (-> @state :projects keys))))
 
 ;; NOTE: this could be simplified with a go-loop?
 (defn- handle-compiler-output
@@ -452,7 +468,8 @@
     (zero? num-selected-builds) [:i.fa.fa-square-o]
     :else [:i.fa.fa-minus-square-o]))
 
-(defn- click-compile-options [prj-key]
+(defn- click-compile-options [js-evt prj-key]
+  (.stopPropagation js-evt)
   (swap! state update-in [:projects prj-key :compile-menu-showing?] not))
 
 (defn- toggle-auto-compile [prj-key]
@@ -472,6 +489,7 @@
 
 (sablono/defhtml compile-menu [prj-key prj]
   [:div.menu-b4b27
+    {:on-click #(.stopPropagation %)}
     [:div.auto-option-8a122
       [:label.label-ec878
         {:on-click #(toggle-auto-compile prj-key)}
@@ -482,13 +500,6 @@
     [:div.builds-selections-642a3
       (map-indexed #(build-option %1 %2 prj-key) (:builds prj))]])
 
-(defn- num-selected-builds [prj]
-  (->> prj
-    :builds
-    (map :active?)
-    (remove false?)
-    count))
-
 (sablono/defhtml idle-buttons [prj-key prj]
   ;(start-auto-btn prj-key num-selected-builds)
   ;(build-once-btn prj-key num-selected-builds)
@@ -498,7 +509,7 @@
       "Compile Once")
     [:span.count-cfa27 (str "[" (num-selected-builds prj) "]")]]
   [:button
-    {:on-click #(click-compile-options prj-key)}
+    {:on-click #(click-compile-options % prj-key)}
     [:i.fa.fa-caret-down]]
   [:button.btn-da85d
     ;{:on-click #(click-clean-btn prj-key)}
@@ -568,6 +579,7 @@
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
     [:div.app-ca3cd
+      {:on-click click-root}
       [:div.header-a4c14
         [:div.title-8749a "ClojureScript Compiler"]
         [:div.title-links-42b06
@@ -601,6 +613,17 @@
 ;; Init
 ;;------------------------------------------------------------------------------
 
+(def events-added? (atom false))
+
+(defn- add-events!
+  "Add events that are outside the react.js event system.
+   NOTE: this is a run-once function"
+  []
+  (when-not @events-added?
+    ;; TODO: we may not even use this
+    (reset! events-added? true)))
+
 (defn init! []
+  (add-events!)
   ;; trigger the initial render
   (swap! state identity))
