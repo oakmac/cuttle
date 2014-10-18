@@ -490,25 +490,26 @@
 (sablono/defhtml compile-menu [prj-key prj]
   [:div.menu-b4b27
     {:on-click #(.stopPropagation %)}
-    [:div.auto-option-8a122
-      [:label.label-ec878
-        {:on-click #(toggle-auto-compile prj-key)}
-        (if (:auto-compile? prj)
-          [:i.fa.fa-check-square-o]
-          [:i.fa.fa-square-o])
-        "Auto Compile"]]
-    [:div.builds-selections-642a3
-      (map-indexed #(build-option %1 %2 prj-key) (:builds prj))]])
+    [:label.small-cffc5 "options"]
+    [:label.label-ec878
+      {:on-click #(toggle-auto-compile prj-key)}
+      (if (:auto-compile? prj)
+        [:i.fa.fa-check-square-o]
+        [:i.fa.fa-square-o])
+      "Auto Compile"]
+    [:div.spacer-685b6]
+    [:label.small-cffc5 "builds"]
+    (map-indexed #(build-option %1 %2 prj-key) (:builds prj))])
 
 (sablono/defhtml idle-buttons [prj-key prj]
   ;(start-auto-btn prj-key num-selected-builds)
   ;(build-once-btn prj-key num-selected-builds)
-  [:button
+  [:button.compile-btn-17a78
     (if (:auto-compile? prj)
       "Auto Compile"
       "Compile Once")
     [:span.count-cfa27 (str "[" (num-selected-builds prj) "]")]]
-  [:button
+  [:button.menu-btn-550bf
     {:on-click #(click-compile-options % prj-key)}
     [:i.fa.fa-caret-down]]
   [:button.btn-da85d
