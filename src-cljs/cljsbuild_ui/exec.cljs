@@ -47,9 +47,9 @@
   (cond
     (start-error-line? s) :start-error
     (end-error-line? s) :end-error
-    (start-line? s) :start
     (success-line? s) :success
     (warning-line? s) :warning
+    (start-line? s) :start
     :else nil))
 
 (defn- extract-time-from-success-msg [s]
