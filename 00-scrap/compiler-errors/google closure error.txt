@@ -1,0 +1,14 @@
+oakmac@oakmac-desktop:~/t3tr0s$ lein cljsbuild once
+Compiling ClojureScript.
+Compiling "server.js" from ["src/server"]...
+Oct 19, 2014 12:16:43 AM com.google.javascript.jscomp.LoggerErrorManager println
+SEVERE: /home/oakmac/t3tr0s/target/cljsbuild-compiler-0/cljs/core.js:15719: ERROR - Parse error. primary expression expected
+
+Oct 19, 2014 12:16:43 AM com.google.javascript.jscomp.LoggerErrorManager printSummary
+WARNING: 1 error(s), 0 warning(s)
+ERROR: JSC_PARSE_ERROR. Parse error. primary expression expected at /home/oakmac/t3tr0s/target/cljsbuild-compiler-0/cljs/core.js line 15719 : 0
+Successfully compiled "server.js" in 6.236 seconds.
+Compiling "public/js/client.min.js" from ["src/client"]...
+Successfully compiled "public/js/client.min.js" in 18.4 seconds.
+Compiling "public/js/client.js" from ["src/client"]...
+Successfully compiled "public/js/client.js" in 11.413 seconds.
