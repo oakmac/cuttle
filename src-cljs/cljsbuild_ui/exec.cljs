@@ -11,8 +11,8 @@
 ;;------------------------------------------------------------------------------
 
 (def child-proc (js/require "child_process"))
-(def js-spawn (aget child-proc "spawn"))
 (def js-exec (aget child-proc "exec"))
+(def js-spawn (aget child-proc "spawn"))
 
 ;;------------------------------------------------------------------------------
 ;; Paser Compiler Output
@@ -85,8 +85,8 @@
    It parses them using regex and puts the results onto a core.async channel."
   [text1 c error-msg inside-error?]
 
-  ; (js-log text1)
-  ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+  (js-log text1)
+  (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
   (let [text2 (trim text1)
         output-type (determine-output-type text2)]
@@ -140,13 +140,28 @@
         (apply array (rest cmd-arr))
         (js-obj "cwd" cwd)))))
 
+(defn- kill-auto-on-unix2 [output]
+  (let [lein-pid (-> output trim int)]
+    (js-exec (str "kill " lein-pid))))
+
+;; I fought with this for hours re: trying to kill the process from node.js
+;; this is hacky, but it seems to work everywhere I've tested
+(defn- kill-auto-on-unix [pid]
+  (let [child (js-spawn "ps"
+                (array "-o" "pid" "--no-headers" "--ppid" pid))]
+    (.setEncoding (.-stdout child) "utf8")
+    (.on (.-stdout child) "data" kill-auto-on-unix2)))
+
 ;;------------------------------------------------------------------------------
 ;; Public Methods
 ;;------------------------------------------------------------------------------
 
+;; TODO: need to kill any "auto" process when they exit the app
+(def auto-pids (atom {}))
+
 (defn start-auto
   "Start auto-compile. This function returns a core.async channel."
-  [prj-key bld-keys]
+  [prj-key bld-ids]
   (let [c (chan)
         child (spawn "lein cljsbuild auto" (convert-cwd prj-key))
         error-msg (atom "")
@@ -156,20 +171,29 @@
     (.on (.-stderr child) "data" #(on-console-output % c error-msg inside-error?))
     (.on (.-stdout child) "data" #(on-console-output % c error-msg inside-error?))
     (.on child "close" #(on-close-child c))
+
+    ;; save the child pid
+    (swap! auto-pids assoc prj-key (.-pid child))
+
     ;; return the channel
     c))
 
 (defn stop-auto
   "Kill an auto-compile process."
   [prj-key]
-  ;; TODO: write me
-  )
+  (let [main-pid (get @auto-pids prj-key)]
+    (if on-windows?
+      (js-exec (str "taskkill /pid " main-pid " /T /F"))
+      (kill-auto-on-unix main-pid))
+
+    ;; remove the pid from the atom
+    (swap! auto-pids dissoc prj-key)))
 
 (defn build-once
   "Start the build once process. This function returns a core.async channel
    that receives the status of the build.
    The channel is closed when the build is finished."
-  [prj-key blds]
+  [prj-key bld-ids]
   (let [c (chan)
         child (spawn "lein cljsbuild once" (convert-cwd prj-key))
         error-msg (atom "")

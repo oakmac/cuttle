@@ -220,17 +220,8 @@
   (swap! state assoc-in [:projects prj-key :state] :idle))
 
 ;;------------------------------------------------------------------------------
-;; Events
+;; Compiler Interface
 ;;------------------------------------------------------------------------------
-
-;; TODO: this will not work if they click outside the app root element
-;; need to refactor
-(defn- click-root []
-  (doall
-    (map
-      (fn [prj-key]
-        (swap! state assoc-in [:projects prj-key :compile-menu-showing?] false))
-      (-> @state :projects keys))))
 
 ;; NOTE: this could be simplified with a go-loop?
 (defn- handle-compiler-output
@@ -250,8 +241,9 @@
             (reset! current-bld-id bld-id)
             (show-start-compiling! prj-key bld-id))
         (= type :success)
-          (do (show-done-compiling! prj-key @current-bld-id data)
-              (reset! current-bld-id nil))
+          (do
+            (show-done-compiling! prj-key @current-bld-id data)
+            (reset! current-bld-id nil))
         (= type :warning)
           (show-warnings! prj-key @current-bld-id data)
         (= type :finished)
@@ -262,15 +254,23 @@
       ;; loop back
       (handle-compiler-output c prj-key current-bld-id))))
 
-(defn- start-auto-compile! [prj-key active-bld-ids]
+(defn- start-auto-compile! [prj-key bld-ids]
   ;; show project loading state
   (swap! state assoc-in [:projects prj-key :state] :auto)
 
-  ;;(exec/start-auto prj-key active-bld-ids)
-  ;; TODO: finish me
-  )
+  ;; TODO: update the BuildRows state
+  ; (doall
+  ;   (map-indexed
+  ;     #()
+  ;     ()))
 
-(defn- start-compile-once! [prj-key active-bld-ids]
+  (remove-compiled-info! prj-key)
+
+  ;; start the build
+  (let [compiler-chan (exec/start-auto prj-key bld-ids)]
+    (handle-compiler-output compiler-chan prj-key (atom nil))))
+
+(defn- start-compile-once! [prj-key bld-ids]
   ;; show project state
   (swap! state assoc-in [:projects prj-key :state] :once)
 
@@ -283,30 +283,14 @@
   (remove-compiled-info! prj-key)
 
   ;; start the build
-  (let [compiler-chan (exec/build-once prj-key active-bld-ids)]
+  (let [compiler-chan (exec/build-once prj-key bld-ids)]
     (handle-compiler-output compiler-chan prj-key (atom nil))))
 
-(defn- click-compile-btn [prj-key]
-  (let [prj (get-in @state [:projects prj-key])
-        active-bld-ids (get-active-bld-ids prj)]
-    ;; safeguard
-    (when-not (zero? (count active-bld-ids))
-      (if (:auto-compile? prj)
-        (start-auto-compile! prj-key active-bld-ids)
-        (start-compile-once! prj-key active-bld-ids)))))
-
-(defn- click-stop-auto-btn [prj-key]
-  ;; update project state
-  (swap! state assoc-in [:projects prj-key :state] :idle)
-
-  ;; TODO: figure out how to cancel the auto child process
-  )
-
 ;; TODO: deal with clean errors
-(defn- clean-error [stderr]
+(defn- on-clean-error [stderr]
   (js-log "TODO: handle clean error"))
 
-(defn- clean-success [prj-key]
+(defn- on-clean-success [prj-key]
   ;; set project state
   (swap! state assoc-in [:projects prj-key :state] :idle)
 
@@ -317,6 +301,35 @@
         (swap! state update-in [:projects prj-key :builds idx]
           assoc :state :missing))
       (get-in @state [:projects prj-key :builds]))))
+
+;;------------------------------------------------------------------------------
+;; Events
+;;------------------------------------------------------------------------------
+
+;; TODO: this will not work if they click outside the app root element
+;; need to refactor
+(defn- click-root []
+  (doall
+    (map
+      (fn [prj-key]
+        (swap! state assoc-in [:projects prj-key :compile-menu-showing?] false))
+      (-> @state :projects keys))))
+
+(defn- click-compile-btn [prj-key]
+  (let [prj (get-in @state [:projects prj-key])
+        bld-ids (get-active-bld-ids prj)]
+    ;; safeguard
+    (when-not (zero? (count bld-ids))
+      (if (:auto-compile? prj)
+        (start-auto-compile! prj-key bld-ids)
+        (start-compile-once! prj-key bld-ids)))))
+
+(defn- click-stop-auto-btn [prj-key]
+  ;; update project state
+  (swap! state assoc-in [:projects prj-key :state] :idle)
+
+  ;; stop the process
+  (exec/stop-auto prj-key))
 
 (defn- click-clean-btn [prj-key]
   ;; update project state
@@ -333,7 +346,7 @@
   (remove-compiled-info! prj-key)
 
   ;; start the clean
-  (exec/clean prj-key #(clean-success prj-key) clean-error))
+  (exec/clean prj-key #(on-clean-success prj-key) on-clean-error))
 
 (defn- click-build-row [prj-key build-key]
   (swap! state update-in [:projects prj-key :builds build-key :checked?] not))
@@ -464,10 +477,10 @@
     (compile-menu prj-key prj)))
 
 (sablono/defhtml auto-state [prj-key]
-  [:span.status-984ee "Compiling ClojureScript..."]
+  [:span.status-984ee "Auto compiling ClojureScript..."]
   [:button.btn-da85d
     {:on-click #(click-stop-auto-btn prj-key)}
-    "Stop Auto"])
+    "Stop"])
 
 (sablono/defhtml cleaning-state [prj-key]
   [:span.status-984ee "Removing generated files..."])
@@ -504,16 +517,12 @@
           (when (= (:state prj) :idle)
             [:span.edit-c0ba4 "edit"])]
         [:div.right-f5656
-          (let [prj-state (:state prj)]
-            (cond
-              (= :idle prj-state)
-                (idle-state prj-key prj)
-              (= :auto prj-state)
-                (auto-state prj-key)
-              (= :cleaning prj-state)
-                (cleaning-state prj-key)
-              (= :once prj-state)
-                (once-state prj-key)))]]
+          (case (:state prj)
+            :auto (auto-state prj-key)
+            :cleaning (cleaning-state prj-key)
+            :idle (idle-state prj-key prj)
+            :once (once-state prj-key)
+            "*unknown project state*")]]
       [:table.tbl-bdf39
         (bld-tbl-hdr)
         (map-indexed
