@@ -231,9 +231,10 @@
   (go
     (when-let [[type data] (<! c)]
 
-      ; (log type)
-      ; (log data)
-      ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+      (js-log "channel contents:")
+      (log type)
+      (log data)
+      (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
       (cond
         (= type :start)

@@ -29,6 +29,12 @@
 (defn- end-error-line? [s]
   (.test #"Subprocess failed" s))
 
+(def end-error-msg (str "***END ERROR***" (uuid)))
+
+(defn- end-error-line? [s]
+  (or (.test #"Subprocess failed" s)
+      (= s end-error-msg)))
+
 (defn- start-line? [s]
   (and (.test #"Compiling " s)
        (.test #"]\.\.\.$" s)))
@@ -58,16 +64,27 @@
     (replace #" seconds.+$" "")
     float))
 
+
+
 ;; TODO: need to collect a list of all the possible error messages
 ;; https://github.com/oakmac/cljsbuild-ui/issues/3
 ;; TODO: if the error contains column and line information, we should extract
 ;; that out of the file and show the user
+
+; (defn- error-msg-type [s]
+;   (cond
+;     (= 1 2) :map-literal
+
+;     :else nil))
+
 (defn- extract-error-msg [s]
   (-> s
-    (replace "\n" " ")
-    (replace "\t" "")
-    (replace #"^.*Caused by: clojure.lang.ExceptionInfo: " "")
-    (replace #" at clojure.core.+$" "")))
+    (replace #"\[\d\dm" "") ;; remove bash color coding characters
+    (replace #"\s+" " ") ;; remove consecutive whitespace
+    (replace #"^.*Caused by:" "")
+    (replace #"^.*clojure.lang.ExceptionInfo: " "")
+    (replace #" at clojure.core.*$" "")
+    ))
 
 (defn- clean-warning-line [s]
   (-> s
@@ -84,31 +101,46 @@
   "This function gets called with chunks of text from the compiler console output.
    It parses them using regex and puts the results onto a core.async channel."
   [text1 c error-msg inside-error?]
-
-  (js-log text1)
-  (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-
   (let [text2 (trim text1)
         output-type (determine-output-type text2)]
-    (cond
-      (= output-type :start-error)
-        (do (reset! inside-error? true)
-            (reset! error-msg text2))
-      (= output-type :end-error)
-        (do (reset! inside-error? false)
-            (put! c [:error (extract-error-msg @error-msg)]))
-      @inside-error?
-        (swap! error-msg str text1)
-      (= output-type :start)
-        (let [target (extract-target-from-start-msg text2)]
-          (put! c [:start target]))
-      (= output-type :success)
-        (let [compile-time (extract-time-from-success-msg text2)]
-          (put! c [:success compile-time]))
-      (= output-type :warning)
-        (let [warning-msgs (extract-warning-msgs text2)]
-          (put! c [:warning warning-msgs]))
-      :else nil)))
+
+    (js-log "raw output:")
+    (js-log text2)
+    (if output-type
+      (js-log (str "### output type: " output-type)))
+    (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
+    ;; TODO: need to close the error sequence when we receive nothing for some
+    ;; period of time inside of one
+
+    ;; close the error sequence if we catch any signal
+    (when (and output-type @inside-error?)
+      (reset! inside-error? false)
+      (put! c [:error (extract-error-msg @error-msg)]))
+
+    ;; concatenate error message
+    (when @inside-error?
+      (swap! error-msg str text1))
+
+    ;; start error signal
+    (when (= output-type :start-error)
+      (reset! inside-error? true)
+      (reset! error-msg text2)
+      ;; send an "end error" signal 25ms from start of the error
+      (js/setTimeout
+        #(on-console-output end-error-msg c error-msg inside-error?) 25))
+
+    ;; start compiling signal
+    (when (= output-type :start)
+      (put! c [:start (extract-target-from-start-msg text2)]))
+
+    ;; compilation success
+    (when (= output-type :success)
+      (put! c [:success (extract-time-from-success-msg text2)]))
+
+    ;; warnings
+    (when (= output-type :warning)
+      (put! c [:warning (extract-warning-msgs text2)]))))
 
 (defn- on-close-child [c]
   (put! c [:finished])
