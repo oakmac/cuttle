@@ -181,7 +181,7 @@
                (= line-type :error))
       (swap! err-msg-buffer conj cleaned-line))
 
-    ;; close the error sequence when we see a non red-line
+    ;; close an error sequence
     (when (and @inside-error?
                line-type
                (not= line-type :error))
@@ -276,6 +276,8 @@
 ;; TODO: need to kill any "auto" process when they exit the app
 (def auto-pids (atom {}))
 
+;; TODO: need to combine the start-auto and build-once functions
+
 (defn start-auto
   "Start auto-compile. This function returns a core.async channel."
   [prj-key bld-ids]
@@ -318,7 +320,7 @@
         child (spawn "lein cljsbuild once" (convert-cwd prj-key))
         inside-error? (atom false)
         err-msg-buffer (atom "")
-        stopped-output-timeout nil]
+        stopped-output-timeout (atom nil)]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stderr child) "data"
