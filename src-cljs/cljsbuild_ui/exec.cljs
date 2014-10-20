@@ -154,44 +154,49 @@
 (defn- on-console-output
   "This function gets called with chunks of text from the compiler console output.
    It parses them using regex and puts the results onto a core.async channel."
-  [text1 c error-msg inside-error?]
-  (let [text2 (trim text1)
-        output-type (determine-output-type text2)]
+  [raw-output c inside-error? err-msg-buffer err-msg-timeout]
+  (let [trimmed-output (trim raw-output)
+        output-type (determine-output-type trimmed-output)]
 
-    ; (js-log "raw output:")
-    ; (js-log text2)
-    ; (if output-type
-    ;   (js-log (str "### output type: " output-type)))
-    ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    (js-log "raw output:")
+    (js-log trimmed-output)
+    (if output-type
+      (js-log (str "### output type: " output-type)))
+    (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     ;; close the error sequence if we catch any signal
     (when (and output-type @inside-error?)
+      (js/clearTimeout @err-msg-timeout)
       (reset! inside-error? false)
-      (put! c [:error (extract-error-msg @error-msg)]))
+      (put! c [:error (extract-error-msg @err-msg-buffer)]))
 
     ;; concatenate error message
     (when @inside-error?
-      (swap! error-msg str text1))
+      (swap! err-msg-buffer str raw-output "\n"))
 
     ;; start error signal
     (when (= output-type :start-error)
       (reset! inside-error? true)
-      (reset! error-msg text2)
+      (reset! err-msg-buffer raw-output)
+
       ;; send an "end error" signal 25ms from start of the error
-      (js/setTimeout
-        #(on-console-output end-error-msg c error-msg inside-error?) 25))
+      (let [t (js/setTimeout
+                #(on-console-output end-error-msg c inside-error?
+                   err-msg-buffer err-msg-timeout)
+                25)]
+        (reset! err-msg-timeout t)))
 
     ;; start compiling signal
     (when (= output-type :start)
-      (put! c [:start (extract-target-from-start-msg text2)]))
+      (put! c [:start (extract-target-from-start-msg trimmed-output)]))
 
     ;; compilation success
     (when (= output-type :success)
-      (put! c [:success (extract-time-from-success-msg text2)]))
+      (put! c [:success (extract-time-from-success-msg trimmed-output)]))
 
     ;; warnings
     (when (= output-type :warning)
-      (put! c [:warning (extract-warning-msgs text2)]))))
+      (put! c [:warning (extract-warning-msgs trimmed-output)]))))
 
 (defn- on-close-child [c]
   (put! c [:finished])
@@ -247,12 +252,15 @@
   [prj-key bld-ids]
   (let [c (chan)
         child (spawn "lein cljsbuild auto" (convert-cwd prj-key))
-        error-msg (atom "")
-        inside-error? (atom false)]
+        inside-error? (atom false)
+        err-msg-buffer (atom "")
+        err-msg-timeout (atom nil)]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
-    (.on (.-stderr child) "data" #(on-console-output % c error-msg inside-error?))
-    (.on (.-stdout child) "data" #(on-console-output % c error-msg inside-error?))
+    (.on (.-stderr child) "data"
+      #(on-console-output % c inside-error? err-msg-buffer err-msg-timeout))
+    (.on (.-stdout child) "data"
+      #(on-console-output % c inside-error? err-msg-buffer err-msg-timeout))
     (.on child "close" #(on-close-child c))
 
     ;; save the child pid
@@ -279,12 +287,15 @@
   [prj-key bld-ids]
   (let [c (chan)
         child (spawn "lein cljsbuild once" (convert-cwd prj-key))
-        error-msg (atom "")
-        inside-error? (atom false)]
+        inside-error? (atom false)
+        err-msg-buffer (atom "")
+        err-msg-timeout nil]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
-    (.on (.-stderr child) "data" #(on-console-output % c error-msg inside-error?))
-    (.on (.-stdout child) "data" #(on-console-output % c error-msg inside-error?))
+    (.on (.-stderr child) "data"
+      #(on-console-output % c inside-error? err-msg-buffer err-msg-timeout))
+    (.on (.-stdout child) "data"
+      #(on-console-output % c inside-error? err-msg-buffer err-msg-timeout))
     (.on child "close" #(on-close-child c))
     ;; return the channel
     c))
