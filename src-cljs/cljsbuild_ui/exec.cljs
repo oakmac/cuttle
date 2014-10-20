@@ -26,6 +26,10 @@
 (defn- red-line? [s]
   (.test #"\[31m" s))
 
+(defn- error-line? [s]
+  (or (red-line? s)
+      (.test #"clojure\.lang\.ExceptionInfo" s)))
+
 (def ^:private stopped-signal (str "*** OUTPUT STOPPED *** " (uuid)))
 
 (defn- end-line? [s]
@@ -48,7 +52,7 @@
    nil if we do not recognize the line or don't care what it is"
   [s]
   (cond
-    (red-line? s) :error
+    (error-line? s) :error
     (end-line? s) :end-output
     (success-line? s) :success
     (warning-line? s) :warning
@@ -89,47 +93,12 @@
     (replace #" at clojure.core.*$" "")
     ))
 
-(defn- extract-eof-msg [s]
-  (-> s
-    (replace #"^.+EOF while reading" "EOF while reading")
-    (replace #" core.clj.+$" "")))
-
 (defn- clean-error-text
   "Remove bash color coding characters."
   [s]
   (-> s
     (replace #"\[\dm" "")
     (replace #"\[\d\dm" "")))
-
-(defn- extract-unmatched-delimiter [s]
-  (-> s
-    (replace #"^.+Unmatched delimiter" "Unmatched delimiter")
-    ;(replace #"^.+Unmatched delimiter" "Unmatched delimiter")
-    ))
-
-(defn- extract-error-msg [type cleaned-error]
-  (case type
-    :unmatched-delimiter (extract-unmatched-delimiter cleaned-error)
-    :map-literal "map literal error msg!"
-    :eof (extract-eof-msg cleaned-error)
-    (default-extract-error-msg cleaned-error)))
-
-(defn- map-literal? [s]
-  (.test #"Map literal must contain an even" s))
-
-(defn- unmatched-delimiter? [s]
-  (.test #"Unmatched delimiter" s))
-
-(defn- eof? [s]
-  (.test #"EOF while reading" s))
-
-(defn- determine-error-type [s]
-  (cond
-    (eof? s) :eof
-    (unmatched-delimiter? s) :unmatched-delimiter
-    (map-literal? s) :map-literal
-    ;; TODO: more error types go here
-    :else nil))
 
 (defn- extract-error-msg [full-error-txt]
   (->> full-error-txt
@@ -164,11 +133,11 @@
   (let [line-type (determine-line-type raw-line)
         cleaned-line (clean-line raw-line)]
 
-    ; (js-log raw-line)
-    ; (js-log cleaned-line)
-    ; (if line-type
-    ;   (log (str "##### line type: " line-type)))
-    ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    (js-log raw-line)
+    (js-log cleaned-line)
+    (if line-type
+      (log (str "##### line type: " line-type)))
+    (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     ;; start an error sequence
     (when (and (not @inside-error?)

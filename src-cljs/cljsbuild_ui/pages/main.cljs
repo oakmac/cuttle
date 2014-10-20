@@ -15,6 +15,7 @@
 (def state (atom {
   :projects {
     "/home/oakmac/t3tr0s/project.clj" {
+    ;;"C:\\t3tr0s\\project.clj" {
       :compile-menu-showing? false
       :auto-compile? true
       :name "t3tr0s"
@@ -54,7 +55,7 @@
               :pretty-print false }}}
 
         { :id :server
-          :active? false
+          :active? true
           :compile-time nil
           :last-compile-time nil
           :error nil
@@ -95,7 +96,7 @@
 
         { :id :main-min
           :active? true
-          :error "EOF while reading, starting at line 7"
+          :error ["EOF while reading, starting at line 7"]
           :last-compile-time nil
           :state :done-with-error
           :warnings []
@@ -189,6 +190,12 @@
       #(clear-compiled-info! prj-key %1)
       (get-in @state [:projects prj-key :builds]))))
 
+(defn- show-waiting! [prj-key]
+  (doall
+    (map-indexed
+      #(swap! state assoc-in [:projects prj-key :builds %1 :state] :waiting)
+      (get-in @state [:projects prj-key :builds]))))
+
 (defn- show-start-compiling! [prj-key bld-id]
   (let [bld-idx (bld-id->idx prj-key bld-id)]
     (clear-compiled-info! prj-key bld-idx)
@@ -217,75 +224,83 @@
 (defn- show-finished!
   "Mark a project as being finished with compiling. ie: idle state"
   [prj-key]
-  (swap! state assoc-in [:projects prj-key :state] :idle))
+  (swap! state assoc-in [:projects prj-key :state] :idle)
+
+  ;; TODO: update builds here
+  )
+
+(defn- show-jvm-warmup! [prj-key bld-id]
+  (let [bld-idx (bld-id->idx prj-key bld-id)]
+    (swap! state assoc-in [:projects prj-key :builds bld-idx :state] :jvm-warmup)))
 
 ;;------------------------------------------------------------------------------
 ;; Compiler Interface
 ;;------------------------------------------------------------------------------
 
 ;; NOTE: this could be simplified with a go-loop?
+;; TODO: "current-bld-id" should probably be in exec.cljs and passed through
+;; the channel
 (defn- handle-compiler-output
   "This function reads from the console output channel and updates the UI.
    NOTE: recursive function, terminating case is when the channel is closed"
-  [c prj-key current-bld-id]
+  [c prj-key current-bld-id first-output?]
   (go
     (when-let [[type data] (<! c)]
 
-      ; (js-log "channel contents:")
-      ; (log type)
-      ; (log data)
-      ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+      (js-log "Channel contents:")
+      (log type)
+      (log data)
+      (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
-      (cond
-        (= type :start)
+      (when @first-output?
+        (show-waiting! prj-key)
+        (reset! first-output? false))
+
+      (case type
+        :start
           (let [bld-id (output-to->bld-id prj-key data)]
             (reset! current-bld-id bld-id)
             (show-start-compiling! prj-key bld-id))
-        (= type :success)
+        :success
           (do
             (show-done-compiling! prj-key @current-bld-id data)
             (reset! current-bld-id nil))
-        (= type :warning)
+        :warning
           (show-warnings! prj-key @current-bld-id data)
-        (= type :finished)
+        :finished
           (show-finished! prj-key)
-        (= type :error)
+        :error
           (show-build-error! prj-key @current-bld-id data)
-        :else nil)
+        nil)
+
       ;; loop back
-      (handle-compiler-output c prj-key current-bld-id))))
+      (handle-compiler-output c prj-key current-bld-id first-output?))))
 
 (defn- start-auto-compile! [prj-key bld-ids]
   ;; show project loading state
   (swap! state assoc-in [:projects prj-key :state] :auto)
 
-  ;; TODO: update the BuildRows state
-  ; (doall
-  ;   (map-indexed
-  ;     #()
-  ;     ()))
+  ;; update the BuildRows state
+  (doall (map #(show-jvm-warmup! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
   ;; start the build
   (let [compiler-chan (exec/start-auto prj-key bld-ids)]
-    (handle-compiler-output compiler-chan prj-key (atom nil))))
+    (handle-compiler-output compiler-chan prj-key (atom nil) (atom true))))
 
 (defn- start-compile-once! [prj-key bld-ids]
   ;; show project state
   (swap! state assoc-in [:projects prj-key :state] :once)
 
-  ;; TODO: update the BuildRows state
-  ; (doall
-  ;   (map-indexed
-  ;     #()
-  ;     ()))
+  ;; update the BuildRows state
+  (doall (map #(show-jvm-warmup! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
   ;; start the build
   (let [compiler-chan (exec/build-once prj-key bld-ids)]
-    (handle-compiler-output compiler-chan prj-key (atom nil))))
+    (handle-compiler-output compiler-chan prj-key (atom nil) (atom true))))
 
 ;; TODO: deal with clean errors
 (defn- on-clean-error [stderr]
@@ -404,7 +419,7 @@
 (sablono/defhtml state-cell [{:keys [compile-time state warnings]}]
   (case state
     :cleaning
-      [:span.cleaning-a1438 [:i.fa.fa-gear.fa-spin] "Cleaning..."]
+      [:span [:i.fa.fa-gear.fa-spin] "Cleaning..."]
     :compiling
       [:span.compiling-9cc92 [:i.fa.fa-gear.fa-spin] "Compiling..."]
     :done
@@ -415,11 +430,13 @@
         [:i.fa.fa-exclamation-triangle] (warnings-state (count warnings))]
     :done-with-error
       [:span.errors-2718a [:i.fa.fa-times] "Compiling failed"]
+    :jvm-warmup
+      [:span [:i.fa.fa-gear.fa-spin] "JVM warmup..."]
     :missing
-      [:span.missing-f02af [:i.fa.fa-minus-circle] "Output missing"]
+      [:span [:i.fa.fa-minus-circle] "Output missing"]
     :waiting
-      [:span.waiting-e22c3 [:i.fa.fa-clock-o] "Waiting..."]
-    "*unknkown state*"))
+      [:span [:i.fa.fa-clock-o] "Waiting..."]
+    "*unknown state*"))
 
 (sablono/defhtml error-row [error-msg]
   [:tr.error-row-b3028
