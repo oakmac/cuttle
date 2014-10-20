@@ -16,29 +16,21 @@
 (def js-spawn (aget child-proc "spawn"))
 
 ;;------------------------------------------------------------------------------
-;; Paser Compiler Output
+;; Determine Compiler Output Line Type
 ;;------------------------------------------------------------------------------
 
 ;; NOTE: this probably belongs in it's own library or emitted as EDN from the
 ;; compiler itself
 ;; we can get by with regex and duct tape for now ;)
 
-(defn- start-error-line? [s]
-  (and (.test #"Compiling " s)
-       (.test #"failed\." s)))
+(defn- red-line? [s]
+  (.test #"\[31m" s))
 
-(defn- end-error-line? [s]
-  (.test #"Subprocess failed" s))
+(def ^:private stopped-signal (str "*** OUTPUT STOPPED *** " (uuid)))
 
-(def end-error-msg (str "***END ERROR***" (uuid)))
-
-(defn- end-error-line? [s]
+(defn- end-line? [s]
   (or (.test #"Subprocess failed" s)
-      (= s end-error-msg)))
-
-(defn- start-line? [s]
-  (and (.test #"Compiling " s)
-       (.test #"]\.\.\.$" s)))
+      (= s stopped-signal)))
 
 (defn- success-line? [s]
   (and (.test #"Successfully compiled" s)
@@ -47,17 +39,25 @@
 (defn- warning-line? [s]
   (.test #"^WARNING: " s))
 
-(defn- determine-output-type
+(defn- start-line? [s]
+  (and (.test #"Compiling " s)
+       (.test #"]\.\.\.$" s)))
+
+(defn- determine-line-type
   "Returns the type of line output from the compiler.
    nil if we do not recognize the line or don't care what it is"
   [s]
   (cond
-    (start-error-line? s) :start-error
-    (end-error-line? s) :end-error
+    (red-line? s) :error
+    (end-line? s) :end-output
     (success-line? s) :success
     (warning-line? s) :warning
     (start-line? s) :start
     :else nil))
+
+;;------------------------------------------------------------------------------
+;; Extract Info From Lines
+;;------------------------------------------------------------------------------
 
 (defn- extract-time-from-success-msg [s]
   (-> s
@@ -131,9 +131,6 @@
     ;; TODO: more error types go here
     :else nil))
 
-(defn- red-line? [s]
-  (.test #"\[31m" s))
-
 (defn- extract-error-msg [full-error-txt]
   (->> full-error-txt
     split-lines
@@ -151,52 +148,84 @@
     (map clean-warning-line)
     (into [])))
 
-(defn- on-console-output
-  "This function gets called with chunks of text from the compiler console output.
+(defn- clean-line
+  "Clean bash escape characters from a console output line."
+  [s]
+  (-> s
+    (replace #"\033" "")    ;; remove escape characters
+    (replace #"\[\dm" "")   ;; remove color codes
+    (replace #"\[\d\dm" "")
+    trim))
+
+(defn- on-console-line
+  "Handles each line from the compiler console output.
    It parses them using regex and puts the results onto a core.async channel."
-  [raw-output c inside-error? err-msg-buffer err-msg-timeout]
-  (let [trimmed-output (trim raw-output)
-        output-type (determine-output-type trimmed-output)]
+  [raw-line return-chan inside-error? err-msg-buffer]
+  (let [line-type (determine-line-type raw-line)
+        cleaned-line (clean-line raw-line)]
 
-    (js-log "raw output:")
-    (js-log trimmed-output)
-    (if output-type
-      (js-log (str "### output type: " output-type)))
-    (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    ; (js-log raw-line)
+    ; (js-log cleaned-line)
+    ; (if line-type
+    ;   (log (str "##### line type: " line-type)))
+    ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
-    ;; close the error sequence if we catch any signal
-    (when (and output-type @inside-error?)
-      (js/clearTimeout @err-msg-timeout)
-      (reset! inside-error? false)
-      (put! c [:error (extract-error-msg @err-msg-buffer)]))
-
-    ;; concatenate error message
-    (when @inside-error?
-      (swap! err-msg-buffer str raw-output "\n"))
-
-    ;; start error signal
-    (when (= output-type :start-error)
+    ;; start an error sequence
+    (when (and (not @inside-error?)
+               (= line-type :error))
       (reset! inside-error? true)
-      (reset! err-msg-buffer raw-output)
+      (reset! err-msg-buffer []))
 
-      ;; send an "end error" signal 25ms from start of the error
-      (let [t (js/setTimeout
-                #(on-console-output end-error-msg c inside-error?
-                   err-msg-buffer err-msg-timeout)
-                25)]
-        (reset! err-msg-timeout t)))
+    ;; collect error messages
+    (when (and @inside-error?
+               (= line-type :error))
+      (swap! err-msg-buffer conj cleaned-line))
+
+    ;; close the error sequence when we see a non red-line
+    (when (and @inside-error?
+               line-type
+               (not= line-type :error))
+      (reset! inside-error? false)
+      (put! return-chan [:error @err-msg-buffer]))
 
     ;; start compiling signal
-    (when (= output-type :start)
-      (put! c [:start (extract-target-from-start-msg trimmed-output)]))
+    (when (= line-type :start)
+      (put! return-chan [:start (extract-target-from-start-msg raw-line)]))
 
     ;; compilation success
-    (when (= output-type :success)
-      (put! c [:success (extract-time-from-success-msg trimmed-output)]))
+    (when (= line-type :success)
+      (put! return-chan [:success (extract-time-from-success-msg raw-line)]))
 
     ;; warnings
-    (when (= output-type :warning)
-      (put! c [:warning (extract-warning-msgs trimmed-output)]))))
+    (when (= line-type :warning)
+      (put! return-chan [:warning (extract-warning-msgs raw-line)]))))
+
+(defn- on-console-output
+  "This function gets called with chunks of text from the compiler console output.
+   We split it on newlines and then handle each line individually."
+  [raw-output return-chan inside-error? err-msg-buffer stopped-output-timeout]
+
+  ; (js-log "raw output:")
+  ; (js-log raw-output)
+  ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
+  ;; clear timeout whenever we receive a new chunk
+  (js/clearTimeout @stopped-output-timeout)
+
+  ;; parse every line of the output
+  (doall
+    (map
+      #(on-console-line % return-chan inside-error? err-msg-buffer)
+      (split-lines raw-output)))
+
+  ;; Set a timeout to indicate the output has stopped 50ms after the last chunk
+  ;; is received.
+  ;; NOTE: this is used to determine when the output has "stopped" so we can
+  ;; close the error sequence
+  (let [t (js/setTimeout
+            #(on-console-line stopped-signal return-chan inside-error? err-msg-buffer)
+            50)]
+    (reset! stopped-output-timeout t)))
 
 (defn- on-close-child [c]
   (put! c [:finished])
@@ -233,7 +262,7 @@
     (js-exec (str "kill " lein-pid))))
 
 ;; I fought with this for hours re: trying to kill the process from node.js
-;; this is hacky, but it seems to work everywhere I've tested
+;; this feels hacky, but it seems to work
 (defn- kill-auto-on-unix [pid]
   (let [child (js-spawn "ps"
                 (array "-o" "pid" "--no-headers" "--ppid" pid))]
@@ -254,13 +283,13 @@
         child (spawn "lein cljsbuild auto" (convert-cwd prj-key))
         inside-error? (atom false)
         err-msg-buffer (atom "")
-        err-msg-timeout (atom nil)]
+        stopped-output-timeout (atom nil)]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stderr child) "data"
-      #(on-console-output % c inside-error? err-msg-buffer err-msg-timeout))
+      #(on-console-output % c inside-error? err-msg-buffer stopped-output-timeout))
     (.on (.-stdout child) "data"
-      #(on-console-output % c inside-error? err-msg-buffer err-msg-timeout))
+      #(on-console-output % c inside-error? err-msg-buffer stopped-output-timeout))
     (.on child "close" #(on-close-child c))
 
     ;; save the child pid
@@ -289,13 +318,13 @@
         child (spawn "lein cljsbuild once" (convert-cwd prj-key))
         inside-error? (atom false)
         err-msg-buffer (atom "")
-        err-msg-timeout nil]
+        stopped-output-timeout nil]
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stderr child) "data"
-      #(on-console-output % c inside-error? err-msg-buffer err-msg-timeout))
+      #(on-console-output % c inside-error? err-msg-buffer stopped-output-timeout))
     (.on (.-stdout child) "data"
-      #(on-console-output % c inside-error? err-msg-buffer err-msg-timeout))
+      #(on-console-output % c inside-error? err-msg-buffer stopped-output-timeout))
     (.on child "close" #(on-close-child c))
     ;; return the channel
     c))
@@ -326,5 +355,5 @@
 
 (defn- extract-target-from-start-msg [s]
   (-> s
-    (replace #"^.*Compiling \"" "")
+    (replace #"^Compiling \"" "")
     (replace #"\".+$" "")))
