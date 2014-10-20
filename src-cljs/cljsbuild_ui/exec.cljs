@@ -1,5 +1,6 @@
 (ns cljsbuild-ui.exec
   (:require
+    [cljs.reader :refer [read-string]]
     [clojure.string :refer [replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
     [cljsbuild-ui.util :refer [log js-log on-windows? uuid]]))
@@ -64,27 +65,73 @@
     (replace #" seconds.+$" "")
     float))
 
-
-
 ;; TODO: need to collect a list of all the possible error messages
 ;; https://github.com/oakmac/cljsbuild-ui/issues/3
+
 ;; TODO: if the error contains column and line information, we should extract
 ;; that out of the file and show the user
 
-; (defn- error-msg-type [s]
-;   (cond
-;     (= 1 2) :map-literal
-
-;     :else nil))
-
-(defn- extract-error-msg [s]
+(defn- extract-line-info [s]
   (-> s
-    (replace #"\[\d\dm" "") ;; remove bash color coding characters
-    (replace #"\s+" " ") ;; remove consecutive whitespace
+    (replace #".+\{:column " "{:column ")
+    (replace #"reader-exception\}.+$" "reader-exception}")
+    read-string))
+
+(defn- error-has-line-info? [s]
+  (and (.test #"\{\:column" s)
+       (.test #" \:line " s)
+       (.test #"\:reader-exception\}" s)))
+
+(defn- default-extract-error-msg [s]
+  (-> s
     (replace #"^.*Caused by:" "")
     (replace #"^.*clojure.lang.ExceptionInfo: " "")
     (replace #" at clojure.core.*$" "")
     ))
+
+(defn- extract-eof-msg [s]
+  (-> s
+    (replace #"^.+EOF while reading" "EOF while reading")
+    (replace #" core.clj.+$" "")))
+
+;; NOTE: this just makes regex on errors easier
+(defn- clean-error-text [s]
+  (-> s
+    (replace #"\[\d\dm" "") ;; remove bash color coding characters
+    (replace #"\s+" " ")))  ;; remove consecutive whitespace
+
+(defn- extract-error-msg [type cleaned-error]
+  (case type
+    :unmatched-paren "unmatched paren error msg!"
+    :map-literal "map literal error msg!"
+    :eof (extract-eof-msg cleaned-error)
+    (default-extract-error-msg cleaned-error)))
+
+(defn- map-literal? [s]
+  (.test #"Map literal must contain an even" s))
+
+(defn- unmatched-paren? [s]
+  (.test #"Unmatched delimiter \)" s))
+
+(defn- eof? [s]
+  (.test #"EOF while reading" s))
+
+(defn- determine-error-type [s]
+  (cond
+    (unmatched-paren? s) :unmatched-paren
+    (map-literal? s) :map-literal
+    (eof? s) :eof
+    :else nil))
+
+(defn- extract-error-info [full-error]
+  (let [cleaned-error (clean-error-text full-error)
+        error-type (determine-error-type cleaned-error)
+        has-line-info? (error-has-line-info? cleaned-error)
+        line-info (if has-line-info? (extract-line-info cleaned-error))]
+    {:error-type error-type
+     ;; :full-error cleaned-error
+     :line-info line-info
+     :short-msg (extract-error-msg error-type cleaned-error)}))
 
 (defn- clean-warning-line [s]
   (-> s
@@ -104,19 +151,16 @@
   (let [text2 (trim text1)
         output-type (determine-output-type text2)]
 
-    (js-log "raw output:")
-    (js-log text2)
-    (if output-type
-      (js-log (str "### output type: " output-type)))
-    (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-
-    ;; TODO: need to close the error sequence when we receive nothing for some
-    ;; period of time inside of one
+    ; (js-log "raw output:")
+    ; (js-log text2)
+    ; (if output-type
+    ;   (js-log (str "### output type: " output-type)))
+    ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     ;; close the error sequence if we catch any signal
     (when (and output-type @inside-error?)
       (reset! inside-error? false)
-      (put! c [:error (extract-error-msg @error-msg)]))
+      (put! c [:error (extract-error-info @error-msg)]))
 
     ;; concatenate error message
     (when @inside-error?

@@ -209,10 +209,10 @@
     (swap! state update-in [:projects prj-key :builds bld-idx :warnings] (fn [w]
       (into [] (concat w warnings))))))
 
-(defn- show-build-error! [prj-key bld-id err-msg]
+(defn- show-build-error! [prj-key bld-id error-info]
   (let [bld-idx (bld-id->idx prj-key bld-id)]
     (swap! state update-in [:projects prj-key :builds bld-idx]
-      assoc :error err-msg :state :done-with-error)))
+      assoc :error error-info :state :done-with-error)))
 
 (defn- show-finished!
   "Mark a project as being finished with compiling. ie: idle state"
@@ -421,10 +421,13 @@
       [:span.waiting-e22c3 [:i.fa.fa-clock-o] "Waiting..."]
     "*unknkown state*"))
 
-(sablono/defhtml error-row [err]
+(sablono/defhtml error-row [error-info]
   [:tr.error-row-b3028
     [:td.error-cell-1ccea {:col-span "6"}
-      [:i.fa.fa-times] err]])
+      [:i.fa.fa-times]
+      ;; (pr-str error-info)
+      (:short-msg error-info)
+      ]])
 
 (sablono/defhtml warning-row [w]
   [:tr.warning-row-097c8
