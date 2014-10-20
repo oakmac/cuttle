@@ -1,7 +1,7 @@
 (ns cljsbuild-ui.exec
   (:require
     [cljs.reader :refer [read-string]]
-    [clojure.string :refer [replace split-lines split trim]]
+    [clojure.string :refer [join replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
     [cljsbuild-ui.util :refer [log js-log on-windows? uuid]]))
 
@@ -94,15 +94,22 @@
     (replace #"^.+EOF while reading" "EOF while reading")
     (replace #" core.clj.+$" "")))
 
-;; NOTE: this just makes regex on errors easier
-(defn- clean-error-text [s]
+(defn- clean-error-text
+  "Remove bash color coding characters."
+  [s]
   (-> s
-    (replace #"\[\d\dm" "") ;; remove bash color coding characters
-    (replace #"\s+" " ")))  ;; remove consecutive whitespace
+    (replace #"\[\dm" "")
+    (replace #"\[\d\dm" "")))
+
+(defn- extract-unmatched-delimiter [s]
+  (-> s
+    (replace #"^.+Unmatched delimiter" "Unmatched delimiter")
+    ;(replace #"^.+Unmatched delimiter" "Unmatched delimiter")
+    ))
 
 (defn- extract-error-msg [type cleaned-error]
   (case type
-    :unmatched-paren "unmatched paren error msg!"
+    :unmatched-delimiter (extract-unmatched-delimiter cleaned-error)
     :map-literal "map literal error msg!"
     :eof (extract-eof-msg cleaned-error)
     (default-extract-error-msg cleaned-error)))
@@ -110,28 +117,28 @@
 (defn- map-literal? [s]
   (.test #"Map literal must contain an even" s))
 
-(defn- unmatched-paren? [s]
-  (.test #"Unmatched delimiter \)" s))
+(defn- unmatched-delimiter? [s]
+  (.test #"Unmatched delimiter" s))
 
 (defn- eof? [s]
   (.test #"EOF while reading" s))
 
 (defn- determine-error-type [s]
   (cond
-    (unmatched-paren? s) :unmatched-paren
-    (map-literal? s) :map-literal
     (eof? s) :eof
+    (unmatched-delimiter? s) :unmatched-delimiter
+    (map-literal? s) :map-literal
+    ;; TODO: more error types go here
     :else nil))
 
-(defn- extract-error-info [full-error]
-  (let [cleaned-error (clean-error-text full-error)
-        error-type (determine-error-type cleaned-error)
-        has-line-info? (error-has-line-info? cleaned-error)
-        line-info (if has-line-info? (extract-line-info cleaned-error))]
-    {:error-type error-type
-     ;; :full-error cleaned-error
-     :line-info line-info
-     :short-msg (extract-error-msg error-type cleaned-error)}))
+(defn- red-line? [s]
+  (.test #"\[31m" s))
+
+(defn- extract-error-msg [full-error-txt]
+  (->> full-error-txt
+    split-lines
+    (filter red-line?)
+    (map clean-error-text)))
 
 (defn- clean-warning-line [s]
   (-> s
@@ -160,7 +167,7 @@
     ;; close the error sequence if we catch any signal
     (when (and output-type @inside-error?)
       (reset! inside-error? false)
-      (put! c [:error (extract-error-info @error-msg)]))
+      (put! c [:error (extract-error-msg @error-msg)]))
 
     ;; concatenate error message
     (when @inside-error?

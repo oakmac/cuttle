@@ -209,10 +209,10 @@
     (swap! state update-in [:projects prj-key :builds bld-idx :warnings] (fn [w]
       (into [] (concat w warnings))))))
 
-(defn- show-build-error! [prj-key bld-id error-info]
+(defn- show-build-error! [prj-key bld-id error-msg]
   (let [bld-idx (bld-id->idx prj-key bld-id)]
     (swap! state update-in [:projects prj-key :builds bld-idx]
-      assoc :error error-info :state :done-with-error)))
+      assoc :error error-msg :state :done-with-error)))
 
 (defn- show-finished!
   "Mark a project as being finished with compiling. ie: idle state"
@@ -231,10 +231,10 @@
   (go
     (when-let [[type data] (<! c)]
 
-      (js-log "channel contents:")
-      (log type)
-      (log data)
-      (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+      ; (js-log "channel contents:")
+      ; (log type)
+      ; (log data)
+      ; (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
       (cond
         (= type :start)
@@ -421,13 +421,13 @@
       [:span.waiting-e22c3 [:i.fa.fa-clock-o] "Waiting..."]
     "*unknkown state*"))
 
-(sablono/defhtml error-row [error-info]
+(sablono/defhtml error-row [error-msg]
   [:tr.error-row-b3028
     [:td.error-cell-1ccea {:col-span "6"}
       [:i.fa.fa-times]
-      ;; (pr-str error-info)
-      (:short-msg error-info)
-      ]])
+      (if (coll? error-msg)
+        (map (fn [l] (sablono/html [:div l])) error-msg)
+        error-msg)]])
 
 (sablono/defhtml warning-row [w]
   [:tr.warning-row-097c8
