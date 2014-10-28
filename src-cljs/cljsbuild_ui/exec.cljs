@@ -3,9 +3,20 @@
     [cljs.reader :refer [read-string]]
     [clojure.string :refer [join replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
-    [cljsbuild-ui.util :refer [log js-log on-windows? uuid]]))
+    [cljsbuild-ui.util :refer [log js-log on-windows? uuid path-join]]))
 
 (declare extract-target-from-start-msg)
+
+(defn lein-path
+  "Get path to our packaged leiningen script."
+  []
+  (let [dir (aget js/global "__dirname")]
+    (path-join dir "bin" "lein")))
+
+(defn lein
+  "Make lein command string"
+  [args]
+  (str (lein-path) " " args))
 
 ;;------------------------------------------------------------------------------
 ;; Require Modules
@@ -251,7 +262,7 @@
   "Start auto-compile. This function returns a core.async channel."
   [prj-key bld-ids]
   (let [c (chan)
-        child (spawn "lein cljsbuild auto" (convert-cwd prj-key))
+        child (spawn (lein "cljsbuild auto") (convert-cwd prj-key))
         inside-error? (atom false)
         err-msg-buffer (atom "")
         stopped-output-timeout (atom nil)]
@@ -286,7 +297,7 @@
    The channel is closed when the build is finished."
   [prj-key bld-ids]
   (let [c (chan)
-        child (spawn "lein cljsbuild once" (convert-cwd prj-key))
+        child (spawn (lein "cljsbuild once") (convert-cwd prj-key))
         inside-error? (atom false)
         err-msg-buffer (atom "")
         stopped-output-timeout (atom nil)]
@@ -302,7 +313,7 @@
 
 ;; TODO: capture better error results from this
 (defn clean [cwd success-fn error-fn]
-  (js-exec "lein cljsbuild clean"
+  (js-exec (lein "cljsbuild clean")
     (js-obj "cwd" (convert-cwd cwd))
     (fn [err _stdout _stderr]
       (if err

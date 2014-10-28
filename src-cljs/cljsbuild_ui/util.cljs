@@ -1,8 +1,20 @@
 (ns cljsbuild-ui.util)
 
 ;;------------------------------------------------------------------------------
+;; Require Modules
+;;------------------------------------------------------------------------------
+
+(def js-path (js/require "path"))
+
+;;------------------------------------------------------------------------------
 ;; Util Functions
 ;;------------------------------------------------------------------------------
+
+(defn path-join
+  "Create a path string from given args with OS-specific path separators"
+  [& args]
+  (let [path-join (aget js-path "join")]
+    (apply path-join args)))
 
 (def on-windows?
   (.test #"^win" js/process.platform))

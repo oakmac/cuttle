@@ -3,7 +3,7 @@
     [cljs.reader :refer [read-string]]
     [clojure.string :refer [join replace split trim]]
     [cljsbuild-ui.pages.main]
-    [cljsbuild-ui.util :refer [log js-log on-windows? uuid]]
+    [cljsbuild-ui.util :refer [log js-log on-windows? uuid path-join]]
     [cljsbuild-ui.cljsbuild.config :refer [extract-options]]))
 
 (def fs (js/require "fs"))
@@ -12,8 +12,6 @@
 ;;------------------------------------------------------------------------------
 ;; Load or Create Projects File
 ;;------------------------------------------------------------------------------
-
-(def slash (if on-windows? "\\" "/"))
 
 (defn- create-default-projects-file! [app-data-path projects-file]
   (.mkdirSync fs app-data-path)
@@ -40,7 +38,7 @@
 
 ;; TODO: need to do some quick validation on projects.json format here
 (defn- receive-app-data-path [app-data-path]
-  (let [projects-file (str app-data-path slash "projects.json")]
+  (let [projects-file (path-join app-data-path "projects.json")]
     (when-not (.existsSync fs projects-file)
       (create-default-projects-file! app-data-path projects-file))
     (let [prj-files (js->clj (js/require projects-file))
