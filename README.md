@@ -26,6 +26,9 @@ break on a regular basis.
     # compile LESS file
     grunt less
 
+    # downloads copy of lein to be packaged in our app
+    grunt curl
+
     # compile ClojureScript files (this may take a minute)
     lein cljsbuild once
 
