@@ -23,7 +23,7 @@ break on a regular basis.
     # install node.js dependencies
     npm install
 
-    # downloads copy of lein to be packaged in our app
+    # downloads lein jar to be packaged in our app
     grunt curl
 
     # downloads atom-shell

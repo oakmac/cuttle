@@ -33,9 +33,7 @@ grunt.initConfig({
   },
 
   curl: {
-    // download leiningen scripts and jar
-    'cljsbuild-ui/bin/lein': 'https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein',
-    'cljsbuild-ui/bin/lein.bat': 'https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein.bat',
+    // download leiningen jar
     'cljsbuild-ui/bin/lein.jar': 'https://github.com/technomancy/leiningen/releases/download/2.5.0/leiningen-2.5.0-standalone.jar'
   },
 
