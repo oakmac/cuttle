@@ -35,8 +35,9 @@ break on a regular basis.
     # compile ClojureScript files (this may take a minute)
     lein cljsbuild once
 
-    # start Atom Shell and drag the cljsbuild-ui folder onto it
-    # or follow the command line instructions
+    # launch application (mac or windows)
+    ./launch-mac.sh
+    launch-win.bat
     ```
 
 If you want Chrome Dev Tools to auto-open when you start the program, add a
