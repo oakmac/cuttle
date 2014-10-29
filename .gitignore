@@ -19,3 +19,5 @@ pom.xml
 /node_modules
 
 *.diff
+
+/atom-shell

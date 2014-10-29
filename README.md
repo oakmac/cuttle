@@ -16,18 +16,21 @@ TODO: write longer rationale
 Development is currently in a very early stage and things should be expected to
 break on a regular basis.
 
-1. Install [Leiningen], [Node.js], and [Atom Shell].
+1. Install [Leiningen] and [Node.js].
 1. Run the following in the project directory
 
     ```sh
     # install node.js dependencies
     npm install
 
-    # compile LESS file
-    grunt less
-
     # downloads copy of lein to be packaged in our app
     grunt curl
+
+    # downloads atom-shell
+    grunt download-atom-shell
+
+    # compile LESS file
+    grunt less
 
     # compile ClojureScript files (this may take a minute)
     lein cljsbuild once

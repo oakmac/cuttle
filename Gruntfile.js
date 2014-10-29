@@ -37,6 +37,11 @@ grunt.initConfig({
     'cljsbuild-ui/bin/lein': 'https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein',
     'cljsbuild-ui/bin/lein.bat': 'https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein.bat',
     'cljsbuild-ui/bin/lein.jar': 'https://github.com/technomancy/leiningen/releases/download/2.5.0/leiningen-2.5.0-standalone.jar'
+  },
+
+  'download-atom-shell': {
+    version: '0.18.2',
+    outputDir: 'atom-shell'
   }
 
 });
@@ -49,6 +54,7 @@ grunt.initConfig({
 grunt.loadNpmTasks('grunt-contrib-less');
 grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-curl');
+grunt.loadNpmTasks('grunt-download-atom-shell');
 
 grunt.registerTask('default', ['watch']);
 
