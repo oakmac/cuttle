@@ -24,7 +24,10 @@ if "x%LEIN_HOME%" == "x" (
     set LEIN_HOME=!USERPROFILE!\.lein
 )
 
-if "x%LEIN_JAR%" == "x" set "LEIN_JAR=!LEIN_HOME!\self-installs\leiningen-!LEIN_VERSION!-standalone.jar"
+:: NOTE: hard-modified to use local lein.jar file
+rem if "x%LEIN_JAR%" == "x" set "LEIN_JAR=!LEIN_HOME!\self-installs\leiningen-!LEIN_VERSION!-standalone.jar"
+set THIS_DIR=%~dp0
+set "LEIN_JAR=!THIS_DIR!\lein.jar"
 
 if "%1" == "self-install" goto SELF_INSTALL
 if "%1" == "upgrade"      goto UPGRADE
