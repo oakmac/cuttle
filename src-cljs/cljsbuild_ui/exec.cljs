@@ -10,8 +10,9 @@
 (defn lein-path
   "Get path to our packaged leiningen script."
   []
-  (let [dir (aget js/global "__dirname")]
-    (path-join dir "bin" "lein")))
+  (let [dir (aget js/global "__dirname")
+        exe (if on-windows? "lein.bat" "lein")]
+    (path-join dir "bin" exe)))
 
 (defn lein
   "Make lein command string"
