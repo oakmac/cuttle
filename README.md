@@ -38,8 +38,10 @@ break on a regular basis.
     # compile ClojureScript files (this may take a minute)
     lein cljsbuild once
 
-    # launch application (from unix-like shell, or windows batch)
+    # launch on Mac/Linux/Cygwin
     ./launch.sh
+
+    # launch on Windows
     launch.bat
     ```
 
