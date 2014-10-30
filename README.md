@@ -38,9 +38,9 @@ break on a regular basis.
     # compile ClojureScript files (this may take a minute)
     lein cljsbuild once
 
-    # launch application (mac or windows)
-    ./launch-mac.sh
-    launch-win.bat
+    # launch application (from unix-like shell, or windows batch)
+    ./launch.sh
+    launch.bat
     ```
 
 If you want Chrome Dev Tools to auto-open when you start the program, add a
