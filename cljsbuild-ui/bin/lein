@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# (Get path of this script, should mostly work)
+#   source: http://stackoverflow.com/a/246128/142317
+SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Ensure this file is executable via `chmod a+x lein`, then place it
 # somewhere on your $PATH, like ~/bin. The rest of Leiningen will be
 # installed upon first run into the ~/.lein/self-installs directory.
@@ -110,11 +114,6 @@ fi
 
 # NOTE: hard-modified to use local lein.jar file
 #   original: LEIN_JAR="$LEIN_HOME/self-installs/leiningen-$LEIN_VERSION-standalone.jar"
-#
-# FIXME: the SCRIPT_PATH is failing if full path to lein isn't specified,
-#         but our tool is using the full path, so it should succeed.
-#   source: http://stackoverflow.com/a/246128/142317
-SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LEIN_JAR="$SCRIPT_PATH/lein.jar"
 
 # normalize $0 on certain BSDs
