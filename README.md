@@ -23,6 +23,9 @@ break on a regular basis.
     # install node.js dependencies
     npm install
 
+    # install grunt (may need sudo)
+    npm install -g grunt-cli
+
     # downloads lein jar to be packaged in our app
     grunt curl
 
