@@ -6,10 +6,14 @@ A user interface for the ClojureScript Compiler.
 
 ## Goal
 
-Improve the usability of the ClojureScript Compiler by wrapping `lein cljsbuild`
-in a native user interface.
+Getting started with ClojureScript is one of the more difficult things about
+the language. JS devs are often unfamiliar with Leiningen and project.clj seems
+very foreign initially. The goal of this project is to reduce the barrier to
+entry for new ClojureScript devs.
 
-TODO: write longer rationale
+We also want to improve the usability of the compiler in day-to-day workflows.
+The user should be able to build/clean their projects with a few clicks, and
+they should see meaningful errors and warnings at a glance.
 
 ## Development Setup
 
