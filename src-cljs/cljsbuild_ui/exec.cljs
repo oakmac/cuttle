@@ -88,10 +88,10 @@
 ;; TODO: if the error contains column and line information, we should extract
 ;; that out of the file and show the user
 
-(defn- extract-line-info [s]
+(defn- extract-error-info [s]
   (-> s
-    (replace #".+\{:column " "{:column ")
-    (replace #"reader-exception\}.+$" "reader-exception}")
+    (replace #"^.*\{:column" "{:column")
+    (replace #"reader-exception\}.*$" "reader-exception}")
     read-string))
 
 (defn- error-has-line-info? [s]
@@ -99,12 +99,11 @@
        (.test #" \:line " s)
        (.test #"\:reader-exception\}" s)))
 
-(defn- default-extract-error-msg [s]
-  (-> s
-    (replace #"^.*Caused by:" "")
-    (replace #"^.*clojure.lang.ExceptionInfo: " "")
-    (replace #" at clojure.core.*$" "")
-    ))
+; (defn- default-extract-error-msg [s]
+;   (-> s
+;     (replace #"^.*Caused by:" "")
+;     (replace #"^.*clojure.lang.ExceptionInfo: " "")
+;     (replace #" at clojure.core.*$" "")))
 
 (defn- clean-error-text
   "Remove bash color coding characters."
@@ -113,11 +112,11 @@
     (replace #"\[\dm" "")
     (replace #"\[\d\dm" "")))
 
-(defn- extract-error-msg [full-error-txt]
-  (->> full-error-txt
-    split-lines
-    (filter red-line?)
-    (map clean-error-text)))
+; (defn- extract-error-msg [full-error-txt]
+;   (->> full-error-txt
+;     split-lines
+;     (filter red-line?)
+;     (map clean-error-text)))
 
 (defn- clean-warning-line [s]
   (-> s
@@ -149,7 +148,7 @@
     (when (:log-compiler-output config)
       (js-log raw-line)
       (js-log cleaned-line)
-      (if line-type
+      (when line-type
         (log (str "##### line type: " line-type)))
       (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"))
 
