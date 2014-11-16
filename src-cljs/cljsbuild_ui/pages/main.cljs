@@ -12,10 +12,56 @@
 ;; App State
 ;;------------------------------------------------------------------------------
 
-(def state (atom {
+(def initial-project-build-state
+  "Initial state for a new build in a project"
+  {;; tool state
+   :active? true
+   :compile-time 0
+   :last-compile-time nil
+   :error nil
+   :state :done
+   :warnings []
+
+   ;; from project.clj
+   :id nil
+   :source-paths []
+   :compiler {}})
+
+(def initial-project-state
+  "Initial state for a new project"
+  {;; tool state
+   :compile-menu-showing? false
+   :auto-compile? true
+   :state :idle
+
+   ;; from project.clj
+   :name ""
+   :filename ""
+   :version ""
+   :license {}
+   :dependencies []
+   :plugins []
+
+   ;; from project.clj, but with extra tool state
+   ;; (see initial-project-build-state)
+   :builds []})
+
+(def initial-app-state
+  {:projects {:order []}})
+
+(def state (atom initial-app-state))
+
+(defn get-ordered-projects
+  "Given a project map containing a list of keys in :order, return a vector of their ordered values."
+  [project-map]
+  (let [proj-keys (-> project-map :order)]
+    (mapv #(get project-map %) proj-keys)))
+
+(def test-app-state
+  "A test app-state for quick-testing page rendering."
+  {
   :projects {
     "/home/oakmac/t3tr0s/project.clj" {
-    ;;"C:\\t3tr0s\\project.clj" {
       :compile-menu-showing? false
       :auto-compile? true
       :name "t3tr0s"
@@ -152,7 +198,7 @@
    the last compile."
   []
   (let [n (now)
-        prj-keys (keys (:projects @state))]
+        prj-keys (-> @state :projects :order)]
     (doall
       (map
         (fn [prj-key]
@@ -322,7 +368,7 @@
     (map
       (fn [prj-key]
         (swap! state assoc-in [:projects prj-key :compile-menu-showing?] false))
-      (-> @state :projects keys))))
+      (-> @state :projects :order))))
 
 (defn- click-compile-btn [prj-key]
   (let [prj (get-in @state [:projects prj-key])
@@ -522,26 +568,27 @@
                  (not (zero? (:warnings bld))))
         (map warning-row (:warnings bld)))]))
 
-(quiescent/defcomponent Project [[prj-key prj]]
-  (sablono/html
-    [:div.project-1b83a
-      [:div.wrapper-714e4
+(quiescent/defcomponent Project [prj]
+  (let [prj-key (:filename prj)]
+    (sablono/html
+      [:div.project-1b83a
+       [:div.wrapper-714e4
         [:div.left-ba9e7
-          (:name prj)
-          (when (= (:state prj) :idle)
-            [:span.edit-c0ba4 "edit"])]
+         (:name prj)
+         (when (= (:state prj) :idle)
+           [:span.edit-c0ba4 "edit"])]
         [:div.right-f5656
-          (case (:state prj)
-            :auto (auto-state prj-key)
-            :cleaning (cleaning-state prj-key)
-            :idle (idle-state prj-key prj)
-            :once (once-state prj-key)
-            "*unknown project state*")]]
-      [:table.tbl-bdf39
+         (case (:state prj)
+           :auto (auto-state prj-key)
+           :cleaning (cleaning-state prj-key)
+           :idle (idle-state prj-key prj)
+           :once (once-state prj-key)
+           "*unknown project state*")]]
+       [:table.tbl-bdf39
         (bld-tbl-hdr)
         (map-indexed
           #(BuildRow (assoc %2 :idx %1 :prj-key prj-key))
-          (:builds prj))]]))
+          (:builds prj))]])))
 
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
@@ -553,7 +600,7 @@
           [:span.link-3d3ad [:i.fa.fa-plus] "Add project"]
           [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]]
         [:div.clr-737fa]]
-      (map Project (:projects app-state))]))
+      (map Project (get-ordered-projects (:projects app-state)))]))
 
 ;;------------------------------------------------------------------------------
 ;; State Change and Rendering
@@ -590,8 +637,39 @@
     ;; TODO: we may not even use this
     (reset! events-added? true)))
 
+(defn attach-state-to-build
+  "Attach state to project-build map, and prune out unused keys"
+  [build]
+  (let [keep-keys [:id
+                   :source-paths
+                   :compiler]]
+    (-> initial-project-build-state
+        (merge (select-keys build keep-keys)))))
+
+(defn attach-state-to-proj
+  "Attach state to project map, and prune out unused keys"
+  [project]
+  (let [keep-keys [:filename
+                   :name
+                   :version
+                   :license
+                   :dependencies
+                   :plugins]
+        builds (->> project :cljsbuild :builds (mapv attach-state-to-build))]
+    (-> initial-project-state
+        (merge (select-keys project keep-keys))
+        (assoc :builds builds))))
+
+(defn init-projs!
+  [projects]
+  (js/console.log (pr-str projects))
+  (let [projects2 (map attach-state-to-proj projects)
+        filenames (mapv :filename projects2)
+        project-map (assoc (zipmap filenames projects2)
+                           :order filenames)]
+    (swap! state assoc :projects project-map)))
+
 (defn init! [projs]
-  (js/console.log (pr-str projs))
-  (add-events!)
-  ;; trigger the initial render
-  (swap! state identity))
+  (init-projs! projs)
+  (js/console.log (pr-str @state))
+  (add-events!))
