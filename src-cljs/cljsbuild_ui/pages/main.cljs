@@ -10,6 +10,8 @@
     [cljsbuild-ui.util :refer [date-format log js-log now uuid]]))
 
 (def ipc (js/require "ipc"))
+(def open (js/require "open"))
+(def path (js/require "path"))
 
 ;;------------------------------------------------------------------------------
 ;; App State
@@ -199,6 +201,8 @@
                         (assoc-in [:projects :order] new-order))]
       (reset! state new-state))))
 
+(.on ipc "remove-project" remove-project!)
+
 (defn init-projects!
   [projects]
   (let [projects2 (map attach-state-to-proj projects)
@@ -217,7 +221,10 @@
 (defn try-add-existing-project! []
   (.send ipc "request-add-existing-project"))
 
-(.on ipc "remove-project" remove-project!)
+(defn open-project-folder!
+  [filename]
+  (let [dirname (.dirname path filename)]
+    (open dirname)))
 
 ;;------------------------------------------------------------------------------
 ;; Util
@@ -654,7 +661,8 @@
         [:div.left-ba9e7
          (:name prj)
          [:span.project-icons-dd1bb
-          [:i.fa.fa-folder-open-o.project-icon-1711d]
+          [:i.fa.fa-folder-open-o.project-icon-1711d
+           {:on-click #(open-project-folder! prj-key)}]
           (when (= (:state prj) :idle)
             (list
               [:i.fa.fa-edit.project-icon-1711d]
