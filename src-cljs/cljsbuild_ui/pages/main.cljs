@@ -666,7 +666,6 @@
 
 (defn init-projs!
   [projects]
-  (js/console.log (pr-str projects))
   (let [projects2 (map attach-state-to-proj projects)
         filenames (mapv :filename projects2)
         project-map (assoc (zipmap filenames projects2)
