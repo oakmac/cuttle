@@ -1,5 +1,6 @@
 var app = require('app'),
   BrowserWindow = require('browser-window'),
+  ipc = require('ipc'),
   path = require('path'),
   Menu = require('menu'),
   dialog = require('dialog'),
@@ -10,11 +11,40 @@ var app = require('app'),
 require('crash-reporter').start();
 
 //--------------------------------------------------------------------------------
-// Add Project Dialog
+// Projects Config
 //--------------------------------------------------------------------------------
 
-var showAddExistingProjectDialog = (function(){
+var projectsFilename = path.join(app.getDataPath(), "projects.json");
 
+function readProjectsConfig() {
+  return JSON.parse(fs.readFileSync(projectsFilename, 'utf8'));
+}
+
+function writeProjectsConfig(projects) {
+  fs.writeFileSync(projectsFilename, JSON.stringify(projects, null, 2), {encoding: "utf8"});
+}
+
+function addToProjectsConfig(filename) {
+  var projects = readProjectsConfig();
+  var i = projects.indexOf(filename);
+  if (i == -1) {
+    projects.push(filename);
+    writeProjectsConfig(projects);
+    mainWindow.webContents.send('add-existing-project', filename);
+  }
+}
+
+function removeFromProjectsConfig(filename) {
+  var projects = readProjectsConfig();
+  var i = projects.indexOf(filename);
+  if (i > -1) {
+    projects.splice(i, 1);
+    writeProjectsConfig(projects);
+  }
+  mainWindow.webContents.send('remove-project', filename);
+}
+
+function showAddExistingProjectDialog() {
   var options = {
     title: "Select an existing project (project.clj)",
     properties: ["openFile"],
@@ -26,31 +56,24 @@ var showAddExistingProjectDialog = (function(){
     ],
   };
 
-  function addToProjectsJson(filename) {
-    var projectsFilename = path.join(app.getDataPath(), "projects.json");
-
-    var projects = JSON.parse(fs.readFileSync(projectsFilename, 'utf8'));
-    projects.push(filename);
-
-    fs.writeFileSync(
-      projectsFilename,
-      JSON.stringify(projects, null, 2),
-      {encoding: "utf8"});
-  }
-
-  function callback(filenames) {
+  dialog.showOpenDialog(options, function(filenames) {
     if (filenames) {
       var filename = filenames[0];
-      addToProjectsJson(filename);
-      mainWindow.webContents.send('add-existing-project', filename);
+      addToProjectsConfig(filename);
     }
-  }
+  });
+}
 
-  return function() {
-    dialog.showOpenDialog(options, callback);
-  };
+ipc.on("request-add-existing-project", function(event, arg) {
+  console.log("request to add existing project received");
+  showAddExistingProjectDialog(arg);
+});
 
-})();
+ipc.on("request-remove-project", function(event, arg) {
+  console.log("request to remove project received");
+  removeFromProjectsConfig(arg);
+});
+
 
 //--------------------------------------------------------------------------------
 // Menu Builder

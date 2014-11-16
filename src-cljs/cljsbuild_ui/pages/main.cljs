@@ -9,43 +9,11 @@
     [cljsbuild-ui.exec :as exec]
     [cljsbuild-ui.util :refer [date-format log js-log now uuid]]))
 
+(def ipc (js/require "ipc"))
+
 ;;------------------------------------------------------------------------------
 ;; App State
 ;;------------------------------------------------------------------------------
-
-(def initial-project-build-state
-  "Initial state for a new build in a project"
-  {;; tool state
-   :active? true
-   :compile-time 0
-   :last-compile-time nil
-   :error nil
-   :state :blank
-   :warnings []
-
-   ;; from project.clj
-   :id nil
-   :source-paths []
-   :compiler {}})
-
-(def initial-project-state
-  "Initial state for a new project"
-  {;; tool state
-   :compile-menu-showing? false
-   :auto-compile? true
-   :state :idle
-
-   ;; from project.clj
-   :name ""
-   :filename ""
-   :version ""
-   :license {}
-   :dependencies []
-   :plugins []
-
-   ;; from project.clj, but with extra tool state
-   ;; (see initial-project-build-state)
-   :builds []})
 
 (def initial-app-state
   {:projects {:order []}})
@@ -148,6 +116,105 @@
           :compiler {
             :optimizations :advanced
             :output-to "public/js/main.min.js"}}]}}})
+
+;;------------------------------------------------------------------------------
+;; Project State
+;;------------------------------------------------------------------------------
+
+(def initial-project-build-state
+  "Initial state for a new build in a project"
+  {;; tool state
+   :active? true
+   :compile-time 0
+   :last-compile-time nil
+   :error nil
+   :state :blank
+   :warnings []
+
+   ;; from project.clj
+   :id nil
+   :source-paths []
+   :compiler {}})
+
+(def initial-project-state
+  "Initial state for a new project"
+  {;; tool state
+   :compile-menu-showing? false
+   :auto-compile? true
+   :state :idle
+
+   ;; from project.clj
+   :name ""
+   :filename ""
+   :version ""
+   :license {}
+   :dependencies []
+   :plugins []
+
+   ;; from project.clj, but with extra tool state
+   ;; (see initial-project-build-state)
+   :builds []})
+
+(defn attach-state-to-build
+  "Attach state to project-build map, and prune out unused keys"
+  [build]
+  (let [keep-keys [:id
+                   :source-paths
+                   :compiler]]
+    (-> initial-project-build-state
+        (merge (select-keys build keep-keys)))))
+
+(defn attach-state-to-proj
+  "Attach state to project map, and prune out unused keys"
+  [project]
+  (let [keep-keys [:filename
+                   :name
+                   :version
+                   :license
+                   :dependencies
+                   :plugins]
+        builds (->> project :cljsbuild :builds (mapv attach-state-to-build))]
+    (-> initial-project-state
+        (merge (select-keys project keep-keys))
+        (assoc :builds builds))))
+
+(defn add-project!
+  [project]
+  (when-not (contains? (:projects @state) (:filename project))
+    (let [filename (:filename project)
+          project2 (attach-state-to-proj project)
+          new-state (-> @state
+                        (assoc-in [:projects filename] project2)
+                        (update-in [:projects :order] conj filename))]
+      (reset! state new-state))))
+
+(defn remove-project!
+  [filename]
+  (when (contains? (:projects @state) filename)
+    (let [new-order (->> @state :projects :order
+                     (remove #(= % filename))
+                     vec)
+          new-state (-> @state
+                        (update-in [:projects] dissoc filename)
+                        (assoc-in [:projects :order] new-order))]
+      (reset! state new-state))))
+
+(defn init-projects!
+  [projects]
+  (let [projects2 (map attach-state-to-proj projects)
+        filenames (mapv :filename projects2)
+        project-map (assoc (zipmap filenames projects2)
+                           :order filenames)]
+    (swap! state assoc :projects project-map)))
+
+(defn try-remove-project!
+  [filename]
+  (let [msg "Remove this project? (This will NOT delete it from filesystem.)"
+        proceed (.confirm js/window msg)]
+  (when proceed
+    (.send ipc "request-remove-project" filename))))
+
+(.on ipc "remove-project" remove-project!)
 
 ;;------------------------------------------------------------------------------
 ;; Util
@@ -583,8 +650,12 @@
        [:div.wrapper-714e4
         [:div.left-ba9e7
          (:name prj)
+         [:i.fa.fa-folder-open]
          (when (= (:state prj) :idle)
-           [:span.edit-c0ba4 "edit"])]
+           (list
+             [:i.fa.fa-edit]
+             [:i.fa.fa-times
+              {:on-click #(try-remove-project! prj-key)}]))]
         [:div.right-f5656
          (case (:state prj)
            :auto (auto-state prj-key)
@@ -644,47 +715,6 @@
   (when-not @events-added?
     ;; TODO: we may not even use this
     (reset! events-added? true)))
-
-(defn attach-state-to-build
-  "Attach state to project-build map, and prune out unused keys"
-  [build]
-  (let [keep-keys [:id
-                   :source-paths
-                   :compiler]]
-    (-> initial-project-build-state
-        (merge (select-keys build keep-keys)))))
-
-(defn attach-state-to-proj
-  "Attach state to project map, and prune out unused keys"
-  [project]
-  (let [keep-keys [:filename
-                   :name
-                   :version
-                   :license
-                   :dependencies
-                   :plugins]
-        builds (->> project :cljsbuild :builds (mapv attach-state-to-build))]
-    (-> initial-project-state
-        (merge (select-keys project keep-keys))
-        (assoc :builds builds))))
-
-(defn add-project!
-  [project]
-  (when-not (contains? (:projects @state) (:filename project))
-    (let [filename (:filename project)
-          project2 (attach-state-to-proj project)
-          new-state (-> @state
-                        (assoc-in [:projects filename] project2)
-                        (update-in [:projects :order] conj filename))]
-      (reset! state new-state))))
-
-(defn init-projects!
-  [projects]
-  (let [projects2 (map attach-state-to-proj projects)
-        filenames (mapv :filename projects2)
-        project-map (assoc (zipmap filenames projects2)
-                           :order filenames)]
-    (swap! state assoc :projects project-map)))
 
 (defn init! [projs]
   (init-projects! projs)
