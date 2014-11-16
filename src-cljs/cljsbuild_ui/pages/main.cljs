@@ -653,12 +653,13 @@
        [:div.wrapper-714e4
         [:div.left-ba9e7
          (:name prj)
-         [:i.fa.fa-folder-open]
-         (when (= (:state prj) :idle)
-           (list
-             [:i.fa.fa-edit]
-             [:i.fa.fa-times
-              {:on-click #(try-remove-project! prj-key)}]))]
+         [:span.project-icons-dd1bb
+          [:i.fa.fa-folder-open-o.project-icon-1711d]
+          (when (= (:state prj) :idle)
+            (list
+              [:i.fa.fa-edit.project-icon-1711d]
+              [:i.fa.fa-times.project-icon-1711d
+               {:on-click #(try-remove-project! prj-key)}]))]]
         [:div.right-f5656
          (case (:state prj)
            :auto (auto-state prj-key)
