@@ -1,5 +1,6 @@
 var app = require('app'),
   BrowserWindow = require('browser-window'),
+  path = require('path'),
   Menu = require('menu'),
   dialog = require('dialog'),
   config = {},
@@ -25,8 +26,22 @@ var showAddExistingProjectDialog = (function(){
     ],
   };
 
+  function addToProjectsJson(filename) {
+    var projectsFilename = path.join(app.getDataPath(), "projects.json");
+
+    var projects = JSON.parse(fs.readFileSync(projectsFilename, 'utf8'));
+    projects.push(filename);
+
+    fs.writeFileSync(
+      projectsFilename,
+      JSON.stringify(projects, null, 2),
+      {encoding: "utf8"});
+  }
+
   function callback(filenames) {
-    mainWindow.webContents.send('add-existing-project', filenames[0]);
+    var filename = filenames[0];
+    addToProjectsJson(filename);
+    mainWindow.webContents.send('add-existing-project', filename);
   }
 
   return function() {
