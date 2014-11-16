@@ -39,9 +39,11 @@ var showAddExistingProjectDialog = (function(){
   }
 
   function callback(filenames) {
-    var filename = filenames[0];
-    addToProjectsJson(filename);
-    mainWindow.webContents.send('add-existing-project', filename);
+    if (filenames) {
+      var filename = filenames[0];
+      addToProjectsJson(filename);
+      mainWindow.webContents.send('add-existing-project', filename);
+    }
   }
 
   return function() {
