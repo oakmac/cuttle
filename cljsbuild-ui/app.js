@@ -1,10 +1,62 @@
 var app = require('app'),
   BrowserWindow = require('browser-window'),
+  Menu = require('menu'),
+  dialog = require('dialog'),
   config = {},
   fs = require('fs');
-
+//
 // report crashes to atom-shell
 require('crash-reporter').start();
+
+//--------------------------------------------------------------------------------
+// Add Project Dialog
+//--------------------------------------------------------------------------------
+
+var showAddExistingProjectDialog = (function(){
+
+  var options = {
+    title: "Select an existing project (project.clj)",
+    properties: ["openFile"],
+    filters: [
+      {
+        name: "Leiningen project config",
+        extensions: ["clj"],
+      }
+    ],
+  };
+
+  function callback(filenames) {
+    mainWindow.webContents.send('add-existing-project', filenames[0]);
+  }
+
+  return function() {
+    dialog.showOpenDialog(options, callback);
+  };
+
+})();
+
+//--------------------------------------------------------------------------------
+// Menu Builder
+//--------------------------------------------------------------------------------
+
+menu_template = [
+  {
+    label: "File", // NOTE: On Mac, the first menu item is always the name of the Application
+    submenu: [
+      {
+        label: "Add Existing Project",
+        click: showAddExistingProjectDialog,
+      },
+    ],
+  }
+];
+
+menu = Menu.buildFromTemplate(menu_template);
+Menu.setApplicationMenu(menu);
+
+//--------------------------------------------------------------------------------
+// Main
+//--------------------------------------------------------------------------------
 
 // load config
 // NOTE: this is mostly for development purposes

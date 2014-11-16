@@ -601,7 +601,7 @@
       [:div.header-a4c14
         [:div.title-8749a "ClojureScript Compiler"]
         [:div.title-links-42b06
-          [:span.link-3d3ad [:i.fa.fa-plus] "Add project"]
+          #_[:span.link-3d3ad [:i.fa.fa-plus] "Add project"]
           [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]]
         [:div.clr-737fa]]
       (map Project (get-ordered-projects (:projects app-state)))]))
@@ -664,7 +664,17 @@
         (merge (select-keys project keep-keys))
         (assoc :builds builds))))
 
-(defn init-projs!
+(defn add-project!
+  [project]
+  (when-not (contains? (:projects @state) (:filename project))
+    (let [filename (:filename project)
+          project2 (attach-state-to-proj project)
+          new-state (-> @state
+                        (assoc-in [:projects filename] project2)
+                        (update-in [:projects :order] conj filename))]
+      (reset! state new-state))))
+
+(defn init-projects!
   [projects]
   (js/console.log (pr-str projects))
   (let [projects2 (map attach-state-to-proj projects)
@@ -674,5 +684,5 @@
     (swap! state assoc :projects project-map)))
 
 (defn init! [projs]
-  (init-projs! projs)
+  (init-projects! projs)
   (add-events!))

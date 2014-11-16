@@ -40,6 +40,13 @@
   (let [file-contents (.readFileSync fs filename (js-obj "encoding" "utf8"))]
     (parse-project-file file-contents filename)))
 
+(defn on-add-existing-project
+  [filename]
+  (let [project (load-project-file filename)]
+    (cljsbuild-ui.pages.main/add-project! project)))
+
+(.on ipc "add-existing-project" on-add-existing-project)
+
 ;; TODO: need to do some quick validation on projects.json format here
 (defn- receive-app-data-path [app-data-path]
   (let [projects-file (path-join app-data-path "projects.json")]
