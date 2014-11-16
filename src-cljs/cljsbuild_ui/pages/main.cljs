@@ -30,12 +30,11 @@
           :warnings []
 
           ;; copied directly from project.clj
-          :cljsbuild {
-            :source-paths ["src/client"]
-            :compiler {
-              :output-to "public/js/client.js"
-              :output-dir "public/out"
-              :optimizations :whitespace }}}
+          :source-paths ["src/client"]
+          :compiler {
+            :output-to "public/js/client.js"
+            :output-dir "public/out"
+            :optimizations :whitespace }}
 
         { :id :client-adv
           :active? true
@@ -46,13 +45,12 @@
           :warnings []
 
           ;; copied directly from project.clj
-          :cljsbuild {
-            :source-paths ["src/client"]
-            :compiler {
-              :externs ["externs/jquery-1.9.js" "externs/socket.io.js"]
-              :output-to "public/js/client.min.js"
-              :optimizations :advanced
-              :pretty-print false }}}
+          :source-paths ["src/client"]
+          :compiler {
+            :externs ["externs/jquery-1.9.js" "externs/socket.io.js"]
+            :output-to "public/js/client.min.js"
+            :optimizations :advanced
+            :pretty-print false }}
 
         { :id :server
           :active? true
@@ -63,14 +61,13 @@
           :warnings []
 
           ;; copied directly from project.clj
-          :cljsbuild {
-            :source-paths ["src/server"]
-            :compiler {
-              :language-in :ecmascript5
-              :language-out :ecmascript5
-              :target :nodejs
-              :output-to "server.js"
-              :optimizations :simple }}}]}
+          :source-paths ["src/server"]
+          :compiler {
+            :language-in :ecmascript5
+            :language-out :ecmascript5
+            :target :nodejs
+            :output-to "server.js"
+            :optimizations :simple }}]}
 
     "/home/oakmac/project2/project.clj" {
       :auto-compile? false
@@ -88,11 +85,10 @@
             "Use of undeclared Var project2.core/bar at line 80 src-cljs/project2/core.cljs"
           ]
 
-          :cljsbuild {
-            :source-paths ["src-cljs"]
-            :compiler {
-              :optimizations :whitespace
-              :output-to "public/js/main.js"}}}
+          :source-paths ["src-cljs"]
+          :compiler {
+            :optimizations :whitespace
+            :output-to "public/js/main.js"}}
 
         { :id :main-min
           :active? true
@@ -101,13 +97,10 @@
           :state :done-with-error
           :warnings []
 
-          :cljsbuild {
-            :source-paths ["src-cljs"]
-            :compiler {
-              :optimizations :advanced
-              :output-to "public/js/main.min.js"}}}]}
-  }
-  }))
+          :source-paths ["src-cljs"]
+          :compiler {
+            :optimizations :advanced
+            :output-to "public/js/main.min.js"}}]}}})
 
 ;;------------------------------------------------------------------------------
 ;; Util
@@ -120,7 +113,7 @@
 ;; should probably refactor with a filter?
 (defn- output-to->bld-id [prj-key output-to]
   (let [blds (get-in @state [:projects prj-key :builds])
-        outputs (map #(-> % :cljsbuild :compiler :output-to) blds)
+        outputs (map #(-> % :compiler :output-to) blds)
         ids (map :id blds)
         m (zipmap outputs ids)]
     (get m output-to)))
@@ -518,11 +511,11 @@
     [:tbody
       [:tr {:class (build-row-class bld)}
         [:td.cell-9ad24 (-> bld :id name)]
-        [:td.cell-9ad24 (-> bld :cljsbuild :source-paths first)] ;; TODO: need to print the vector here
-        [:td.cell-9ad24 (-> bld :cljsbuild :compiler :output-to)]
+        [:td.cell-9ad24 (-> bld :source-paths first)] ;; TODO: need to print the vector here
+        [:td.cell-9ad24 (-> bld :compiler :output-to)]
         [:td.cell-9ad24 (state-cell bld)]
         [:td.cell-9ad24 (last-compile-cell bld)]
-        [:td.cell-9ad24 (-> bld :cljsbuild :compiler :optimizations name)]]
+        [:td.cell-9ad24 (-> bld :compiler :optimizations name)]]
       (when (:error bld)
         (error-row (:error bld)))
       (when (and (:warnings bld)
