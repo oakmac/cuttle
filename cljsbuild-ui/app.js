@@ -27,7 +27,7 @@ function writeProjectsConfig(projects) {
 function addToProjectsConfig(filename) {
   var projects = readProjectsConfig();
   var i = projects.indexOf(filename);
-  if (i == -1) {
+  if (i === -1) {
     projects.push(filename);
     writeProjectsConfig(projects);
     mainWindow.webContents.send('add-existing-project', filename);
@@ -51,9 +51,9 @@ function showAddExistingProjectDialog() {
     filters: [
       {
         name: "Leiningen project config",
-        extensions: ["clj"],
+        extensions: ["clj"]
       }
-    ],
+    ]
   };
 
   dialog.showOpenDialog(options, function(filenames) {
@@ -79,19 +79,19 @@ ipc.on("request-remove-project", function(event, arg) {
 // Menu Builder
 //--------------------------------------------------------------------------------
 
-menu_template = [
+var menuTemplate = [
   {
     label: "File", // NOTE: On Mac, the first menu item is always the name of the Application
     submenu: [
       {
         label: "Add Existing Project",
-        click: showAddExistingProjectDialog,
-      },
-    ],
+        click: showAddExistingProjectDialog
+      }
+    ]
   }
 ];
 
-menu = Menu.buildFromTemplate(menu_template);
+var menu = Menu.buildFromTemplate(menuTemplate);
 Menu.setApplicationMenu(menu);
 
 //--------------------------------------------------------------------------------
