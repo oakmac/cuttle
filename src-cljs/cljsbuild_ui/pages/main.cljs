@@ -214,6 +214,9 @@
   (when proceed
     (.send ipc "request-remove-project" filename))))
 
+(defn try-add-existing-project! []
+  (.send ipc "request-add-existing-project"))
+
 (.on ipc "remove-project" remove-project!)
 
 ;;------------------------------------------------------------------------------
@@ -676,7 +679,9 @@
       [:div.header-a4c14
         [:div.title-8749a "ClojureScript Compiler"]
         [:div.title-links-42b06
-          #_[:span.link-3d3ad [:i.fa.fa-plus] "Add project"]
+          [:span.link-3d3ad
+           {:on-click try-add-existing-project!}
+           [:i.fa.fa-plus] "Add project"]
           [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]]
         [:div.clr-737fa]]
       (map Project (get-ordered-projects (:projects app-state)))]))

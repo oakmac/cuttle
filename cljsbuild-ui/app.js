@@ -66,7 +66,7 @@ function showAddExistingProjectDialog() {
 
 ipc.on("request-add-existing-project", function(event, arg) {
   console.log("request to add existing project received");
-  showAddExistingProjectDialog(arg);
+  showAddExistingProjectDialog();
 });
 
 ipc.on("request-remove-project", function(event, arg) {
