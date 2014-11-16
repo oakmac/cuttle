@@ -27,9 +27,9 @@
         cljsbuild (extract-options project)]
     (assoc project
            :cljsbuild cljsbuild
-           :project-filename filename
-           :project-name (name (nth prj1 1))
-           :project-version (nth prj1 2))))
+           :filename filename
+           :name (name (nth prj1 1))
+           :version (nth prj1 2))))
 
 ;; TODO:
 ;; - Need to handle files listed in projects.json that no longer exist on disk
