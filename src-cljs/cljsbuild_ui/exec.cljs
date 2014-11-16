@@ -3,6 +3,7 @@
     [cljs.reader :refer [read-string]]
     [clojure.string :refer [join replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
+    [cljsbuild-ui.config :refer [config]]
     [cljsbuild-ui.util :refer [log js-log on-windows? uuid path-join]]))
 
 (declare extract-target-from-start-msg)
@@ -145,11 +146,12 @@
   (let [line-type (determine-line-type raw-line)
         cleaned-line (clean-line raw-line)]
 
-    (js-log raw-line)
-    (js-log cleaned-line)
-    (if line-type
-      (log (str "##### line type: " line-type)))
-    (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    (when (:log-compiler-output config)
+      (js-log raw-line)
+      (js-log cleaned-line)
+      (if line-type
+        (log (str "##### line type: " line-type)))
+      (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"))
 
     ;; start an error sequence
     (when (and (not @inside-error?)

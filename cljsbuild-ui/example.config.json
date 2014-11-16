@@ -1,3 +1,4 @@
 {
-  "dev-tools": true
+  "dev-tools": true,
+  "log-compiler-output": false
 }

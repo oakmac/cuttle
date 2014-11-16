@@ -5,6 +5,7 @@
     [cljs.core.async :refer [<!]]
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
+    [cljsbuild-ui.config :refer [config]]
     [cljsbuild-ui.exec :as exec]
     [cljsbuild-ui.util :refer [date-format log js-log now uuid]]))
 
@@ -286,10 +287,11 @@
   (go
     (when-let [[type data] (<! c)]
 
-      (js-log "Channel contents:")
-      (log type)
-      (log data)
-      (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+      (when (:log-compiler-output config)
+        (js-log "Channel contents:")
+        (log type)
+        (log data)
+        (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"))
 
       (when @first-output?
         (show-waiting! prj-key)
@@ -673,5 +675,4 @@
 
 (defn init! [projs]
   (init-projs! projs)
-  (js/console.log (pr-str @state))
   (add-events!))

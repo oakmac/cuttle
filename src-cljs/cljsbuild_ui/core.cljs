@@ -43,17 +43,12 @@
 ;; TODO: need to do some quick validation on projects.json format here
 (defn- receive-app-data-path [app-data-path]
   (let [projects-file (path-join app-data-path "projects.json")]
-    (log projects-file)
     (when-not (.existsSync fs projects-file)
       (create-default-projects-file! app-data-path projects-file))
     (let [prj-files (js->clj (js/require projects-file))
           projects (mapv load-project-file prj-files)]
-      ;; it works!
-      ;;(log (:cljsbuild (first (vals projects))))
-      (cljsbuild-ui.pages.main/init! projects)
-      )))
+      (cljsbuild-ui.pages.main/init! projects))))
 
 ;; receive the OS-normalized app data path from app.js
 ;; NOTE: this event is effectively "global app init" for the webpage
 (.on ipc "config-file-location" receive-app-data-path)
-
