@@ -597,7 +597,8 @@
     ;; TODO: we may not even use this
     (reset! events-added? true)))
 
-(defn init! []
+(defn init! [projs]
+  (js/console.log (pr-str projs))
   (add-events!)
   ;; trigger the initial render
   (swap! state identity))
