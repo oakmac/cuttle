@@ -265,7 +265,8 @@
   "Start auto-compile. This function returns a core.async channel."
   [prj-key bld-ids]
   (let [c (chan)
-        child (spawn (lein "cljsbuild auto") (convert-cwd prj-key))
+        lein-cmd (str "cljsbuild auto " (join " " bld-ids))
+        child (spawn (lein lein-cmd) (convert-cwd prj-key))
         inside-error? (atom false)
         err-msg-buffer (atom "")
         stopped-output-timeout (atom nil)]
@@ -300,7 +301,8 @@
    The channel is closed when the build is finished."
   [prj-key bld-ids]
   (let [c (chan)
-        child (spawn (lein "cljsbuild once") (convert-cwd prj-key))
+        lein-cmd (str "cljsbuild once " (join " " bld-ids))
+        child (spawn (lein lein-cmd) (convert-cwd prj-key))
         inside-error? (atom false)
         err-msg-buffer (atom "")
         stopped-output-timeout (atom nil)]

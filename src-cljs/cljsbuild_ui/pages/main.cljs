@@ -230,11 +230,15 @@
       #(clear-compiled-info! prj-key %1)
       (get-in @state [:projects prj-key :builds]))))
 
-(defn- show-waiting! [prj-key]
+(defn- mark-build-as-waiting! [prj-key bld-id]
+  (let [bld-idx (bld-id->idx prj-key bld-id)]
+    (swap! state assoc-in [:projects prj-key :builds bld-idx :state] :waiting)))
+
+(defn- show-waiting! [prj-key bld-ids]
   (doall
-    (map-indexed
-      #(swap! state assoc-in [:projects prj-key :builds %1 :state] :waiting)
-      (get-in @state [:projects prj-key :builds]))))
+    (map
+      #(mark-build-as-waiting! prj-key %)
+      bld-ids)))
 
 (defn- show-start-compiling! [prj-key bld-id]
   (let [bld-idx (bld-id->idx prj-key bld-id)]
@@ -283,7 +287,7 @@
 (defn- handle-compiler-output
   "This function reads from the console output channel and updates the UI.
    NOTE: recursive function, terminating case is when the channel is closed"
-  [c prj-key current-bld-id first-output?]
+  [c prj-key bld-ids current-bld-id first-output?]
   (go
     (when-let [[type data] (<! c)]
 
@@ -294,7 +298,7 @@
         (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"))
 
       (when @first-output?
-        (show-waiting! prj-key)
+        (show-waiting! prj-key bld-ids)
         (reset! first-output? false))
 
       (case type
@@ -315,7 +319,7 @@
         nil)
 
       ;; loop back
-      (handle-compiler-output c prj-key current-bld-id first-output?))))
+      (handle-compiler-output c prj-key bld-ids current-bld-id first-output?))))
 
 (defn- start-auto-compile! [prj-key bld-ids]
   ;; show project loading state
@@ -328,7 +332,7 @@
 
   ;; start the build
   (let [compiler-chan (exec/start-auto prj-key bld-ids)]
-    (handle-compiler-output compiler-chan prj-key (atom nil) (atom true))))
+    (handle-compiler-output compiler-chan prj-key bld-ids (atom nil) (atom true))))
 
 (defn- start-compile-once! [prj-key bld-ids]
   ;; show project state
@@ -341,7 +345,7 @@
 
   ;; start the build
   (let [compiler-chan (exec/build-once prj-key bld-ids)]
-    (handle-compiler-output compiler-chan prj-key (atom nil) (atom true))))
+    (handle-compiler-output compiler-chan prj-key bld-ids (atom nil) (atom true))))
 
 ;; TODO: deal with clean errors
 (defn- on-clean-error [stderr]
