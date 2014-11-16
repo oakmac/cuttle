@@ -19,7 +19,7 @@
    :compile-time 0
    :last-compile-time nil
    :error nil
-   :state :done
+   :state :blank
    :warnings []
 
    ;; from project.clj
@@ -457,6 +457,8 @@
 
 (sablono/defhtml state-cell [{:keys [compile-time state warnings]}]
   (case state
+    :blank
+      [:span "-"]
     :cleaning
       [:span [:i.fa.fa-gear.fa-spin] "Cleaning..."]
     :compiling
