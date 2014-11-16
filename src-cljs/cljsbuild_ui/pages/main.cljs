@@ -268,9 +268,9 @@
   ;; TODO: update builds here
   )
 
-(defn- show-jvm-warmup! [prj-key bld-id]
+(defn- show-lein-startup! [prj-key bld-id]
   (let [bld-idx (bld-id->idx prj-key bld-id)]
-    (swap! state assoc-in [:projects prj-key :builds bld-idx :state] :jvm-warmup)))
+    (swap! state assoc-in [:projects prj-key :builds bld-idx :state] :lein-startup)))
 
 ;;------------------------------------------------------------------------------
 ;; Compiler Interface
@@ -320,7 +320,7 @@
   (swap! state assoc-in [:projects prj-key :state] :auto)
 
   ;; update the BuildRows state
-  (doall (map #(show-jvm-warmup! prj-key %) bld-ids))
+  (doall (map #(show-lein-startup! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
@@ -333,7 +333,7 @@
   (swap! state assoc-in [:projects prj-key :state] :once)
 
   ;; update the BuildRows state
-  (doall (map #(show-jvm-warmup! prj-key %) bld-ids))
+  (doall (map #(show-lein-startup! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
@@ -469,8 +469,8 @@
         [:i.fa.fa-exclamation-triangle] (warnings-state (count warnings))]
     :done-with-error
       [:span.errors-2718a [:i.fa.fa-times] "Compiling failed"]
-    :jvm-warmup
-      [:span [:i.fa.fa-gear.fa-spin] "JVM warmup..."]
+    :lein-startup
+      [:span [:i.fa.fa-gear.fa-spin] "Leiningen starting..."]
     :missing
       [:span [:i.fa.fa-minus-circle] "Output missing"]
     :waiting
