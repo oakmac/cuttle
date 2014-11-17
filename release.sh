@@ -81,8 +81,14 @@ if [ "$OS" == "mac" ]; then
 
   mv $RELEASE_DIR/Atom.app $RELEASE_DIR/ClojureScript.app
 
-#elif [ "$OS" == "linux" ]; then
-#elif [ "$OS" == "windows" ]; then
+elif [ "$OS" == "linux" ]; then
+
+  mv $RELEASE_DIR/atom $RELEASE_DIR/ClojureScript
+
+elif [ "$OS" == "windows" ]; then
+
+  mv $RELEASE_DIR/atom.exe $RELEASE_DIR/ClojureScript.exe
+
 fi
 
 #----------------------------------------------------------------------
