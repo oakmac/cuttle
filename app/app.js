@@ -93,7 +93,9 @@ var menuTemplate = [
 ];
 
 var menu = Menu.buildFromTemplate(menuTemplate);
-Menu.setApplicationMenu(menu);
+
+// FIXME: custom menu disabled, since CMD+Q doesn't work without the menu item for it
+// Menu.setApplicationMenu(menu);
 
 //--------------------------------------------------------------------------------
 // Main
