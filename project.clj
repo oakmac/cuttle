@@ -1,4 +1,4 @@
-(defproject cljsbuild-ui "0.1.0"
+(defproject cljsbuild-ui "0.1.0-SNAPSHOT"
   :source-paths ["src-clj"]
 
   :dependencies [
