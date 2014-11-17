@@ -19,12 +19,12 @@
         :source-paths ["src-cljs"]
         :compiler {
           :optimizations :whitespace
-          :output-to "cljsbuild-ui/js/main.js"}}
+          :output-to "app/js/main.js"}}
 
       :main-min {
         :source-paths ["src-cljs"]
         :compiler {
           :externs ["externs/react-0.11.0.js"]
-          :output-to "cljsbuild-ui/js/main.min.js"
+          :output-to "app/js/main.min.js"
           :optimizations :advanced
           :pretty-print false }}}})

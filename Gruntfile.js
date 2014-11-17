@@ -15,7 +15,7 @@ grunt.initConfig({
 
     default: {
       files: {
-        'cljsbuild-ui/css/main.min.css': 'less/main.less'
+        'app/css/main.min.css': 'less/main.less'
       }
     }
   },
@@ -34,7 +34,7 @@ grunt.initConfig({
 
   curl: {
     // download leiningen jar
-    'cljsbuild-ui/bin/lein.jar': 'https://github.com/technomancy/leiningen/releases/download/2.5.0/leiningen-2.5.0-standalone.jar'
+    'app/bin/lein.jar': 'https://github.com/technomancy/leiningen/releases/download/2.5.0/leiningen-2.5.0-standalone.jar'
   },
 
   'download-atom-shell': {

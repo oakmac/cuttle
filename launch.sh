@@ -15,4 +15,4 @@ else
   exit 1
 fi
 
-$ATOM cljsbuild-ui
+$ATOM app

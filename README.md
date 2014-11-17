@@ -50,7 +50,7 @@ break on a regular basis.
     ```
 
 If you want Chrome Dev Tools to auto-open when you start the program, add a
-`config.json` file in the `cljsbuild-ui/` folder. An `example.config.json` is
+`config.json` file in the `app/` folder. An `example.config.json` is
 provided.
 
 ## License
