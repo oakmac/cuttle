@@ -21,7 +21,7 @@ Development is currently in a very early stage and things should be expected to
 break on a regular basis.
 
 1. Install [Leiningen] and [Node.js].
-1. Run the following in the project directory
+1. One-time setup. Run from the project directory:
 
     ```sh
     # install node.js dependencies
@@ -35,13 +35,21 @@ break on a regular basis.
 
     # downloads atom-shell
     grunt download-atom-shell
+    ```
 
+1. Compile when files change:
+
+    ```sh
     # compile LESS file
     grunt less
 
     # compile ClojureScript files (this may take a minute)
     lein cljsbuild once
+    ```
 
+1. Launch to try it out:
+
+    ```sh
     # launch on Mac/Linux/Cygwin
     ./launch.sh
 
@@ -49,9 +57,19 @@ break on a regular basis.
     launch.bat
     ```
 
+1. Assemble a release (can only do this for your OS):
+
+    ```sh
+    # Create a release folder
+    ./release.sh
+
+    # Create a release zip
+    ./release.sh -z
+    ```
+
 If you want Chrome Dev Tools to auto-open when you start the program, add a
 `config.json` file in the `app/` folder. An `example.config.json` is
-provided.
+provided. This is disabled in the release.
 
 ## License
 
