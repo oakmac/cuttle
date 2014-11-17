@@ -82,6 +82,7 @@ ipc.on("request-remove-project", function(event, arg) {
 var menuTemplate = [
   {
     label: "File", // NOTE: On Mac, the first menu item is always the name of the Application
+                   //       (uses CFBundleName in Info.plist, set by "release.sh")
     submenu: [
       {
         label: "Add Existing Project",
