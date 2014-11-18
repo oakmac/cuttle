@@ -87,6 +87,12 @@ elif [ "$OS" == "linux" ]; then
 
 elif [ "$OS" == "windows" ]; then
 
+  winresourcer --operation=Update \
+               --exeFile=$RELEASE_DIR/atom.exe \
+               --resourceType=Icongroup \
+               --resourceName:1 \
+               --resourceFile:$RELEASE_RSRC/app/img/clojure-logo.ico
+
   mv $RELEASE_DIR/atom.exe $RELEASE_DIR/ClojureScript.exe
 
 fi

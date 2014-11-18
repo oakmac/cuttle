@@ -30,6 +30,9 @@ break on a regular basis.
     # install grunt (may need sudo)
     npm install -g grunt-cli
 
+    # install winresourcer
+    npm install -g winresourcer
+
     # downloads lein jar to be packaged in our app
     grunt curl
 
