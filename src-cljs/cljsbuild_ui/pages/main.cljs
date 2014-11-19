@@ -29,97 +29,6 @@
   (let [proj-keys (-> project-map :order)]
     (mapv #(get project-map %) proj-keys)))
 
-(def test-app-state
-  "A test app-state for quick-testing page rendering."
-  {
-  :projects {
-    "/home/oakmac/t3tr0s/project.clj" {
-      :compile-menu-showing? false
-      :auto-compile? true
-      :name "t3tr0s"
-      :state :idle
-      :builds [
-        { :id :client
-          :active? true
-          :compile-time 0.6
-          :last-compile-time nil
-          :error nil
-          :state :done
-          :warnings []
-
-          ;; copied directly from project.clj
-          :source-paths ["src/client"]
-          :compiler {
-            :output-to "public/js/client.js"
-            :output-dir "public/out"
-            :optimizations :whitespace }}
-
-        { :id :client-adv
-          :active? true
-          :compile-time 4.7
-          :last-compile-time nil
-          :error nil
-          :state :done
-          :warnings []
-
-          ;; copied directly from project.clj
-          :source-paths ["src/client"]
-          :compiler {
-            :externs ["externs/jquery-1.9.js" "externs/socket.io.js"]
-            :output-to "public/js/client.min.js"
-            :optimizations :advanced
-            :pretty-print false }}
-
-        { :id :server
-          :active? true
-          :compile-time nil
-          :last-compile-time nil
-          :error nil
-          :state :missing
-          :warnings []
-
-          ;; copied directly from project.clj
-          :source-paths ["src/server"]
-          :compiler {
-            :language-in :ecmascript5
-            :language-out :ecmascript5
-            :target :nodejs
-            :output-to "server.js"
-            :optimizations :simple }}]}
-
-    "/home/oakmac/project2/project.clj" {
-      :auto-compile? false
-      :compile-menu-showing? false
-      :name "project2"
-      :state :auto
-      :builds [
-        { :id :main
-          :active? true
-          :error nil
-          :last-compile-time 1413048033
-          :state :done-with-warnings
-          :warnings [
-            "Use of undeclared Var project2.core/foo at line 79 src-cljs/project2/core.cljs"
-            "Use of undeclared Var project2.core/bar at line 80 src-cljs/project2/core.cljs"
-          ]
-
-          :source-paths ["src-cljs"]
-          :compiler {
-            :optimizations :whitespace
-            :output-to "public/js/main.js"}}
-
-        { :id :main-min
-          :active? true
-          :error ["EOF while reading, starting at line 7"]
-          :last-compile-time nil
-          :state :done-with-error
-          :warnings []
-
-          :source-paths ["src-cljs"]
-          :compiler {
-            :optimizations :advanced
-            :output-to "public/js/main.min.js"}}]}}})
-
 ;;------------------------------------------------------------------------------
 ;; Project State
 ;;------------------------------------------------------------------------------
@@ -483,9 +392,6 @@
 
   ;; start the compile
   (compile-now! prj-key))
-
-(defn- click-build-row [prj-key build-key]
-  (swap! state update-in [:projects prj-key :builds build-key :checked?] not))
 
 (defn- click-compile-options [js-evt prj-key]
   (.stopPropagation js-evt)
