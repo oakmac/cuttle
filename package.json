@@ -1,5 +1,11 @@
 {
   "name": "cljsbuild-ui",
+  "homepage": "https://github.com/oakmac/cljsbuild-ui",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oakmac/cljsbuild-ui.git"
+  },
   "dependencies": {
     "express": "4.1.x",
     "fs.extra": "1.2.1",
