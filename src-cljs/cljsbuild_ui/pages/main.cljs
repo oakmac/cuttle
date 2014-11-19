@@ -2,6 +2,7 @@
   (:require-macros
     [cljs.core.async.macros :refer [go]])
   (:require
+    [clojure.string :refer [replace]]
     [cljs.core.async :refer [<!]]
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
@@ -211,12 +212,16 @@
                            :order filenames)]
     (swap! state assoc :projects project-map)))
 
+(def delete-confirm-msg (str
+  "Remove % from the build tool?\n\n"
+  "This action will have no effect on the filesystem."))
+
 (defn try-remove-project!
-  [filename]
-  (let [msg "Remove this project? (This will NOT delete it from filesystem.)"
-        proceed (.confirm js/window msg)]
-  (when proceed
-    (.send ipc "request-remove-project" filename))))
+  [prj-name filename]
+  (let [msg (replace delete-confirm-msg "%" prj-name)
+        delete? (.confirm js/window msg)]
+    (when delete?
+      (.send ipc "request-remove-project" filename))))
 
 (defn try-add-existing-project! []
   (.send ipc "request-add-existing-project"))
@@ -668,7 +673,7 @@
                   ;; NOTE: hiding edit link for now
                   ;; [:i.fa.fa-edit.project-icon-1711d]
                   [:i.fa.fa-times.project-icon-1711d
-                    {:on-click #(try-remove-project! prj-key)}]))]]
+                    {:on-click #(try-remove-project! (:name prj) prj-key)}]))]]
           [:div.right-f5656
             (case (:state prj)
               :auto (auto-state prj-key)
