@@ -65,30 +65,28 @@
 
    ;; from project.clj, but with extra tool state
    ;; (see initial-project-build-state)
-   :builds []})
+   :builds {}
+   :builds-order []})
+
+(def build-keys [:id :source-paths :compiler])
 
 (defn attach-state-to-build
   "Attach state to project-build map, and prune out unused keys"
-  [build]
-  (let [keep-keys [:id
-                   :source-paths
-                   :compiler]]
-    (-> initial-project-build-state
-        (merge (select-keys build keep-keys)))))
+  [bld]
+  (merge initial-project-build-state
+    (select-keys bld build-keys)))
+
+(def project-keys [:filename :name :version :license :dependencies :plugins])
 
 (defn attach-state-to-proj
   "Attach state to project map, and prune out unused keys"
-  [project]
-  (let [keep-keys [:filename
-                   :name
-                   :version
-                   :license
-                   :dependencies
-                   :plugins]
-        builds (->> project :cljsbuild :builds (mapv attach-state-to-build))]
+  [prj]
+  (let [blds (->> prj :cljsbuild :builds (mapv attach-state-to-build))
+        bld-ids (map :id blds)]
     (-> initial-project-state
-        (merge (select-keys project keep-keys))
-        (assoc :builds builds))))
+        (merge (select-keys prj project-keys))
+        (assoc :builds (zipmap bld-ids blds)
+               :builds-order (vec bld-ids)))))
 
 (defn add-project!
   [project]
@@ -150,26 +148,16 @@
 ;; NOTE: this function will not work if two builds have the same output-to target
 ;; should probably refactor with a filter?
 (defn- output-to->bld-id [prj-key output-to]
-  (let [blds (get-in @state [:projects prj-key :builds])
+  (let [blds (vals (get-in @state [:projects prj-key :builds]))
         outputs (map #(-> % :compiler :output-to) blds)
         ids (map :id blds)
         m (zipmap outputs ids)]
     (get m output-to)))
 
-;; NOTE: this could probably be written cleaner with a threading macro
-;; TODO: this function needs to go away! we are using the wrong data structure
-;; for builds; need to switch to a map and just have a separate vector for order
-(defn- bld-id->idx [prj-key bld-id]
-  (first
-    (remove nil?
-      (map-indexed
-        (fn [idx bld]
-          (if (= bld-id (:id bld)) idx))
-        (get-in @state [:projects prj-key :builds])))))
-
 (defn- num-selected-builds [prj]
   (->> prj
     :builds
+    vals
     (map :active?)
     (remove false?)
     count))
@@ -177,6 +165,7 @@
 (defn- get-active-bld-ids [prj]
   (->> prj
     :builds
+    vals
     (filter #(true? (:active? %)))
     (map :id)))
 
@@ -209,8 +198,8 @@
 ;; update the now timestamps every 0.25 second
 ;; (js/setInterval update-now! 250)
 
-(defn- clear-compiled-info! [prj-key bld-idx]
-  (swap! state update-in [:projects prj-key :builds bld-idx]
+(defn- clear-compiled-info! [prj-key bld-id]
+  (swap! state update-in [:projects prj-key :builds bld-id]
     assoc :last-compile-time nil
           :error nil
           :warnings []))
@@ -219,28 +208,25 @@
   "Removes compiled info from a build: last-compile-time, error, warnings"
   [prj-key]
   (doall
-    (map-indexed
-      #(clear-compiled-info! prj-key %1)
+    (map
+      #(clear-compiled-info! prj-key (first %))
       (get-in @state [:projects prj-key :builds]))))
 
 (defn- mark-build-as-waiting! [prj-key bld-id]
-  (let [bld-idx (bld-id->idx prj-key bld-id)]
-    (swap! state assoc-in [:projects prj-key :builds bld-idx :state] :waiting)))
+  (swap! state assoc-in [:projects prj-key :builds bld-id :state] :waiting))
 
-(defn- show-waiting! [prj-key bld-ids]
+(defn- mark-builds-as-waiting! [prj-key bld-ids]
   (doall
     (map
       #(mark-build-as-waiting! prj-key %)
       bld-ids)))
 
 (defn- show-start-compiling! [prj-key bld-id]
-  (let [bld-idx (bld-id->idx prj-key bld-id)]
-    (clear-compiled-info! prj-key bld-idx)
-    (swap! state assoc-in [:projects prj-key :builds bld-idx :state] :compiling)))
+  (clear-compiled-info! prj-key bld-id)
+  (swap! state assoc-in [:projects prj-key :builds bld-id :state] :compiling))
 
 (defn- show-done-compiling! [prj-key bld-id compile-time]
-  (let [bld-idx (bld-id->idx prj-key bld-id)
-        map-path [:projects prj-key :builds bld-idx]
+  (let [map-path [:projects prj-key :builds bld-id]
         bld (get-in @state map-path)
         new-state (if (-> bld :warnings empty?) :done :done-with-warnings)
         new-bld (assoc bld :compile-time compile-time
@@ -249,14 +235,14 @@
     (swap! state assoc-in map-path new-bld)))
 
 (defn- show-warnings! [prj-key bld-id warnings]
-  (let [bld-idx (bld-id->idx prj-key bld-id)]
-    (swap! state update-in [:projects prj-key :builds bld-idx :warnings] (fn [w]
-      (into [] (concat w warnings))))))
+  (swap! state update-in [:projects prj-key :builds bld-id :warnings]
+    (fn [w]
+      (into [] (concat w warnings)))))
 
-(defn- show-build-error! [prj-key bld-id error-msg]
-  (let [bld-idx (bld-id->idx prj-key bld-id)]
-    (swap! state update-in [:projects prj-key :builds bld-idx]
-      assoc :error error-msg :state :done-with-error)))
+(defn- show-build-error! [prj-key bld-id errors]
+  (swap! state update-in [:projects prj-key :builds bld-id]
+    assoc :error errors
+          :state :done-with-error))
 
 (defn- compiler-done!
   "Mark a project as being finished with compiling. ie: idle state"
@@ -264,11 +250,11 @@
   (swap! state assoc-in [:projects prj-key :state] :idle)
 
   ;; TODO: make sure all the builds are in a "finished" state
+  ;; clear any "Waiting" with "Output missing"
   )
 
 (defn- show-lein-startup! [prj-key bld-id]
-  (let [bld-idx (bld-id->idx prj-key bld-id)]
-    (swap! state assoc-in [:projects prj-key :builds bld-idx :state] :lein-startup)))
+  (swap! state assoc-in [:projects prj-key :builds bld-id :state] :lein-startup))
 
 ;;------------------------------------------------------------------------------
 ;; Compiler Interface
@@ -291,7 +277,7 @@
         (js-log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"))
 
       (when @first-output?
-        (show-waiting! prj-key bld-ids)
+        (mark-builds-as-waiting! prj-key bld-ids)
         (reset! first-output? false))
 
       (case type
@@ -319,7 +305,8 @@
   (swap! state assoc-in [:projects prj-key :state] :auto)
 
   ;; update the BuildRows state
-  (doall (map #(show-lein-startup! prj-key %) bld-ids))
+  (doall
+    (map #(show-lein-startup! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
@@ -332,7 +319,8 @@
   (swap! state assoc-in [:projects prj-key :state] :once)
 
   ;; update the BuildRows state
-  (doall (map #(show-lein-startup! prj-key %) bld-ids))
+  (doall
+    (map #(show-lein-startup! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
@@ -353,14 +341,36 @@
         (swap! state assoc-in [:projects prj-key :compile-menu-showing?] false))
       (-> @state :projects :order))))
 
-(defn- compile-now! [prj-key]
+(defn- compile-now! [prj-key prj bld-ids]
+  (if (:auto-compile? prj)
+    (start-auto-compile! prj-key bld-ids)
+    (start-compile-once! prj-key bld-ids)))
+
+(defn- mark-build-as-cleaning! [prj-key bld-id]
+  (swap! state assoc-in [:projects prj-key :builds bld-id :state] :cleaning))
+
+(defn- start-build-clean! [prj-key bld-id]
+  (let [bld (get-in @state [:projects prj-key :builds bld-id])]
+    (mark-build-as-cleaning! prj-key bld-id)
+    (exec/clean-build! prj-key bld)))
+
+(defn- click-compile-btn [prj-key]
   (let [prj (get-in @state [:projects prj-key])
         bld-ids (get-active-bld-ids prj)]
     ;; safeguard
     (when-not (zero? (count bld-ids))
-      (if (:auto-compile? prj)
-        (start-auto-compile! prj-key bld-ids)
-        (start-compile-once! prj-key bld-ids)))))
+      ;; remove any errors / warnings from previous builds
+      (remove-compiled-info! prj-key)
+
+      ;; update project state
+      (swap! state assoc-in [:projects prj-key :state] :cleaning)
+
+      ;; clean the builds
+      (doall
+        (map #(start-build-clean! prj-key %) bld-ids))
+
+      ;; start the compile
+      (compile-now! prj-key prj bld-ids))))
 
 (defn- click-stop-auto-btn [prj-key]
   ;; update project state
@@ -369,30 +379,6 @@
   ;; stop the process
   (exec/stop-auto prj-key))
 
-
-(defn- mark-build-as-cleaning! [prj-key bld-id]
-  (let [bld-idx (bld-id->idx prj-key bld-id)]
-    (swap! state assoc-in [:projects prj-key :builds bld-idx :state] :cleaning)))
-
-(defn- click-compile-btn [prj-key]
-  ;; remove any errors / warnings from previous builds
-  (remove-compiled-info! prj-key)
-
-  ;; update project state
-  (swap! state assoc-in [:projects prj-key :state] :cleaning)
-
-  ;; clean the builds
-  (let [bld-ids (get-active-bld-ids (get-in @state [:projects prj-key]))]
-    (doall
-      (map
-        (fn [bld-id]
-          (mark-build-as-cleaning! prj-key bld-id)
-          (exec/clean-build! prj-key (get-in @state [:projects prj-key :builds (bld-id->idx prj-key bld-id)])))
-        bld-ids)))
-
-  ;; start the compile
-  (compile-now! prj-key))
-
 (defn- click-compile-options [js-evt prj-key]
   (.stopPropagation js-evt)
   (swap! state update-in [:projects prj-key :compile-menu-showing?] not))
@@ -400,8 +386,8 @@
 (defn- toggle-auto-compile [prj-key]
   (swap! state update-in [:projects prj-key :auto-compile?] not))
 
-(defn- toggle-build-active [prj-key bld-idx]
-  (swap! state update-in [:projects prj-key :builds bld-idx :active?] not))
+(defn- toggle-build-active [prj-key bld-id]
+  (swap! state update-in [:projects prj-key :builds bld-id :active?] not))
 
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
@@ -487,9 +473,9 @@
     (if-not active?
       " not-active-a8d35")))
 
-(sablono/defhtml build-option [idx bld prj-key]
+(sablono/defhtml build-option [bld prj-key]
   [:div.bld-e7c4d
-    {:on-click #(toggle-build-active prj-key idx)}
+    {:on-click #(toggle-build-active prj-key (:id bld))}
     (if (:active? bld)
       [:i.fa.fa-check-square-o]
       [:i.fa.fa-square-o])
@@ -507,7 +493,11 @@
       "Auto Compile"]
     [:div.spacer-685b6]
     [:label.small-cffc5 "builds"]
-    (map-indexed #(build-option %1 %2 prj-key) (:builds prj))])
+    (map
+      (fn [bld-id]
+        (let [bld (get-in prj [:builds bld-id])]
+          (build-option bld prj-key)))
+      (:builds-order prj))])
 
 (sablono/defhtml idle-state [prj-key prj]
   [:button.compile-btn-17a78
@@ -580,8 +570,11 @@
         [:table.tbl-bdf39
           (bld-tbl-hdr)
           (map-indexed
-            #(BuildRow (assoc %2 :idx %1 :prj-key prj-key))
-            (:builds prj))]])))
+            (fn [idx bld-id]
+              (let [bld (get-in prj [:builds bld-id])]
+                (BuildRow (assoc bld :idx idx
+                                     :prj-key prj-key))))
+            (:builds-order prj))]])))
 
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
