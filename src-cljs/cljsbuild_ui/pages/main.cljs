@@ -657,29 +657,30 @@
   (let [prj-key (:filename prj)]
     (sablono/html
       [:div.project-1b83a
-       [:div.wrapper-714e4
-        [:div.left-ba9e7
-         (:name prj)
-         [:span.project-icons-dd1bb
-          [:i.fa.fa-folder-open-o.project-icon-1711d
-           {:on-click #(open-project-folder! prj-key)}]
-          (when (= (:state prj) :idle)
-            (list
-              [:i.fa.fa-edit.project-icon-1711d]
-              [:i.fa.fa-times.project-icon-1711d
-               {:on-click #(try-remove-project! prj-key)}]))]]
-        [:div.right-f5656
-         (case (:state prj)
-           :auto (auto-state prj-key)
-           :cleaning (cleaning-state prj-key)
-           :idle (idle-state prj-key prj)
-           :once (once-state prj-key)
-           "*unknown project state*")]]
-       [:table.tbl-bdf39
-        (bld-tbl-hdr)
-        (map-indexed
-          #(BuildRow (assoc %2 :idx %1 :prj-key prj-key))
-          (:builds prj))]])))
+        [:div.wrapper-714e4
+          [:div.left-ba9e7
+            (:name prj)
+            [:span.project-icons-dd1bb
+              [:i.fa.fa-folder-open-o.project-icon-1711d
+                {:on-click #(open-project-folder! prj-key)}]
+              (when (= (:state prj) :idle)
+                (list
+                  ;; NOTE: hiding edit link for now
+                  ;; [:i.fa.fa-edit.project-icon-1711d]
+                  [:i.fa.fa-times.project-icon-1711d
+                    {:on-click #(try-remove-project! prj-key)}]))]]
+          [:div.right-f5656
+            (case (:state prj)
+              :auto (auto-state prj-key)
+              :cleaning (cleaning-state prj-key)
+              :idle (idle-state prj-key prj)
+              :once (once-state prj-key)
+              "*unknown project state*")]]
+        [:table.tbl-bdf39
+          (bld-tbl-hdr)
+          (map-indexed
+            #(BuildRow (assoc %2 :idx %1 :prj-key prj-key))
+            (:builds prj))]])))
 
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
@@ -689,9 +690,11 @@
         [:div.title-8749a "ClojureScript Compiler"]
         [:div.title-links-42b06
           [:span.link-3d3ad
-           {:on-click try-add-existing-project!}
-           [:i.fa.fa-plus] "Add project"]
-          [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]]
+            {:on-click try-add-existing-project!}
+            [:i.fa.fa-plus] "Add project"]
+          ;; NOTE: hide settings for now
+          ;; [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]
+          ]
         [:div.clr-737fa]]
       (map Project (get-ordered-projects (:projects app-state)))]))
 
