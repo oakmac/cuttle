@@ -319,9 +319,10 @@ body {
   border: 1px solid #e1e1e1;
   .font-normal(14px);
   margin-top: 10px;
-  padding: 15px;
+  min-width: 140px;
+  padding: 10px;
   position: absolute;
-  right: 71px;
+  right: 0;
   z-index: 10;
 }
 
@@ -353,6 +354,8 @@ body {
 
 .label-ec878 {
   cursor: pointer;
+  display: block;
+  padding: 5px;
 
   .fa {
     width: 20px;
@@ -361,23 +364,27 @@ body {
 
 .bld-e7c4d {
   cursor: pointer;
-  padding: 5px 0;
+  padding: 5px;
 
   .fa {
     width: 20px;
   }
 }
 
+.label-ec878:hover, .bld-e7c4d:hover {
+  background: #d9edf7;
+}
+
 .small-cffc5 {
   color: #8e8e8e;
   display: block;
   .font-bold(11px);
-  margin-bottom: 10px;
+  padding: 5px;
   text-transform: uppercase;
 }
 
 .spacer-685b6 {
-  height: 20px;
+  height: 10px;
 }
 
 .compile-btn-17a78 {

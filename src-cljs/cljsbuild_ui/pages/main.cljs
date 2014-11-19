@@ -248,6 +248,8 @@
     (get m output-to)))
 
 ;; NOTE: this could probably be written cleaner with a threading macro
+;; TODO: this function needs to go away! we are using the wrong data structure
+;; for builds; need to switch to a map and just have a separate vector for order
 (defn- bld-id->idx [prj-key bld-id]
   (first
     (remove nil?
@@ -347,12 +349,12 @@
     (swap! state update-in [:projects prj-key :builds bld-idx]
       assoc :error error-msg :state :done-with-error)))
 
-(defn- show-finished!
+(defn- compiler-done!
   "Mark a project as being finished with compiling. ie: idle state"
-  [prj-key]
+  [prj-key bld-ids]
   (swap! state assoc-in [:projects prj-key :state] :idle)
 
-  ;; TODO: update builds here
+  ;; TODO: make sure all the builds are in a "finished" state
   )
 
 (defn- show-lein-startup! [prj-key bld-id]
@@ -395,7 +397,7 @@
         :warning
           (show-warnings! prj-key @current-bld-id data)
         :finished
-          (show-finished! prj-key)
+          (compiler-done! prj-key bld-ids)
         :error
           (show-build-error! prj-key @current-bld-id data)
         nil)
@@ -429,22 +431,6 @@
   (let [compiler-chan (exec/build-once prj-key bld-ids)]
     (handle-compiler-output compiler-chan prj-key bld-ids (atom nil) (atom true))))
 
-;; TODO: deal with clean errors
-(defn- on-clean-error [stderr]
-  (js-log "TODO: handle clean error"))
-
-(defn- on-clean-success [prj-key]
-  ;; set project state
-  (swap! state assoc-in [:projects prj-key :state] :idle)
-
-  ;; set builds state
-  (doall
-    (map-indexed
-      (fn [idx bld]
-        (swap! state update-in [:projects prj-key :builds idx]
-          assoc :state :missing))
-      (get-in @state [:projects prj-key :builds]))))
-
 ;;------------------------------------------------------------------------------
 ;; Events
 ;;------------------------------------------------------------------------------
@@ -458,7 +444,7 @@
         (swap! state assoc-in [:projects prj-key :compile-menu-showing?] false))
       (-> @state :projects :order))))
 
-(defn- click-compile-btn [prj-key]
+(defn- compile-now! [prj-key]
   (let [prj (get-in @state [:projects prj-key])
         bld-ids (get-active-bld-ids prj)]
     ;; safeguard
@@ -474,22 +460,29 @@
   ;; stop the process
   (exec/stop-auto prj-key))
 
-(defn- click-clean-btn [prj-key]
+
+(defn- mark-build-as-cleaning! [prj-key bld-id]
+  (let [bld-idx (bld-id->idx prj-key bld-id)]
+    (swap! state assoc-in [:projects prj-key :builds bld-idx :state] :cleaning)))
+
+(defn- click-compile-btn [prj-key]
+  ;; remove any errors / warnings from previous builds
+  (remove-compiled-info! prj-key)
+
   ;; update project state
   (swap! state assoc-in [:projects prj-key :state] :cleaning)
 
-  ;; mark the build rows
-  (doall
-    (map-indexed
-      #(swap! state update-in [:projects prj-key :builds %1]
-          assoc :active? true :state :cleaning)
-      (get-in @state [:projects prj-key :builds])))
+  ;; clean the builds
+  (let [bld-ids (get-active-bld-ids (get-in @state [:projects prj-key]))]
+    (doall
+      (map
+        (fn [bld-id]
+          (mark-build-as-cleaning! prj-key bld-id)
+          (exec/clean-build! prj-key (get-in @state [:projects prj-key :builds (bld-id->idx prj-key bld-id)])))
+        bld-ids)))
 
-  ;; remove any errors / warnings from BuildRows
-  (remove-compiled-info! prj-key)
-
-  ;; start the clean
-  (exec/clean prj-key #(on-clean-success prj-key) on-clean-error))
+  ;; start the compile
+  (compile-now! prj-key))
 
 (defn- click-build-row [prj-key build-key]
   (swap! state update-in [:projects prj-key :builds build-key :checked?] not))
@@ -620,14 +613,11 @@
   [:button.menu-btn-550bf
     {:on-click #(click-compile-options % prj-key)}
     [:i.fa.fa-caret-down]]
-  [:button.btn-da85d
-    {:on-click #(click-clean-btn prj-key)}
-    "Clean"]
   (when (:compile-menu-showing? prj)
     (compile-menu prj-key prj)))
 
 (sablono/defhtml auto-state [prj-key]
-  [:span.status-984ee "Auto compiling ClojureScript..."]
+  [:span.status-984ee "Auto compiling..."]
   [:button.btn-da85d
     {:on-click #(click-stop-auto-btn prj-key)}
     "Stop"])
@@ -636,7 +626,7 @@
   [:span.status-984ee "Removing generated files..."])
 
 (sablono/defhtml once-state [prj-key]
-  [:span.status-984ee "Compiling ClojureScript..."])
+  [:span.status-984ee "Compiling..."])
 
 ;;------------------------------------------------------------------------------
 ;; Quiescent Components

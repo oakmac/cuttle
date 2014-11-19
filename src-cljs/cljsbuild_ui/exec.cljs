@@ -4,7 +4,7 @@
     [clojure.string :refer [join replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
     [cljsbuild-ui.config :refer [config]]
-    [cljsbuild-ui.util :refer [log js-log on-windows? uuid path-join]]))
+    [cljsbuild-ui.util :refer [js-log log on-windows? path-join uuid]]))
 
 (declare extract-target-from-start-msg)
 
@@ -25,6 +25,7 @@
 ;;------------------------------------------------------------------------------
 
 (def child-proc (js/require "child_process"))
+(def fs (js/require "fs.extra"))
 (def js-exec (aget child-proc "exec"))
 (def js-spawn (aget child-proc "spawn"))
 
@@ -315,16 +316,18 @@
     ;; return the channel
     c))
 
-;; TODO: capture better error results from this
-(defn clean [cwd success-fn error-fn]
-  (js-exec (lein "cljsbuild clean")
-    (js-obj "cwd" (convert-cwd cwd))
-    (fn [err _stdout _stderr]
-      (if err
-        (error-fn)
-        (success-fn)))))
-
-
+;; TODO: "target" here is probably configurable in build; need to look closer
+;; at Leiningen's code
+(defn clean-build! [prj-key bld]
+  (let [cwd (convert-cwd prj-key)
+        output-dir (-> bld :compiler :output-dir)
+        output-dir-full (str cwd "target" output-dir)
+        output-to (-> bld :compiler :output-to)
+        output-to-full (str cwd output-to)]
+    (when (and output-dir (.existsSync fs output-dir-full))
+      (.rmrfSync fs output-dir-full))
+    (when (and output-to (.existsSync fs output-to-full))
+      (.unlinkSync fs output-to-full))))
 
 
 
