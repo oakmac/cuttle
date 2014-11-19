@@ -16,6 +16,8 @@ pom.xml
 /app/js/main.min.js
 /app/js/main.js
 
+/builds
+
 /node_modules
 
 *.diff
