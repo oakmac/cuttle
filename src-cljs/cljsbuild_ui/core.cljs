@@ -6,6 +6,8 @@
     [cljsbuild-ui.util :refer [log js-log on-windows? uuid path-join]]
     [cljsbuild-ui.cljsbuild.config :refer [extract-options]]))
 
+(enable-console-print!)
+
 (def fs (js/require "fs"))
 (def ipc (js/require "ipc"))
 
