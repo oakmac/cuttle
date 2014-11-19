@@ -244,14 +244,21 @@
     assoc :error errors
           :state :done-with-error))
 
+(defn- mark-missing! [prj-key bld-id]
+  (let [state-path [:projects prj-key :builds bld-id :state]
+        bld-state (get-in @state state-path)]
+    (when (= bld-state :waiting)
+      (swap! state assoc-in state-path :missing))))
+
 (defn- compiler-done!
   "Mark a project as being finished with compiling. ie: idle state"
   [prj-key bld-ids]
   (swap! state assoc-in [:projects prj-key :state] :idle)
 
-  ;; TODO: make sure all the builds are in a "finished" state
-  ;; clear any "Waiting" with "Output missing"
-  )
+  ;; any build still in :waiting state at this point is due to compiler error
+  ;; mark those builds as :missing
+  (doall
+    (map #(mark-missing! prj-key %) bld-ids)))
 
 (defn- show-lein-startup! [prj-key bld-id]
   (swap! state assoc-in [:projects prj-key :builds bld-id :state] :lein-startup))
