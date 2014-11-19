@@ -19,6 +19,12 @@
 (def on-windows?
   (.test #"^win" js/process.platform))
 
+(def on-mac?
+  (.test #"^darwin" js/process.platform))
+
+(def on-linux?
+  (.test #"^linux" js/process.platform))
+
 (defn log
   "Log a Clojure thing."
   [clj-thing]
