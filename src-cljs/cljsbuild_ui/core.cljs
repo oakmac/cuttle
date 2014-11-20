@@ -4,6 +4,8 @@
     [cljsbuild-ui.projects :as projects]
     ))
 
+(enable-console-print!)
+
 (def ipc (js/require "ipc"))
 
 (defn- on-load-projects

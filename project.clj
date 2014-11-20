@@ -1,4 +1,11 @@
 (defproject cljsbuild-ui "0.1.0-SNAPSHOT"
+  :description "A user interface for the ClojureScript compiler."
+  :url "https://github.com/oakmac/cljsbuild-ui"
+  :license {
+    :name "MIT License"
+    :url "https://github.com/oakmac/cljsbuild-ui/blob/master/LICENSE.md"
+    :distribution :repo}
+
   :source-paths ["src-clj"]
 
   :dependencies [
