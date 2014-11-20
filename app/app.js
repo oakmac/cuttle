@@ -74,13 +74,6 @@ if (fs.existsSync(__dirname + '/config.json')) {
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
-// Quit when all windows are closed.
-app.on('window-all-closed', function() {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
 function onWindowClose() {
   // dereference the window object
   mainWindow = null;
