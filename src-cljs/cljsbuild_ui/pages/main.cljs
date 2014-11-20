@@ -2,10 +2,12 @@
   (:require-macros
     [cljs.core.async.macros :refer [go]])
   (:require
-    [clojure.string :refer [replace]]
     [cljs.core.async :refer [<!]]
+    [clojure.walk :refer [keywordize-keys]]
+    [clojure.string :refer [replace]]
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
+    [cljsbuild-ui.projects :as projects :refer [load-project-file]]
     [cljsbuild-ui.config :refer [config]]
     [cljsbuild-ui.exec :as exec]
     [cljsbuild-ui.util :refer [date-format log js-log now uuid]]))
@@ -68,6 +70,10 @@
    :builds {}
    :builds-order []})
 
+;;------------------------------------------------------------------------------
+;; Project State Creators
+;;------------------------------------------------------------------------------
+
 (def build-keys [:id :source-paths :compiler])
 
 (defn attach-state-to-build
@@ -88,15 +94,28 @@
         (assoc :builds (zipmap bld-ids blds)
                :builds-order (vec bld-ids)))))
 
+;;------------------------------------------------------------------------------
+;; Project Adding and Removing (from app state)
+;;------------------------------------------------------------------------------
+
+(defn init-projects!
+  [filenames]
+  (let [projects (map load-project-file filenames)
+        projects2 (map attach-state-to-proj projects)
+        project-map (assoc (zipmap filenames projects2)
+                           :order filenames)]
+    (swap! state assoc :projects project-map)))
+
 (defn add-project!
-  [project]
-  (when-not (contains? (:projects @state) (:filename project))
-    (let [filename (:filename project)
-          project2 (attach-state-to-proj project)
-          new-state (-> @state
-                        (assoc-in [:projects filename] project2)
-                        (update-in [:projects :order] conj filename))]
-      (reset! state new-state))))
+  [filename]
+  (let [project (load-project-file filename)]
+    (when-not (contains? (:projects @state) (:filename project))
+      (let [filename (:filename project)
+            project2 (attach-state-to-proj project)
+            new-state (-> @state
+                          (assoc-in [:projects filename] project2)
+                          (update-in [:projects :order] conj filename))]
+        (reset! state new-state)))))
 
 (defn remove-project!
   [filename]
@@ -109,15 +128,17 @@
                         (assoc-in [:projects :order] new-order))]
       (reset! state new-state))))
 
-(.on ipc "remove-project" remove-project!)
+;;------------------------------------------------------------------------------
+;; User-initiated Project Adding and Removing (both workspace and app state)
+;;------------------------------------------------------------------------------
 
-(defn init-projects!
-  [projects]
-  (let [projects2 (map attach-state-to-proj projects)
-        filenames (mapv :filename projects2)
-        project-map (assoc (zipmap filenames projects2)
-                           :order filenames)]
-    (swap! state assoc :projects project-map)))
+(defn try-add-existing-project! []
+  (.send ipc "request-add-existing-project-dialog"))
+
+(.on ipc "add-existing-project-dialog-success"
+  (fn [filename]
+    (when-let [_ (projects/add-to-workspace! filename)]
+      (add-project! filename))))
 
 (def delete-confirm-msg (str
   "Remove % from the build tool?\n\n"
@@ -128,15 +149,8 @@
   (let [msg (replace delete-confirm-msg "%" prj-name)
         delete? (.confirm js/window msg)]
     (when delete?
-      (.send ipc "request-remove-project" filename))))
-
-(defn try-add-existing-project! []
-  (.send ipc "request-add-existing-project"))
-
-(defn open-project-folder!
-  [filename]
-  (let [dirname (.dirname path filename)]
-    (open dirname)))
+      (projects/remove-from-workspace! filename)
+      (remove-project! filename))))
 
 ;;------------------------------------------------------------------------------
 ;; Util
@@ -551,6 +565,11 @@
                  (not (zero? (:warnings bld))))
         (map warning-row (:warnings bld)))]))
 
+(defn open-project-folder!
+  [filename]
+  (let [dirname (.dirname path filename)]
+    (open dirname)))
+
 (quiescent/defcomponent Project [prj]
   (let [prj-key (:filename prj)]
     (sablono/html
@@ -591,7 +610,7 @@
         [:div.title-8749a "ClojureScript Compiler"]
         [:div.title-links-42b06
           [:span.link-3d3ad
-            {:on-click try-add-existing-project!}
+            {:on-click #(try-add-existing-project!)}
             [:i.fa.fa-plus] "Add project"]
           ;; NOTE: hide settings for now
           ;; [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]
@@ -634,6 +653,6 @@
     ;; TODO: we may not even use this
     (reset! events-added? true)))
 
-(defn init! [projs]
-  (init-projects! projs)
+(defn init! [proj-filenames]
+  (init-projects! proj-filenames)
   (add-events!))

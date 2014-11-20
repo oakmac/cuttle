@@ -1,7 +1,6 @@
 var app = require('app'),
   BrowserWindow = require('browser-window'),
   ipc = require('ipc'),
-  path = require('path'),
   Menu = require('menu'),
   dialog = require('dialog'),
   config = {},
@@ -11,38 +10,9 @@ var app = require('app'),
 require('crash-reporter').start();
 
 //--------------------------------------------------------------------------------
-// Projects Config
+// Dialogs
+// (These have to be created on the "browser" side, i.e. here, not on the "page")
 //--------------------------------------------------------------------------------
-
-var projectsFilename = path.join(app.getDataPath(), "projects.json");
-
-function readProjectsConfig() {
-  return JSON.parse(fs.readFileSync(projectsFilename, 'utf8'));
-}
-
-function writeProjectsConfig(projects) {
-  fs.writeFileSync(projectsFilename, JSON.stringify(projects, null, 2), {encoding: "utf8"});
-}
-
-function addToProjectsConfig(filename) {
-  var projects = readProjectsConfig();
-  var i = projects.indexOf(filename);
-  if (i === -1) {
-    projects.push(filename);
-    writeProjectsConfig(projects);
-    mainWindow.webContents.send('add-existing-project', filename);
-  }
-}
-
-function removeFromProjectsConfig(filename) {
-  var projects = readProjectsConfig();
-  var i = projects.indexOf(filename);
-  if (i > -1) {
-    projects.splice(i, 1);
-    writeProjectsConfig(projects);
-  }
-  mainWindow.webContents.send('remove-project', filename);
-}
 
 function showAddExistingProjectDialog() {
   var options = {
@@ -59,21 +29,14 @@ function showAddExistingProjectDialog() {
   dialog.showOpenDialog(options, function(filenames) {
     if (filenames) {
       var filename = filenames[0];
-      addToProjectsConfig(filename);
+      mainWindow.webContents.send("add-existing-project-dialog-success", filename);
     }
   });
 }
 
-ipc.on("request-add-existing-project", function(event, arg) {
-  console.log("request to add existing project received");
+ipc.on("request-add-existing-project-dialog", function(event, arg) {
   showAddExistingProjectDialog();
 });
-
-ipc.on("request-remove-project", function(event, arg) {
-  console.log("request to remove project received");
-  removeFromProjectsConfig(arg);
-});
-
 
 //--------------------------------------------------------------------------------
 // Menu Builder
