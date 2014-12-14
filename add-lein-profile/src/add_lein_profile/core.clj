@@ -1,4 +1,4 @@
-(ns config-deps.core
+(ns add-lein-profile.core
   (:gen-class)
   (:require
     [clojure.java.io :as io]
