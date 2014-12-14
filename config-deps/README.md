@@ -1,27 +1,29 @@
 # Configure Dependencies
 
-When cljsbuild-ui starts up, we need to make sure the following lein dependencies are available:
+This is a project that cljsbuild-ui uses to programmatically add a [leiningen profile]
+to `~/.lein/profiles.clj`. This allows cljsbuild-ui to use lein
+plugins/dependencies across user projects without polluting their project.clj.
 
-- `lein-pprint` for extracting cljsbuild config options project.clj
-- `lein-cljsbuild-lib` for a fork of cljsbuild that allows a direct interface to our UI
+On startup, cljsbuild-ui effectively runs
 
-We want to be able use these without injecting them into user project.clj
-files, which may be too intrusive.
+```
+lein run '{:cljsbuild-ui {:plugins [[lein-pprint "1.1.1"]]}}'
+```
 
-To this end, we aim to use this app to add plugins/dependencies to
-`~/.lein/profiles.clj`, which contains [profiles] to be used across all projects.
-
-We could inject them into the `:user` profile which is included by default on
-all projects.  But we decided to avoid handling potential collisions by
-creating our own profile `:cljsbuild-ui`.
-
-cljsbuild-ui will use this custom profile when running `lein`:
+so it can include these dependencies on any project with:
 
 ```
 lein with-profile +cljsbuild-ui <command>
 ```
 
-The plus sign in `+cljsbuild-ui` indicates that it is adding rather than
-overwriting the default profiles.
+## Details
 
-[profiles]: https://github.com/technomancy/leiningen/blob/master/doc/PROFILES.md
+We could inject plugins/dependencies into the `:user` profile which is included
+by default on all projects.  But we decided to avoid handling potential
+collisions by creating our own profile `:cljsbuild-ui`, which is what this tool
+helps us do.
+
+The plus sign in `lein with-profile +cljsbuild-ui` indicates that it is adding
+to (rather than overwriting) the default profiles.
+
+[leiningen profile]: https://github.com/technomancy/leiningen/blob/master/doc/PROFILES.md
