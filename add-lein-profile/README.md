@@ -1,4 +1,4 @@
-# Configure Dependencies
+# Add Lein Profile
 
 This is a project that cljsbuild-ui uses to programmatically add a [leiningen profile]
 to `~/.lein/profiles.clj`. This allows cljsbuild-ui to use lein
