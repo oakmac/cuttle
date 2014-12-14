@@ -38,6 +38,9 @@ break on a regular basis.
 
     # downloads atom-shell
     grunt download-atom-shell
+
+    # builds add-lein-profile tool
+    ./build-lein-profile-tool.sh
     ```
 
 1. Compile when files change:
