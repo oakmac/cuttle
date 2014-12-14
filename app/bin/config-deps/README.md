@@ -8,18 +8,17 @@ When cljsbuild-ui starts up, we need to make sure the following lein dependencie
 We want to be able use these without injecting them into user project.clj
 files, which may be too intrusive.
 
-To this end, we aim to use this app to add dependencies to
+To this end, we aim to use this app to add plugins/dependencies to
 `~/.lein/profiles.clj`, which contains [profiles] to be used across all projects.
 
-We can either inject them into the `:user` profile, or create our own
-`:cljsbuild-ui` to avoid handling collisions with existing dependencies in the
-user profile.
+We could inject them into the `:user` profile which is included by default on
+all projects.  But we decided to avoid handling potential collisions by
+creating our own profile `:cljsbuild-ui`.
 
-The user profile is used by default on all projects.  But if we go with the
-custom profile, we can use it with:
+cljsbuild-ui will use this custom profile when running `lein`:
 
 ```
-lein with-profile +cljsbuild-ui ...
+lein with-profile +cljsbuild-ui <command>
 ```
 
 The plus sign in `+cljsbuild-ui` indicates that it is adding rather than
