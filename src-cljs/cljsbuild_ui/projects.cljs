@@ -49,14 +49,14 @@
     (.stringify js/JSON (array) nil 2)
     (js-obj "encoding" "utf8")))
 
-(defn load-workspace
-  [app-data-path on-load]
+(defn load-workspace!
+  [app-data-path]
   (set-workspace-filename! app-data-path)
   ;; TODO: need to do some quick validation on projects.json format here
   (when-not (.existsSync fs workspace-filename)
     (create-default-projects-file! app-data-path workspace-filename))
   (let [filenames (js->clj (js/require workspace-filename))]
-    (on-load filenames)))
+    filenames))
 
 ;;------------------------------------------------------------------------------
 ;; Project Workspace Modification

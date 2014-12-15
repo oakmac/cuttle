@@ -30,6 +30,24 @@
 (def js-spawn (aget child-proc "spawn"))
 
 ;;------------------------------------------------------------------------------
+;; Lein profile for dependencies
+;;------------------------------------------------------------------------------
+
+(def lein-profile
+  "Lein profile containing dependencies required for our tool."
+  '{:cljsbuild-ui {:plugins [[lein-pprint "1.1.1"]]}})
+
+(defn add-lein-profile!
+  "Adds our Lein profile to the user's global profiles.clj."
+  []
+  (let [dir (aget js/global "__dirname")
+        jar (path-join dir "bin" "add-lein-profile.jar")
+        cmd (str "java -jar " jar " '" (pr-str lein-profile) "'")
+        out-chan (chan)]
+    (js-exec cmd #(close! out-chan))
+    out-chan))
+
+;;------------------------------------------------------------------------------
 ;; Determine Compiler Output Line Type
 ;;------------------------------------------------------------------------------
 
