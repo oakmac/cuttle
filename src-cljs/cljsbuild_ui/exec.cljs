@@ -18,7 +18,7 @@
 (defn lein
   "Make lein command string"
   [args]
-  (str (lein-path) " " args))
+  (str (lein-path) " with-profile +cljsbuild-ui " args))
 
 ;;------------------------------------------------------------------------------
 ;; Require Modules
@@ -45,6 +45,17 @@
         cmd (str "java -jar " jar " '" (pr-str lein-profile) "'")
         out-chan (chan)]
     (js-exec cmd #(close! out-chan))
+    out-chan))
+
+(defn get-cljsbuild-with-profiles
+  [path]
+  (let [out-chan (chan)
+        cmd (lein "pprint :cljsbuild")
+        opts #js {:cwd path}
+        callback (fn [error stdout stderr]
+                   (let [project (read-string stdout)]
+                     (put! out-chan project)))]
+    (js-exec cmd opts callback)
     out-chan))
 
 ;;------------------------------------------------------------------------------

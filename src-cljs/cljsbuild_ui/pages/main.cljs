@@ -98,24 +98,26 @@
 ;; Project Adding and Removing (from app state)
 ;;------------------------------------------------------------------------------
 
-(defn init-projects!
-  [filenames]
-  (let [projects (map load-project-file filenames)
-        projects2 (map attach-state-to-proj projects)
-        project-map (assoc (zipmap filenames projects2)
-                           :order filenames)]
-    (swap! state assoc :projects project-map)))
+(defn- add-project*
+  [project]
+  (let [filename (:filename project)
+        project2 (attach-state-to-proj project)
+        new-state (-> @state
+                      (assoc-in [:projects filename] project2)
+                      (update-in [:projects :order] conj filename))]
+    (reset! state new-state)))
 
 (defn add-project!
   [filename]
-  (let [project (load-project-file filename)]
-    (when-not (contains? (:projects @state) (:filename project))
-      (let [filename (:filename project)
-            project2 (attach-state-to-proj project)
-            new-state (-> @state
-                          (assoc-in [:projects filename] project2)
-                          (update-in [:projects :order] conj filename))]
-        (reset! state new-state)))))
+  (go
+    (let [project (<! (load-project-file filename))]
+      (when-not (contains? (:projects @state) (:filename project))
+        (add-project* project)))))
+
+(defn init-projects!
+  [filenames]
+  (doseq [f filenames]
+    (add-project! f)))
 
 (defn remove-project!
   [filename]

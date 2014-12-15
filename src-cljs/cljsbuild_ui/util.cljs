@@ -16,6 +16,11 @@
   (let [path-join (aget js-path "join")]
     (apply path-join args)))
 
+(defn path-dirname
+  [p]
+  (let [dirname (aget js-path "dirname")]
+    (dirname p)))
+
 (def on-windows?
   (.test #"^win" js/process.platform))
 
