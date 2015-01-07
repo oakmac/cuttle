@@ -645,16 +645,9 @@
 ;; Init
 ;;------------------------------------------------------------------------------
 
-(def events-added? (atom false))
-
-(defn- add-events!
-  "Add events that are outside the react.js event system.
-   NOTE: this is a run-once function"
-  []
-  (when-not @events-added?
-    ;; TODO: we may not even use this
-    (reset! events-added? true)))
-
 (defn init! [proj-filenames]
   (init-projects! proj-filenames)
-  (add-events!))
+
+  ;; trigger initial UI render even if proj-filenames is empty
+  ;; TODO: probably should change the way init-projects! works
+  (swap! state identity))
