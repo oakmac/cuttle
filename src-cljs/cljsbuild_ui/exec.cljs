@@ -51,11 +51,11 @@
   [path]
   (let [out-chan (chan)
         cmd (lein "pprint :cljsbuild")
-        opts #js {:cwd path}
+        js-options (js-obj "cwd" path)
         callback (fn [error stdout stderr]
                    (let [project (read-string stdout)]
                      (put! out-chan project)))]
-    (js-exec cmd opts callback)
+    (js-exec cmd js-options callback)
     out-chan))
 
 ;;------------------------------------------------------------------------------
