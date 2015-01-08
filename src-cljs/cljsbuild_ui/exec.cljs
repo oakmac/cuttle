@@ -269,17 +269,29 @@
         (apply array (rest cmd-arr))
         (js-obj "cwd" cwd)))))
 
-(defn- kill-auto-on-unix2 [output]
-  (let [lein-pid (-> output trim int)]
-    (js-exec (str "kill " lein-pid))))
+(defn- convert-ps-line [l]
+  (let [l-arr (split (trim l) #"\s+")
+        ;; NOTE: This is dependent upon the order of the options passed to 
+        ;; the -o flag of ps in kill-auto-on-unix
+        pid (-> l-arr first int)
+        ppid (-> l-arr second int)]
+    [pid ppid]))
+
+(defn- kill-auto-on-unix2 [pid output]
+  (let [lines1 (split-lines output)
+        lines2 (map convert-ps-line lines1) 
+        pid-to-kill (ffirst (filter #(= pid (second %)) lines2))]
+    ;; sanity check to make sure the pid exists
+    (when (pos? pid-to-kill)
+      (js-exec (str "kill " pid-to-kill)))))
 
 ;; I fought with this for hours re: trying to kill the process from node.js
 ;; this feels hacky, but it seems to work
 (defn- kill-auto-on-unix [pid]
   (let [child (js-spawn "ps"
-                (array "-o" "pid" "--no-headers" "--ppid" pid))]
+                (array "-o" "pid,ppid"))]
     (.setEncoding (.-stdout child) "utf8")
-    (.on (.-stdout child) "data" kill-auto-on-unix2)))
+    (.on (.-stdout child) "data" #(kill-auto-on-unix2 pid %))))
 
 ;;------------------------------------------------------------------------------
 ;; Public Methods
