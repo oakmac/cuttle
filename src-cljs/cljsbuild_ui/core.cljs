@@ -22,3 +22,10 @@
 ;; It sends the OS-normalized app data path to this event,
 ;; effectively "global app init" for the webpage.
 (.on ipc "config-file-location" on-load)
+
+
+(defn- on-shutdown []
+  (js/alert "shutdown!")
+  )
+
+(.on ipc "shutdown" on-shutdown)

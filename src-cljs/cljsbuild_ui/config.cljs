@@ -12,8 +12,7 @@
 
 (def config-file-path (str js/__dirname "/config.json"))
 
-(def default-config {
-  :log-compiler-output false })
+(def default-config {:log-compiler-output false })
 
 (def config
   (if (.existsSync fs config-file-path)

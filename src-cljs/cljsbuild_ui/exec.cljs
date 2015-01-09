@@ -95,11 +95,11 @@
    nil if we do not recognize the line or don't care what it is"
   [s]
   (cond
-    (error-line? s) :error
-    (end-line? s) :end-output
+    (error-line? s)   :error
+    (end-line? s)     :end-output
     (success-line? s) :success
     (warning-line? s) :warning
-    (start-line? s) :start
+    (start-line? s)   :start
     :else nil))
 
 ;;------------------------------------------------------------------------------
@@ -271,7 +271,7 @@
 
 (defn- convert-ps-line [l]
   (let [l-arr (split (trim l) #"\s+")
-        ;; NOTE: This is dependent upon the order of the options passed to 
+        ;; NOTE: This is dependent upon the order of the options passed to
         ;; the -o flag of ps in kill-auto-on-unix
         pid (-> l-arr first int)
         ppid (-> l-arr second int)]
@@ -279,7 +279,7 @@
 
 (defn- kill-auto-on-unix2 [pid output]
   (let [lines1 (split-lines output)
-        lines2 (map convert-ps-line lines1) 
+        lines2 (map convert-ps-line lines1)
         pid-to-kill (ffirst (filter #(= pid (second %)) lines2))]
     ;; sanity check to make sure the pid exists
     (when (pos? pid-to-kill)

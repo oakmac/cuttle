@@ -74,9 +74,15 @@ if (fs.existsSync(__dirname + '/config.json')) {
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
-function onWindowClose() {
+function onWindowClosed() {
   // dereference the window object
   mainWindow = null;
+}
+
+function onWindowClose(evt) {
+  // TODO: finish this
+  // evt.preventDefault();
+  // mainWindow.webContents.send('shutdown');
 }
 
 // send the OS-normalized app data path to the webpage
@@ -104,8 +110,11 @@ function startApp() {
   // send info to the webpage
   mainWindow.webContents.on('did-finish-load', onFinishLoad);
 
+  // TODO: finish this
+  // mainWindow.on('close', onWindowClose);
+
   // Emitted when the window is closed.
-  mainWindow.on('closed', onWindowClose);
+  mainWindow.on('closed', onWindowClosed);
 
   // optionally launch dev tools
   if (config.hasOwnProperty("dev-tools") && config["dev-tools"] === true) {
