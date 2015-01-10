@@ -1,17 +1,36 @@
 (ns cljsbuild-ui.core
   (:require-macros
-    [cljs.core.async.macros :refer [go]])
+    [cljs.core.async.macros :refer [go]]
+    [hiccups.core :as hiccups])
   (:require
     [cljs.core.async :refer [<!]]
+    [cljsbuild-ui.dom :refer [by-id set-html!]]
+    [cljsbuild-ui.exec :refer [add-lein-profile! kill-all-leiningen-instances!]]
     [cljsbuild-ui.pages.main :as main-page]
     [cljsbuild-ui.projects :refer [load-workspace!]]
-    [cljsbuild-ui.exec :refer [add-lein-profile! kill-all-leiningen-instances!]]))
+    hiccups.runtime))
 
 (enable-console-print!)
 
 (def ipc (js/require "ipc"))
 
-(defn- on-load
+;;------------------------------------------------------------------------------
+;; Shutdown Signal
+;;------------------------------------------------------------------------------
+
+;; NOTE: this probably belongs somewhere other than core, just putting it here for now
+
+(defn- on-shutdown []
+  (kill-all-leiningen-instances!)
+  (.send ipc "shutdown-for-real"))
+
+(.on ipc "shutdown" on-shutdown)
+
+;;------------------------------------------------------------------------------
+;; Client Init
+;;------------------------------------------------------------------------------
+
+(defn- global-init!
   [app-data-path]
   (go
     (let [filenames (load-workspace! app-data-path)]
@@ -21,16 +40,19 @@
 ;; You can find the atom-shell entry point at "app/app.js".
 ;; It sends the OS-normalized app data path to this event,
 ;; effectively "global app init" for the webpage.
-(.on ipc "config-file-location" on-load)
+(.on ipc "config-file-location" global-init!)
 
 ;;------------------------------------------------------------------------------
-;; Shutdown Signal
-;; NOTE: this probably belongs somewhere other than core, just putting it here
-;;       for now
+;; Loading State
 ;;------------------------------------------------------------------------------
 
-(defn- on-shutdown []
-  (kill-all-leiningen-instances!)
-  (.send ipc "shutdown-for-real"))
+(hiccups/defhtml loading-state []
+  [:div.loading-6792e
+    [:i.fa.fa-cog.fa-spin]
+    "Loading"])
 
-(.on ipc "shutdown" on-shutdown)
+(defn- show-loading-state! []
+  (set-html! "app" (loading-state)))
+
+;; initialize the loading state
+(show-loading-state!)

@@ -7,9 +7,10 @@
     [clojure.string :refer [replace]]
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
-    [cljsbuild-ui.projects :as projects :refer [load-project-file]]
     [cljsbuild-ui.config :refer [config]]
+    [cljsbuild-ui.dom :refer [by-id]]
     [cljsbuild-ui.exec :as exec]
+    [cljsbuild-ui.projects :as projects :refer [load-project-file]]
     [cljsbuild-ui.util :refer [date-format log js-log now uuid]]))
 
 (def ipc (js/require "ipc"))
@@ -158,9 +159,6 @@
 ;;------------------------------------------------------------------------------
 ;; Util
 ;;------------------------------------------------------------------------------
-
-(defn- by-id [id]
-  (.getElementById js/document id))
 
 ;; NOTE: this function will not work if two builds have the same output-to target
 ;; should probably refactor with a filter?
