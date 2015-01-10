@@ -16,14 +16,27 @@
 ;; Project Parsing
 ;;------------------------------------------------------------------------------
 
+(defn- add-default-id-to-build
+  [i build]
+  (if-not (:id build)
+    (assoc build :id (str "build " i))
+    build))
+
+(defn normalize-cljsbuild-opts
+  [opts]
+  (let [opts (extract-options {:cljsbuild opts})
+        builds (->> (:builds opts)
+                    (map-indexed add-default-id-to-build))]
+    (assoc opts :builds builds)))
+
 (defn- parse-project-file
   "Parse the project file without considering profiles."
   [contents filename]
   (let [contents (replace contents "#(" "(") ;; prevent "Could not find tag parser for" error
         prj1 (read-string contents)
         project (apply hash-map (drop 3 prj1))
-        cljsbuild (when (:cljsbuild project)
-                    (extract-options project))]
+        cljsbuild (when-let [opts (:cljsbuild project)]
+                    (normalize-cljsbuild-opts opts))]
     (assoc project
            :cljsbuild cljsbuild
            :filename filename
@@ -37,7 +50,7 @@
     (let [filename (:filename project)
           path (path-dirname filename)
           cljsbuild (<! (get-cljsbuild-with-profiles path))
-          cljsbuild2 (extract-options {:cljsbuild cljsbuild})]
+          cljsbuild2 (normalize-cljsbuild-opts cljsbuild)]
       (assoc project :cljsbuild cljsbuild2))))
 
 ;; TODO:
