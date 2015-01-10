@@ -298,9 +298,6 @@
 
 (def auto-pids (atom {}))
 
-(defn kill-all-leiningen-instances! []
-  (doall (map stop-auto! (keys @auto-pids))))
-
 (defn start-auto
   "Start auto-compile. This function returns a core.async channel."
   [prj-key bld-ids]
@@ -334,6 +331,9 @@
 
     ;; remove the pid from the atom
     (swap! auto-pids dissoc prj-key)))
+
+(defn kill-all-leiningen-instances! []
+  (doall (map stop-auto! (keys @auto-pids))))
 
 (defn build-once
   "Start the build once process. This function returns a core.async channel

@@ -26,7 +26,8 @@
 (def state (atom initial-app-state))
 
 (defn get-ordered-projects
-  "Given a project map containing a list of keys in :order, return a vector of their ordered values."
+  "Given a project map containing a list of keys in :order, return a vector of
+   their ordered values."
   [project-map]
   (let [proj-keys (-> project-map :order)]
     (mapv #(get project-map %) proj-keys)))
@@ -260,10 +261,13 @@
     assoc :error errors
           :state :done-with-error))
 
-(defn- mark-missing! [prj-key bld-id]
+(defn- mark-missing!
+  "Mark a build row as missing output if the compiler was halted before finishing."
+  [prj-key bld-id]
   (let [state-path [:projects prj-key :builds bld-id :state]
         bld-state (get-in @state state-path)]
-    (when (= bld-state :waiting)
+    (when (or (= bld-state :waiting)
+              (= bld-state :compiling))
       (swap! state assoc-in state-path :missing))))
 
 (defn- compiler-done!
@@ -271,10 +275,9 @@
   [prj-key bld-ids]
   (swap! state assoc-in [:projects prj-key :state] :idle)
 
-  ;; any build still in :waiting state at this point is due to compiler error
-  ;; mark those builds as :missing
-  (doall
-    (map #(mark-missing! prj-key %) bld-ids)))
+  ;; any build not marked as "done" at this point is due to compiler error
+  ;; or being stopped in the middle of compiling
+  (doall (map #(mark-missing! prj-key %) bld-ids)))
 
 (defn- show-lein-startup! [prj-key bld-id]
   (swap! state assoc-in [:projects prj-key :builds bld-id :state] :lein-startup))
@@ -323,13 +326,14 @@
       ;; loop back
       (handle-compiler-output c prj-key bld-ids current-bld-id first-output?))))
 
+;; NOTE: start-auto-compile! and start-compile-once! should probably be combined
+
 (defn- start-auto-compile! [prj-key bld-ids]
   ;; show project loading state
   (swap! state assoc-in [:projects prj-key :state] :auto)
 
   ;; update the BuildRows state
-  (doall
-    (map #(show-lein-startup! prj-key %) bld-ids))
+  (doall (map #(show-lein-startup! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
@@ -342,8 +346,7 @@
   (swap! state assoc-in [:projects prj-key :state] :once)
 
   ;; update the BuildRows state
-  (doall
-    (map #(show-lein-startup! prj-key %) bld-ids))
+  (doall (map #(show-lein-startup! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
@@ -396,11 +399,13 @@
       (compile-now! prj-key prj bld-ids))))
 
 (defn- click-stop-auto-btn [prj-key]
-  ;; update project state
-  (swap! state assoc-in [:projects prj-key :state] :idle)
-
   ;; stop the process
-  (exec/stop-auto! prj-key))
+  (exec/stop-auto! prj-key)
+
+  ;; update project state
+  ;; NOTE: this is really unnecessary as the project state gets updated in
+  ;; compiler-done! - but it doesn't hurt to have it here too
+  (swap! state assoc-in [:projects prj-key :state] :idle))
 
 (defn- click-compile-options [js-evt prj-key]
   (.stopPropagation js-evt)
