@@ -5,14 +5,14 @@ var app = require('app'),
   dialog = require('dialog'),
   config = {},
   fs = require('fs');
-//
+
 // report crashes to atom-shell
 require('crash-reporter').start();
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Dialogs
 // (These have to be created on the "browser" side, i.e. here, not on the "page")
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 function showAddExistingProjectDialog() {
   var options = {
@@ -38,9 +38,9 @@ ipc.on("request-add-existing-project-dialog", function(event, arg) {
   showAddExistingProjectDialog();
 });
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Menu Builder
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 var menuTemplate = [
   {
@@ -60,9 +60,9 @@ var menu = Menu.buildFromTemplate(menuTemplate);
 // FIXME: custom menu disabled, since CMD+Q doesn't work without the menu item for it
 // Menu.setApplicationMenu(menu);
 
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Main
-//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 // load config
 // NOTE: this is mostly for development purposes
@@ -74,15 +74,28 @@ if (fs.existsSync(__dirname + '/config.json')) {
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
+// NOTE: so the docs say to only use this when the page has crashed, but I think
+// it's ok in this case because of the way we're "trapping" the regular close event
+// https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy
+function shutdownForReal() {
+  mainWindow.destroy();
+}
+
+ipc.on('shutdown-for-real', shutdownForReal);
+
+// NOTE: copied this directly from the atom-shell docs
+// is this really necessary?
 function onWindowClosed() {
   // dereference the window object
   mainWindow = null;
 }
 
 function onWindowClose(evt) {
-  // TODO: finish this
-  // evt.preventDefault();
-  // mainWindow.webContents.send('shutdown');
+  // prevent window close
+  evt.preventDefault();
+
+  // send shutdown signal to the window
+  mainWindow.webContents.send('shutdown');
 }
 
 // send the OS-normalized app data path to the webpage
@@ -110,8 +123,8 @@ function startApp() {
   // send info to the webpage
   mainWindow.webContents.on('did-finish-load', onFinishLoad);
 
-  // TODO: finish this
-  // mainWindow.on('close', onWindowClose);
+  // Emitted when the user tries to close the window
+  mainWindow.on('close', onWindowClose);
 
   // Emitted when the window is closed.
   mainWindow.on('closed', onWindowClosed);

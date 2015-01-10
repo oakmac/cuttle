@@ -5,7 +5,7 @@
     [cljs.core.async :refer [<!]]
     [cljsbuild-ui.pages.main :as main-page]
     [cljsbuild-ui.projects :refer [load-workspace!]]
-    [cljsbuild-ui.exec :refer [add-lein-profile!]]))
+    [cljsbuild-ui.exec :refer [add-lein-profile! kill-all-leiningen-instances!]]))
 
 (enable-console-print!)
 
@@ -23,9 +23,14 @@
 ;; effectively "global app init" for the webpage.
 (.on ipc "config-file-location" on-load)
 
+;;------------------------------------------------------------------------------
+;; Shutdown Signal
+;; NOTE: this probably belongs somewhere other than core, just putting it here
+;;       for now
+;;------------------------------------------------------------------------------
 
 (defn- on-shutdown []
-  (js/alert "shutdown!")
-  )
+  (kill-all-leiningen-instances!)
+  (.send ipc "shutdown-for-real"))
 
 (.on ipc "shutdown" on-shutdown)

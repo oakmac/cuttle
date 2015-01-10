@@ -288,8 +288,7 @@
 ;; I fought with this for hours re: trying to kill the process from node.js
 ;; this feels hacky, but it seems to work
 (defn- kill-auto-on-unix [pid]
-  (let [child (js-spawn "ps"
-                (array "-o" "pid,ppid"))]
+  (let [child (js-spawn "ps" (array "-o" "pid,ppid"))]
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stdout child) "data" #(kill-auto-on-unix2 pid %))))
 
@@ -297,10 +296,10 @@
 ;; Public Methods
 ;;------------------------------------------------------------------------------
 
-;; TODO: need to kill any "auto" process when they exit the app
 (def auto-pids (atom {}))
 
-;; TODO: need to combine the start-auto and build-once functions
+(defn kill-all-leiningen-instances! []
+  (doall (map stop-auto! (keys @auto-pids))))
 
 (defn start-auto
   "Start auto-compile. This function returns a core.async channel."
@@ -325,7 +324,7 @@
     ;; return the channel
     c))
 
-(defn stop-auto
+(defn stop-auto!
   "Kill an auto-compile process."
   [prj-key]
   (let [main-pid (get @auto-pids prj-key)]

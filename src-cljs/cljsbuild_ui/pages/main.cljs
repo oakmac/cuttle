@@ -400,7 +400,7 @@
   (swap! state assoc-in [:projects prj-key :state] :idle)
 
   ;; stop the process
-  (exec/stop-auto prj-key))
+  (exec/stop-auto! prj-key))
 
 (defn- click-compile-options [js-evt prj-key]
   (.stopPropagation js-evt)
