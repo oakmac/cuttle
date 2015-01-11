@@ -1,4 +1,6 @@
 (ns cljsbuild-ui.exec
+  (:require-macros
+    [cljs.core.async.macros :refer [go]])
   (:require
     [cljs.reader :refer [read-string]]
     [clojure.string :refer [join replace split-lines split trim]]
@@ -273,31 +275,26 @@
   (let [l-arr (split (trim l) #"\s+")
         ;; NOTE: This is dependent upon the order of the options passed to
         ;; the -o flag of ps in kill-auto-on-unix
-        pid (-> l-arr first int)
+        pid  (-> l-arr first int)
         ppid (-> l-arr second int)]
     [pid ppid]))
 
-(defn- kill-auto-on-unix2 [pid output]
+(defn- kill-auto-on-unix2 [ppid output callback-fn]
   (let [lines1 (split-lines output)
         lines2 (map convert-ps-line lines1)
-        pid-to-kill (ffirst (filter #(= pid (second %)) lines2))]
+        pid-to-kill (ffirst (filter #(= ppid (second %)) lines2))]
     ;; sanity check to make sure the pid exists
     (when (pos? pid-to-kill)
-      (js-exec (str "kill " pid-to-kill)))))
+      (js-exec (str "kill " pid-to-kill) callback-fn))))
 
 ;; I fought with this for hours re: trying to kill the process from node.js
-;; this feels hacky, but it seems to work
-
-
-;; TODO: need a callback here, having a race condition when closing the app
-;; and you have multiple processes going
-;; need a "Shutting down" screen too
-
-
-(defn- kill-auto-on-unix [pid]
+;; this feels hacky, but it works fine
+;; TODO: write a general-purpose "js-exec" function that returns a core.async
+;; channel; would prefer that to using callbacks here
+(defn- kill-auto-on-unix [pid callback-fn]
   (let [child (js-spawn "ps" (array "-o" "pid,ppid"))]
     (.setEncoding (.-stdout child) "utf8")
-    (.on (.-stdout child) "data" #(kill-auto-on-unix2 pid %))))
+    (.on (.-stdout child) "data" #(kill-auto-on-unix2 pid % callback-fn))))
 
 ;;------------------------------------------------------------------------------
 ;; Public Methods
@@ -330,17 +327,29 @@
 
 (defn stop-auto!
   "Kill an auto-compile process."
-  [prj-key]
-  (let [main-pid (get @auto-pids prj-key)]
-    (if on-windows?
-      (js-exec (str "taskkill /pid " main-pid " /T /F"))
-      (kill-auto-on-unix main-pid))
+  ([prj-key]
+    (stop-auto! prj-key (fn [] nil)))
+  ([prj-key callback-fn]
+    (let [main-pid (get @auto-pids prj-key)]
+      (if on-windows?
+        (js-exec (str "taskkill /pid " main-pid " /T /F") callback-fn)
+        (kill-auto-on-unix main-pid callback-fn))
 
-    ;; remove the pid from the atom
-    (swap! auto-pids dissoc prj-key)))
+      ;; remove the pid from the atom
+      (swap! auto-pids dissoc prj-key))))
 
 (defn kill-all-leiningen-instances! []
-  (doall (map stop-auto! (keys @auto-pids))))
+  (let [currently-running-prj-keys (keys @auto-pids)
+        num-running (count currently-running-prj-keys)
+        num-finished (atom 0)
+        ch (chan)
+        callback-fn (fn []
+                      (swap! num-finished inc)
+                      (when (= num-running @num-finished)
+                        (put! ch :all-finished)))]
+    (doall
+      (map #(stop-auto! % callback-fn) currently-running-prj-keys))
+    ch))
 
 (defn build-once
   "Start the build once process. This function returns a core.async channel

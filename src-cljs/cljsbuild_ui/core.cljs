@@ -4,7 +4,7 @@
     [hiccups.core :as hiccups])
   (:require
     [cljs.core.async :refer [<!]]
-    [cljsbuild-ui.dom :refer [by-id set-html!]]
+    [cljsbuild-ui.dom :refer [by-id hide-el! set-html! show-el!]]
     [cljsbuild-ui.exec :refer [add-lein-profile! kill-all-leiningen-instances!]]
     [cljsbuild-ui.pages.main :as main-page]
     [cljsbuild-ui.projects :refer [load-workspace!]]
@@ -15,14 +15,45 @@
 (def ipc (js/require "ipc"))
 
 ;;------------------------------------------------------------------------------
+;; Loading / Shutting Down Pages
+;;------------------------------------------------------------------------------
+
+(hiccups/defhtml shutdown-page []
+  [:div.loading-6792e
+    [:i.fa.fa-cog.fa-spin]
+    "Shutting Down"])
+
+(defn- show-shutting-down-page! []
+  (set-html! "shutdownPage" (shutdown-page))
+  (hide-el! "loadingPage")
+  (hide-el! "mainPage")
+  (show-el! "shutdownPage"))
+
+(hiccups/defhtml loading-page []
+  [:div.loading-6792e
+    [:i.fa.fa-cog.fa-spin]
+    "Loading"])
+
+(defn- show-loading-page! []
+  (set-html! "loadingPage" (loading-page))
+  (hide-el! "shutdownPage")
+  (hide-el! "mainPage")
+  (show-el! "loadingPage"))
+
+;; initialize to the loading page
+(show-loading-page!)
+
+;;------------------------------------------------------------------------------
 ;; Shutdown Signal
 ;;------------------------------------------------------------------------------
 
 ;; NOTE: this probably belongs somewhere other than core, just putting it here for now
 
 (defn- on-shutdown []
-  (kill-all-leiningen-instances!)
-  (.send ipc "shutdown-for-real"))
+  (go
+    (show-shutting-down-page!)
+    (<! (kill-all-leiningen-instances!))
+    (.send ipc "shutdown-for-real")))
 
 (.on ipc "shutdown" on-shutdown)
 
@@ -41,18 +72,3 @@
 ;; It sends the OS-normalized app data path to this event,
 ;; effectively "global app init" for the webpage.
 (.on ipc "config-file-location" global-init!)
-
-;;------------------------------------------------------------------------------
-;; Loading State
-;;------------------------------------------------------------------------------
-
-(hiccups/defhtml loading-state []
-  [:div.loading-6792e
-    [:i.fa.fa-cog.fa-spin]
-    "Loading"])
-
-(defn- show-loading-state! []
-  (set-html! "app" (loading-state)))
-
-;; initialize the loading state
-(show-loading-state!)

@@ -8,7 +8,7 @@
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
     [cljsbuild-ui.config :refer [config]]
-    [cljsbuild-ui.dom :refer [by-id]]
+    [cljsbuild-ui.dom :refer [by-id hide-el! show-el!]]
     [cljsbuild-ui.exec :as exec]
     [cljsbuild-ui.projects :as projects :refer [load-project-file]]
     [cljsbuild-ui.util :refer [date-format log js-log now uuid]]))
@@ -639,7 +639,7 @@
     (set! anim-frame-id nil))
 
   ;; put the render function on the next animation frame
-  (let [render-fn #(quiescent/render (AppRoot new-state) (by-id "app"))]
+  (let [render-fn #(quiescent/render (AppRoot new-state) (by-id "mainPage"))]
     (set! anim-frame-id (request-anim-frame render-fn))))
 
 (add-watch state :main on-change-state)
@@ -650,6 +650,10 @@
 
 (defn init! [proj-filenames]
   (init-projects! proj-filenames)
+
+  (hide-el! "loadingPage")
+  (hide-el! "shutdownPage")
+  (show-el! "mainPage")
 
   ;; trigger initial UI render even if proj-filenames is empty
   ;; TODO: probably should change the way init-projects! works
