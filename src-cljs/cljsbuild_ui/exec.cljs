@@ -287,6 +287,13 @@
 
 ;; I fought with this for hours re: trying to kill the process from node.js
 ;; this feels hacky, but it seems to work
+
+
+;; TODO: need a callback here, having a race condition when closing the app
+;; and you have multiple processes going
+;; need a "Shutting down" screen too
+
+
 (defn- kill-auto-on-unix [pid]
   (let [child (js-spawn "ps" (array "-o" "pid,ppid"))]
     (.setEncoding (.-stdout child) "utf8")
@@ -316,7 +323,7 @@
     (.on child "close" #(on-close-child c))
 
     ;; save the child pid
-    (swap! auto-pids assoc prj-key (.-pid child))
+    (swap! auto-pids assoc prj-key (aget child "pid"))
 
     ;; return the channel
     c))
