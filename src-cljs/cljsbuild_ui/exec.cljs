@@ -349,6 +349,9 @@
                         (put! ch :all-finished)))]
     (doall
       (map #(stop-auto! % callback-fn) currently-running-prj-keys))
+    ;; close the channel immediately if there are no running processes
+    (when (zero? num-running)
+      (put! ch :all-finished))
     ch))
 
 (defn build-once
