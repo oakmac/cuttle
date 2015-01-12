@@ -85,18 +85,23 @@ var mainWindow = null;
 var bounceID;
 
 function onStartBounce() {
+  // run bounce and set to bounceID
   bounceID = app.dock.bounce("critical");
   console.log(bounceID);
+
+  // test code to see houw setBadge works
+  app.dock.setBadge("E");
 }
 
-ipc.on('start-bounce', onStartBounce);
+// ipc.on('start-bounce', onStartBounce);
 
 function onStopBounce() {
+  // need to get bounceID as returned from app.dock.bounce() and pass to
+  // app.dock.cancelBounce(id)
   app.dock.cancelBounce(0);
-  app.dock.cancelBounce(1);
 }
 
-ipc.on('stop-bounce', onStopBounce);
+// ipc.on('stop-bounce', onStopBounce);
 
 // NOTE: so the docs say to only use this when the page has crashed, but I think
 // it's ok in this case because of the way we're "trapping" the regular close event
