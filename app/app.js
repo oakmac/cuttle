@@ -4,7 +4,8 @@ var app = require('app'),
   Menu = require('menu'),
   dialog = require('dialog'),
   config = {},
-  fs = require('fs');
+  fs = require('fs')
+  path = require('path');
 
 // report crashes to atom-shell
 require('crash-reporter').start();
@@ -70,14 +71,27 @@ if (fs.existsSync(__dirname + '/config.json')) {
   config = require(__dirname + '/config.json');
 }
 
+// load window information
+const windowInformationFile = app.getDataPath() + path.sep + 'window.json';
+var windowInformation = {};
+if (fs.existsSync(windowInformationFile)) {
+  windowInformation = require(windowInformationFile);
+}
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
-// NOTE: so the docs say to only use this when the page has crashed, but I think
-// it's ok in this case because of the way we're "trapping" the regular close event
-// https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy
 function shutdownForReal() {
+  // save current window information
+  windowInformation.maximized = mainWindow.isMaximized();
+  windowInformation.position = mainWindow.getPosition();
+  windowInformation.size = mainWindow.getSize();
+  fs.writeFileSync(windowInformationFile, JSON.stringify(windowInformation));
+
+  // NOTE: so the docs say to only use this when the page has crashed, but I think
+  // it's ok in this case because of the way we're "trapping" the regular close event
+  // https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy
   // TODO: look into using app.quit() here instead
   mainWindow.destroy();
 }
@@ -105,11 +119,12 @@ function onFinishLoad() {
   mainWindow.webContents.send('config-file-location', app.getDataPath());
 }
 
-// NOTE: a lot of the browserWindow options listed on the docs page aren't
-// working - need to investigate
-var browserWindowOptions = {
+// NOTE: not all of the browserWindow options listed on the docs page work
+// on all operating systems
+const browserWindowOptions = {
   height: 850,
   icon: __dirname + '/img/clojure-logo.png',
+  'min-width': 860,
   title: 'ClojureScript Compiler',
   width: 1000
 };
@@ -133,6 +148,17 @@ function startApp() {
   // optionally launch dev tools
   if (config.hasOwnProperty("dev-tools") && config["dev-tools"] === true) {
     mainWindow.openDevTools();
+  }
+
+  // position window initially
+  if (windowInformation.hasOwnProperty('maximized') &&
+      windowInformation.maximized === true) {
+    mainWindow.maximize();
+  }
+  else if (windowInformation.hasOwnProperty('size') &&
+           windowInformation.hasOwnProperty('position')) {
+    mainWindow.setPosition(windowInformation.position[0], windowInformation.position[1]);
+    mainWindow.setSize(windowInformation.size[0], windowInformation.size[1]);
   }
 }
 
