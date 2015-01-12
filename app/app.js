@@ -78,6 +78,7 @@ var mainWindow = null;
 // it's ok in this case because of the way we're "trapping" the regular close event
 // https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy
 function shutdownForReal() {
+  // TODO: look into using app.quit() here instead
   mainWindow.destroy();
 }
 
