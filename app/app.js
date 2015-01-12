@@ -103,10 +103,6 @@ function onStopBounce() {
 
 // ipc.on('stop-bounce', onStopBounce);
 
-// NOTE: so the docs say to only use this when the page has crashed, but I think
-// it's ok in this case because of the way we're "trapping" the regular close event
-// https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy
-
 function shutdownForReal() {
   // save current window information
   windowInformation.maximized = mainWindow.isMaximized();
