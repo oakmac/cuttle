@@ -38,7 +38,7 @@ grunt.initConfig({
   },
 
   'download-atom-shell': {
-    version: '0.18.2',
+    version: '0.20.5',
     outputDir: 'atom-shell'
   }
 
