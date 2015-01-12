@@ -82,6 +82,31 @@ if (fs.existsSync(windowInformationFile)) {
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
+var bounceID;
+
+function onStartBounce() {
+  // run bounce and set to bounceID
+  bounceID = app.dock.bounce("critical");
+  console.log(bounceID);
+
+  // test code to see how setBadge works
+  app.dock.setBadge("E");
+}
+
+// ipc.on('start-bounce', onStartBounce);
+
+function onStopBounce() {
+  // need to get bounceID as returned from app.dock.bounce() and pass to
+  // app.dock.cancelBounce(id)
+  app.dock.cancelBounce(0);
+}
+
+// ipc.on('stop-bounce', onStopBounce);
+
+// NOTE: so the docs say to only use this when the page has crashed, but I think
+// it's ok in this case because of the way we're "trapping" the regular close event
+// https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy
+
 function shutdownForReal() {
   // save current window information
   windowInformation.maximized = mainWindow.isMaximized();
