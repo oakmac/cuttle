@@ -144,7 +144,6 @@ function onFinishLoad() {
 const browserWindowOptions = {
   height: 850,
   icon: __dirname + '/img/clojure-logo.png',
-  'min-width': 860,
   title: 'ClojureScript Compiler',
   width: 1000
 };
