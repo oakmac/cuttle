@@ -89,7 +89,7 @@ function onStartBounce() {
   bounceID = app.dock.bounce("critical");
   console.log(bounceID);
 
-  // test code to see houw setBadge works
+  // test code to see how setBadge works
   app.dock.setBadge("E");
 }
 
