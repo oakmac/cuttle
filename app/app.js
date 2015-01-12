@@ -15,19 +15,19 @@ require('crash-reporter').start();
 // (These have to be created on the "browser" side, i.e. here, not on the "page")
 //------------------------------------------------------------------------------
 
-function showAddExistingProjectDialog() {
-  var options = {
-    title: "Select an existing project (project.clj)",
-    properties: ["openFile"],
-    filters: [
-      {
-        name: "Leiningen project config",
-        extensions: ["clj"]
-      }
-    ]
-  };
+const addProjectDialogOptions = {
+  title: "Select an existing project (project.clj)",
+  properties: ["openFile"],
+  filters: [
+    {
+      name: "Leiningen project config",
+       extensions: ["clj"]
+    }
+  ]
+};
 
-  dialog.showOpenDialog(options, function(filenames) {
+function showAddExistingProjectDialog() {
+  dialog.showOpenDialog(addProjectDialogOptions, function(filenames) {
     if (filenames) {
       var filename = filenames[0];
       mainWindow.webContents.send("add-existing-project-dialog-success", filename);
@@ -35,15 +35,13 @@ function showAddExistingProjectDialog() {
   });
 }
 
-ipc.on("request-add-existing-project-dialog", function(event, arg) {
-  showAddExistingProjectDialog();
-});
+ipc.on("request-add-existing-project-dialog", showAddExistingProjectDialog);
 
 //------------------------------------------------------------------------------
 // Menu Builder
 //------------------------------------------------------------------------------
 
-var menuTemplate = [
+const menuTemplate = [
   {
     label: "File", // NOTE: On Mac, the first menu item is always the name of the Application
                    //       (uses CFBundleName in Info.plist, set by "release.sh")
