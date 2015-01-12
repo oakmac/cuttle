@@ -74,6 +74,22 @@ if (fs.existsSync(__dirname + '/config.json')) {
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
+var bounceID;
+
+function onStartBounce() {
+  bounceID = app.dock.bounce("critical");
+  console.log(bounceID);
+}
+
+ipc.on('start-bounce', onStartBounce);
+
+function onStopBounce() {
+  app.dock.cancelBounce(0);
+  app.dock.cancelBounce(1);
+}
+
+ipc.on('stop-bounce', onStopBounce);
+
 // NOTE: so the docs say to only use this when the page has crashed, but I think
 // it's ok in this case because of the way we're "trapping" the regular close event
 // https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy

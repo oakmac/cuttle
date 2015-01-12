@@ -311,14 +311,21 @@
             (show-start-compiling! prj-key bld-id))
         :success
           (do
+            (.send ipc "stop-bounce")
             (show-done-compiling! prj-key @current-bld-id data)
             (reset! current-bld-id nil))
         :warning
-          (show-warnings! prj-key @current-bld-id data)
+          (do
+            ;;NOTE: This will be changed/moved once settings menu is configured.
+            (.send ipc "start-bounce")
+            (show-warnings! prj-key @current-bld-id data))
         :finished
           (compiler-done! prj-key bld-ids)
         :error
-          (show-build-error! prj-key @current-bld-id data)
+          (do
+            ;;NOTE: This will be changed/moved once settings menu is configured.
+            (.send ipc "start-bounce")
+            (show-build-error! prj-key @current-bld-id data))
         nil)
 
       ;; loop back
