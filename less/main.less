@@ -71,6 +71,7 @@
 @errorRed: red;
 @inactiveGrey: #666;
 @warningOrange: #c47f00;
+@primaryGreen: green;
 
 //------------------------------------------------------------------------------
 // Tags
@@ -435,9 +436,9 @@ body {
 .loading-6792e {
   .font-light(42px);
   left: 50%;
-  position: fixed;
-  top: 44%;
-  transform: translate(-50%, -50%);
+  position: absolute;
+  top: 25%;
+  transform: translate(-50%, 0%);
 
   .fa {
     font-size: 36px;
@@ -468,12 +469,98 @@ body {
   }
 }
 
-.new-link-e7e58 {
+.link-e7e58 {
   color: @activeBlue;
   cursor: pointer;
   text-decoration: none;
 }
 
-.new-link-e7e58:hover {
+.link-e7e58:hover {
   text-decoration: underline;
+}
+
+@modalZ: 1000;
+
+.modal-overlay-120d3 {
+  background-color: #3d464d;
+  height: 100%;
+  left: 0;
+  opacity: .6;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: (@modalZ - 1);
+}
+
+.modal-body-fe4db {
+  box-sizing: border-box;
+  background: #f8f9fa;
+  border: 1px solid #e3e3e3;
+  border-radius: 3px;
+  left: 50%;
+  min-width: 500px;
+  padding: 30px 0 0 0;
+  position: absolute;
+  top: 10%;
+  transform: translate(-50%, 0%);
+  z-index: @modalZ;
+
+  code {
+    font-family: "Droid Sans Mono";
+  }
+}
+
+.big-btn-a5d18 {
+  display: inline-block;
+  padding: 5px 10px;
+}
+
+.label-b0246 {
+  display: block;
+  .font-light(18px);
+  margin: 0 0 10px 0;
+  padding: 0;
+}
+
+.modal-chunk-2041a {
+  margin: 0 0 30px 0;
+  padding: 0 20px;
+}
+
+.modal-bottom-050c3 {
+  background: #eee;
+  padding: 20px;
+
+  button {
+    display: inline-block;
+    margin-right: 12px;
+    padding: 5px 10px;
+  }
+}
+
+.icon-e70fb {
+  margin-right: 6px;
+}
+
+.small-info-b72e9 {
+  .font-light(16px);
+  margin: 10px 0 0 0;
+  padding: 0;
+}
+
+.success-hdr-0f1c6 {
+  .font-bold(20px);
+  margin: 0;
+  padding: 0;
+}
+
+.text-input-4800e {
+  box-sizing: border-box;
+  font-size: 24px;
+  padding: 6px;
+  width: 100%;
+}
+
+.large-6d31a {
+  .font-normal(24px);
 }

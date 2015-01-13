@@ -14,19 +14,19 @@ require('crash-reporter').start();
 // (These have to be created on the "browser" side, i.e. here, not on the "page")
 //------------------------------------------------------------------------------
 
-const addProjectDialogOptions = {
-  title: "Select an existing project (project.clj)",
-  properties: ["openFile"],
+const existingProjectDialogOptions = {
+  title: 'Please select an existing project.clj file',
+  properties: ['openFile'],
   filters: [
     {
-      name: "Leiningen project config",
-       extensions: ["clj"]
+      name: 'Leiningen project.clj',
+      extensions: ['clj']
     }
   ]
 };
 
 function showAddExistingProjectDialog() {
-  dialog.showOpenDialog(addProjectDialogOptions, function(filenames) {
+  dialog.showOpenDialog(existingProjectDialogOptions, function(filenames) {
     if (filenames) {
       var filename = filenames[0];
       mainWindow.webContents.send("add-existing-project-dialog-success", filename);
@@ -34,7 +34,21 @@ function showAddExistingProjectDialog() {
   });
 }
 
-ipc.on("request-add-existing-project-dialog", showAddExistingProjectDialog);
+const newProjectDialogOptions = {
+  title: 'Select an empty directory'
+};
+
+function newProjectDialogSuccess(filenames) {
+  console.log("newProjectDialogSuccess");
+  console.log(filenames);
+}
+
+function showNewProjectDialog() {
+  dialog.showOpenDialog(newProjectDialogOptions, newProjectDialogSuccess);
+}
+
+ipc.on('request-add-existing-project-dialog', showAddExistingProjectDialog);
+ipc.on('request-new-project-dialog', showNewProjectDialog);
 
 //------------------------------------------------------------------------------
 // Menu Builder

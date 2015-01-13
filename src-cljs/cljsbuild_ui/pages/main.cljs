@@ -21,8 +21,13 @@
 ;; App State
 ;;------------------------------------------------------------------------------
 
-(def initial-app-state
-  {:projects {:order []}})
+(def initial-app-state {
+  :new-project-dir ""
+  :new-project-name ""
+  :new-project-modal-showing? false
+  :new-project-step 1
+  :projects {:order []}
+  })
 
 (def state (atom initial-app-state))
 
@@ -136,13 +141,14 @@
 ;; User-initiated Project Adding and Removing (both workspace and app state)
 ;;------------------------------------------------------------------------------
 
-(defn try-add-existing-project! []
+(defn click-load-existing-project-btn []
   (.send ipc "request-add-existing-project-dialog"))
 
 (.on ipc "add-existing-project-dialog-success"
   (fn [filename]
-    (when-let [_ (projects/add-to-workspace! filename)]
-      (add-project! filename))))
+    (when-let [added? (projects/add-to-workspace! filename)]
+      (add-project! filename))
+    (swap! state assoc :new-project-modal-showing? false)))
 
 (def delete-confirm-msg (str
   "Remove % from the build tool?\n\n"
@@ -422,6 +428,31 @@
 (defn- toggle-build-active [prj-key bld-id]
   (swap! state update-in [:projects prj-key :builds bld-id :active?] not))
 
+(defn- show-new-project-modal []
+  (swap! state assoc :new-project-modal-showing? true))
+
+(defn- close-modal []
+  (swap! state assoc :new-project-modal-showing? false))
+
+(defn- click-new-from-scratch-btn []
+  (swap! state assoc :new-project-step 2))
+
+(defn- click-create-project-btn []
+  (swap! state assoc :new-project-step 3))
+
+(defn- click-new-project-done-btn []
+  (swap! state assoc :new-project-modal-showing? false
+                     :new-project-name ""
+                     :new-project-dir ""
+                     :new-project-step 1))
+
+(defn- on-change-new-project-name-input [js-evt]
+  (let [n (aget js-evt "currentTarget" "value")]
+    (swap! state assoc :new-project-name n)))
+
+(defn- click-go-back-btn []
+  (swap! state assoc :new-project-step 1))
+
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
 ;;------------------------------------------------------------------------------
@@ -562,8 +593,74 @@
     [:div.inner-aa3fc
       [:h4 "No active projects."]
       [:p "Would you like to add a "
-        [:span.new-link-e7e58 {:on-click try-add-existing-project!}
+        [:span.link-e7e58 {:on-click show-new-project-modal}
           "new one"] "?"]]])
+
+(sablono/defhtml header []
+  [:div.header-a4c14
+    [:div.title-8749a "ClojureScript Compiler"]
+    [:div.title-links-42b06
+      [:span.link-3d3ad
+        {:on-click show-new-project-modal}
+        [:i.fa.fa-plus] "Add project"]
+      ;; NOTE: hide settings for now
+      ;; [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]
+      ]
+    [:div.clr-737fa]])
+
+(sablono/defhtml modal-overlay []
+  [:div.modal-overlay-120d3 {:on-click close-modal}])
+
+(sablono/defhtml new-project-step-1 []
+  [:div.modal-body-fe4db
+    [:div.modal-chunk-2041a
+      [:button.big-btn-a5d18 {:on-click click-new-from-scratch-btn}
+        "New Project"]
+      [:p.small-info-b72e9
+        "Create a new project from scratch."]]
+    [:div.modal-chunk-2041a
+      [:button.big-btn-a5d18 {:on-click click-load-existing-project-btn}
+        "Existing Project"]
+      [:p.small-info-b72e9
+        "Load an existing project from a Leiningen " [:code "project.clj"] " file."]]
+    [:div.modal-bottom-050c3
+      [:span.link-e7e58 {:on-click close-modal}
+        "cancel"]]])
+
+(sablono/defhtml new-project-step-2 [app-state]
+  [:div.modal-body-fe4db
+    [:div.modal-chunk-2041a
+      [:label.label-b0246 "Project Name"]
+      [:input.text-input-4800e
+        {:on-change on-change-new-project-name-input
+         :type "text"
+         :value (:new-project-name app-state)}]]
+    [:div.modal-chunk-2041a
+      [:label.label-b0246 "Project Folder"]
+      [:div "*directory picker*"]]
+    [:div.modal-bottom-050c3
+      [:button {:on-click click-create-project-btn} "Create Project"]
+      [:span.link-e7e58 {:on-click click-go-back-btn} "go back"]]])
+
+(sablono/defhtml new-project-step-3 []
+  [:div.modal-body-fe4db
+    [:div.modal-chunk-2041a.large-6d31a
+      [:i.fa.fa-gear.fa-spin.icon-e70fb]
+      "Creating a new project"]
+
+    ;; NOTE: temporary button, remove me
+    [:button {:on-click #(swap! state assoc :new-project-step 4)} "TMP"]
+
+    ])
+
+(sablono/defhtml new-project-step-4 []
+  [:div.modal-body-fe4db
+    [:div.modal-chunk-2041a
+      [:h4.success-hdr-0f1c6 "Success!"]]
+    [:div.modal-chunk-2041a
+      "*TODO: details of the new project*"]
+    [:div.modal-bottom-050c3
+      [:button {:on-click click-new-project-done-btn} "Got it!"]]])
 
 ;;------------------------------------------------------------------------------
 ;; Quiescent Components
@@ -622,24 +719,28 @@
                                      :prj-key prj-key))))
             (:builds-order prj))]])))
 
+(quiescent/defcomponent NewProjectModal [app-state]
+  (let [current-step (:new-project-step app-state)]
+    (case current-step
+      1 (new-project-step-1)
+      2 (new-project-step-2 app-state)
+      3 (new-project-step-3)
+      4 (new-project-step-4)
+      nil)))
+
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
-    [:div.app-ca3cd
-      {:on-click click-root}
-      [:div.header-a4c14
-        [:div.title-8749a "ClojureScript Compiler"]
-        [:div.title-links-42b06
-          [:span.link-3d3ad
-            {:on-click try-add-existing-project!}
-            [:i.fa.fa-plus] "Add project"]
-          ;; NOTE: hide settings for now
-          ;; [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]
-          ]
-        [:div.clr-737fa]]
-      (let [projects (-> app-state :projects get-ordered-projects)]
-        (if (zero? (count projects))
-          (no-projects)
-          (map Project projects)))]))
+    [:div
+      (when (:new-project-modal-showing? app-state)
+        (list
+          (modal-overlay)
+          (NewProjectModal app-state)))
+      [:div.app-ca3cd {:on-click click-root}
+        (header)
+        (let [projects (-> app-state :projects get-ordered-projects)]
+          (if (zero? (count projects))
+            (no-projects)
+            (map Project projects)))]]))
 
 ;;------------------------------------------------------------------------------
 ;; State Change and Rendering
