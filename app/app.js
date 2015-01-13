@@ -1,10 +1,10 @@
 var app = require('app'),
   BrowserWindow = require('browser-window'),
+  dialog = require('dialog'),
+  fs = require('fs')
   ipc = require('ipc'),
   Menu = require('menu'),
-  dialog = require('dialog'),
-  config = {},
-  fs = require('fs');
+  path = require('path');
 
 // report crashes to atom-shell
 require('crash-reporter').start();
@@ -14,19 +14,19 @@ require('crash-reporter').start();
 // (These have to be created on the "browser" side, i.e. here, not on the "page")
 //------------------------------------------------------------------------------
 
-function showAddExistingProjectDialog() {
-  var options = {
-    title: "Select an existing project (project.clj)",
-    properties: ["openFile"],
-    filters: [
-      {
-        name: "Leiningen project config",
-        extensions: ["clj"]
-      }
-    ]
-  };
+const existingProjectDialogOptions = {
+  title: 'Please select an existing project.clj file',
+  properties: ['openFile'],
+  filters: [
+    {
+      name: 'Leiningen project.clj',
+      extensions: ['clj']
+    }
+  ]
+};
 
-  dialog.showOpenDialog(options, function(filenames) {
+function showAddExistingProjectDialog() {
+  dialog.showOpenDialog(existingProjectDialogOptions, function(filenames) {
     if (filenames) {
       var filename = filenames[0];
       mainWindow.webContents.send("add-existing-project-dialog-success", filename);
@@ -34,21 +34,33 @@ function showAddExistingProjectDialog() {
   });
 }
 
-ipc.on("request-add-existing-project-dialog", function(event, arg) {
-  showAddExistingProjectDialog();
-});
+const newProjectDialogOptions = {
+  title: 'Select an empty directory'
+};
+
+function newProjectDialogSuccess(filenames) {
+  console.log("newProjectDialogSuccess");
+  console.log(filenames);
+}
+
+function showNewProjectDialog() {
+  dialog.showOpenDialog(newProjectDialogOptions, newProjectDialogSuccess);
+}
+
+ipc.on('request-add-existing-project-dialog', showAddExistingProjectDialog);
+ipc.on('request-new-project-dialog', showNewProjectDialog);
 
 //------------------------------------------------------------------------------
 // Menu Builder
 //------------------------------------------------------------------------------
 
-var menuTemplate = [
+const menuTemplate = [
   {
-    label: "File", // NOTE: On Mac, the first menu item is always the name of the Application
+    label: 'File', // NOTE: On Mac, the first menu item is always the name of the Application
                    //       (uses CFBundleName in Info.plist, set by "release.sh")
     submenu: [
       {
-        label: "Add Existing Project",
+        label: 'Add Existing Project',
         click: showAddExistingProjectDialog
       }
     ]
@@ -64,20 +76,59 @@ var menu = Menu.buildFromTemplate(menuTemplate);
 // Main
 //------------------------------------------------------------------------------
 
-// load config
-// NOTE: this is mostly for development purposes
+// load development config (optional)
+var devConfig = {};
 if (fs.existsSync(__dirname + '/config.json')) {
-  config = require(__dirname + '/config.json');
+  devConfig = require(__dirname + '/config.json');
+}
+
+// load window information
+const windowInformationFile = app.getDataPath() + path.sep + 'window.json';
+var windowInformation = {};
+if (fs.existsSync(windowInformationFile)) {
+  windowInformation = require(windowInformationFile);
 }
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
-// NOTE: so the docs say to only use this when the page has crashed, but I think
-// it's ok in this case because of the way we're "trapping" the regular close event
-// https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// dock bounce on Mac (disabled for now)
+
+var bounceID;
+
+function onStartBounce() {
+  // run bounce and set to bounceID
+  bounceID = app.dock.bounce("critical");
+  console.log(bounceID);
+
+  // test code to see how setBadge works
+  app.dock.setBadge("E");
+}
+
+ipc.on('start-bounce', onStartBounce);
+
+function onStopBounce() {
+  // need to get bounceID as returned from app.dock.bounce() and pass to
+  // app.dock.cancelBounce(id)
+  app.dock.cancelBounce(0);
+}
+
+ipc.on('stop-bounce', onStopBounce);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 function shutdownForReal() {
+  // save current window information
+  windowInformation.maximized = mainWindow.isMaximized();
+  windowInformation.position = mainWindow.getPosition();
+  windowInformation.size = mainWindow.getSize();
+  fs.writeFileSync(windowInformationFile, JSON.stringify(windowInformation));
+
+  // NOTE: so the docs say to only use this when the page has crashed, but I think
+  // it's ok in this case because of the way we're "trapping" the regular close event
+  // https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy
+  // TODO: look into using app.quit() here instead
   mainWindow.destroy();
 }
 
@@ -104,9 +155,9 @@ function onFinishLoad() {
   mainWindow.webContents.send('config-file-location', app.getDataPath());
 }
 
-// NOTE: a lot of the browserWindow options listed on the docs page aren't
-// working - need to investigate
-var browserWindowOptions = {
+// NOTE: not all of the browserWindow options listed on the docs page work
+// on all operating systems
+const browserWindowOptions = {
   height: 850,
   icon: __dirname + '/img/clojure-logo.png',
   title: 'ClojureScript Compiler',
@@ -130,8 +181,20 @@ function startApp() {
   mainWindow.on('closed', onWindowClosed);
 
   // optionally launch dev tools
-  if (config.hasOwnProperty("dev-tools") && config["dev-tools"] === true) {
+  if (devConfig.hasOwnProperty('dev-tools') &&
+      devConfig['dev-tools'] === true) {
     mainWindow.openDevTools();
+  }
+
+  // position window initially
+  if (windowInformation.hasOwnProperty('maximized') &&
+      windowInformation.maximized === true) {
+    mainWindow.maximize();
+  }
+  else if (windowInformation.hasOwnProperty('size') &&
+           windowInformation.hasOwnProperty('position')) {
+    mainWindow.setPosition(windowInformation.position[0], windowInformation.position[1]);
+    mainWindow.setSize(windowInformation.size[0], windowInformation.size[1]);
   }
 }
 
