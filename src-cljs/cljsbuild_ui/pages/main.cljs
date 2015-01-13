@@ -557,6 +557,14 @@
 (sablono/defhtml once-state [prj-key]
   [:span.status-984ee "Compiling..."])
 
+(sablono/defhtml no-projects []
+  [:div.outer-f80bb
+    [:div.inner-aa3fc
+      [:h4 "No active projects."]
+      [:p "Would you like to add a "
+        [:span.new-link-e7e58 {:on-click try-add-existing-project!}
+          "new one"] "?"]]])
+
 ;;------------------------------------------------------------------------------
 ;; Quiescent Components
 ;;------------------------------------------------------------------------------
@@ -622,13 +630,16 @@
         [:div.title-8749a "ClojureScript Compiler"]
         [:div.title-links-42b06
           [:span.link-3d3ad
-            {:on-click #(try-add-existing-project!)}
+            {:on-click try-add-existing-project!}
             [:i.fa.fa-plus] "Add project"]
           ;; NOTE: hide settings for now
           ;; [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]
           ]
         [:div.clr-737fa]]
-      (map Project (get-ordered-projects (:projects app-state)))]))
+      (let [projects (-> app-state :projects get-ordered-projects)]
+        (if (zero? (count projects))
+          (no-projects)
+          (map Project projects)))]))
 
 ;;------------------------------------------------------------------------------
 ;; State Change and Rendering
