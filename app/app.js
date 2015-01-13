@@ -1,10 +1,9 @@
 var app = require('app'),
   BrowserWindow = require('browser-window'),
+  dialog = require('dialog'),
+  fs = require('fs')
   ipc = require('ipc'),
   Menu = require('menu'),
-  dialog = require('dialog'),
-  config = {},
-  fs = require('fs')
   path = require('path');
 
 // report crashes to atom-shell
@@ -43,11 +42,11 @@ ipc.on("request-add-existing-project-dialog", showAddExistingProjectDialog);
 
 const menuTemplate = [
   {
-    label: "File", // NOTE: On Mac, the first menu item is always the name of the Application
+    label: 'File', // NOTE: On Mac, the first menu item is always the name of the Application
                    //       (uses CFBundleName in Info.plist, set by "release.sh")
     submenu: [
       {
-        label: "Add Existing Project",
+        label: 'Add Existing Project',
         click: showAddExistingProjectDialog
       }
     ]
@@ -63,10 +62,10 @@ var menu = Menu.buildFromTemplate(menuTemplate);
 // Main
 //------------------------------------------------------------------------------
 
-// load config
-// NOTE: this is mostly for development purposes
+// load development config (optional)
+var devConfig = {};
 if (fs.existsSync(__dirname + '/config.json')) {
-  config = require(__dirname + '/config.json');
+  devConfig = require(__dirname + '/config.json');
 }
 
 // load window information
@@ -80,6 +79,9 @@ if (fs.existsSync(windowInformationFile)) {
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// dock bounce on Mac (disabled for now)
+
 var bounceID;
 
 function onStartBounce() {
@@ -91,7 +93,7 @@ function onStartBounce() {
   app.dock.setBadge("E");
 }
 
-// ipc.on('start-bounce', onStartBounce);
+ipc.on('start-bounce', onStartBounce);
 
 function onStopBounce() {
   // need to get bounceID as returned from app.dock.bounce() and pass to
@@ -99,7 +101,8 @@ function onStopBounce() {
   app.dock.cancelBounce(0);
 }
 
-// ipc.on('stop-bounce', onStopBounce);
+ipc.on('stop-bounce', onStopBounce);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 function shutdownForReal() {
   // save current window information
@@ -164,7 +167,8 @@ function startApp() {
   mainWindow.on('closed', onWindowClosed);
 
   // optionally launch dev tools
-  if (config.hasOwnProperty("dev-tools") && config["dev-tools"] === true) {
+  if (devConfig.hasOwnProperty('dev-tools') &&
+      devConfig['dev-tools'] === true) {
     mainWindow.openDevTools();
   }
 
