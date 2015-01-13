@@ -24,23 +24,11 @@ break on a regular basis.
 1. One-time setup. Run from the project directory:
 
     ```sh
-    # install node.js dependencies
-    npm install
+    # setup on linux/mac
+    ./setup.sh
 
-    # install grunt (may need sudo)
-    npm install -g grunt-cli
-
-    # install winresourcer
-    npm install -g winresourcer
-
-    # downloads lein jar to be packaged in our app
-    grunt curl
-
-    # downloads atom-shell
-    grunt download-atom-shell
-
-    # builds add-lein-profile tool
-    ./build-lein-profile-tool.sh
+    # setup on windows
+    setup.bat
     ```
 
 1. Compile when files change:
