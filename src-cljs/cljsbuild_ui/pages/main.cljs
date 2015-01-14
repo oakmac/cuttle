@@ -17,6 +17,7 @@
 (def open (js/require "open"))
 (def path (js/require "path"))
 (def path-separator (aget path "sep"))
+(def ENTER 13)
 
 ;;------------------------------------------------------------------------------
 ;; App State
@@ -484,6 +485,10 @@
   (when-not (= 3 (:new-project-step @state))
     (close-add-project-modal)))
 
+(defn- on-keydown-new-project-name [js-evt]
+  (when (= ENTER (aget js-evt "keyCode"))
+    (click-create-project-btn)))
+
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
 ;;------------------------------------------------------------------------------
@@ -664,6 +669,7 @@
       [:label.label-b0246 "Project Name"]
       [:input.text-input-4800e
         {:on-change on-change-new-project-name-input
+         :on-key-down on-keydown-new-project-name
          :type "text"
          :value (:new-project-name app-state)}]]
     [:div.modal-chunk-2041a
