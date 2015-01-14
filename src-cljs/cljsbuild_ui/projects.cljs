@@ -7,10 +7,11 @@
     [cljs.reader :refer [read-string]]
     [cljsbuild-ui.cljsbuild.config :refer [extract-options]]
     [cljsbuild-ui.exec :refer [get-cljsbuild-with-profiles]]
-    [cljsbuild-ui.util :refer [path-join
-                               path-dirname]]))
+    [cljsbuild-ui.util :refer [js-log log path-join path-dirname]]))
 
 (def fs (js/require "fs"))
+
+(declare write-workspace!)
 
 ;;------------------------------------------------------------------------------
 ;; Project Parsing
@@ -54,8 +55,6 @@
       (assoc project :cljsbuild cljsbuild2))))
 
 ;; TODO:
-;; - Need to handle files listed in projects.json that no longer exist on disk (GitHub Issue #45)
-;;   (ie: did you remove this file?)
 ;; - need to do some quick validation of project.clj
 ;;   (ie: does it have :cljsbuild?)
 (defn load-project-file [filename]
@@ -90,8 +89,15 @@
   ;; TODO: need to do some quick validation on projects.json format here
   (when-not (.existsSync fs workspace-filename)
     (create-default-projects-file! app-data-path workspace-filename))
-  (let [filenames (js->clj (js/require workspace-filename))]
-    filenames))
+  (let [filenames1 (js->clj (js/require workspace-filename))
+        filenames2 (vec (filter #(.existsSync fs %) filenames1))]
+
+    ;; re-write projects.json if it contains a project.clj file that no longer exists
+    ;; TODO: add some UX around this to inform the user that this has happened, GitHub Issue #45
+    (when (not= filenames1 filenames2)
+      (write-workspace! filenames2))
+
+    filenames2))
 
 ;;------------------------------------------------------------------------------
 ;; Project Workspace Modification
