@@ -1,5 +1,8 @@
+//------------------------------------------------------------------------------
+// Imports
+//------------------------------------------------------------------------------
+
 @import "normalize-3.0.1.less";
-@import "elements-0.9.less";
 @import "font-awesome-4.1.0.less";
 
 //------------------------------------------------------------------------------
@@ -58,22 +61,32 @@
 }
 
 //------------------------------------------------------------------------------
-// Variables
+// Variables and Mixins
 //------------------------------------------------------------------------------
 
 @activeBlue: #0075ea;
 @borderGrey: #e1e1e1;
-@errorRed: #e44545; // #df3232;
+@errorRed: #e44545;
 @inactiveGrey: #666;
 @warningOrange: #c47f00;
 @primaryGreen: #309630;
+
+@modalZ: 1000;
+
+.border-radius(@topright: 0, @bottomright: 0, @bottomleft: 0, @topleft: 0) {
+  background-clip: padding-box;
+  border-top-right-radius: @topright;
+  border-bottom-right-radius: @bottomright;
+  border-bottom-left-radius: @bottomleft;
+  border-top-left-radius: @topleft;
+}
 
 //------------------------------------------------------------------------------
 // Tags
 //------------------------------------------------------------------------------
 
 body {
-  .box-sizing();
+  box-sizing: border-box;
   color: #444;
   font-family: "Open Sans";
 }
@@ -103,10 +116,10 @@ body {
 
 .settings-link-c1709 {
   border: 1px solid @borderGrey;
+  border-radius: 4px;
   cursor: pointer;
   float: right;
   padding: 10px 20px;
-  .rounded(4px);
 }
 
 .title-links-42b06 {
@@ -139,13 +152,13 @@ body {
 .btn-da85d {
   background: #e6e6e6;
   border: 0;
+  border-radius: 4px;
   color: #000;
   cursor: pointer;
   display: inline-block;
   .font-normal(14px);
   margin-left: 10px;
   padding: 8px 12px;
-  .rounded(4px);
 }
 
 .count-cfa27 {
@@ -158,13 +171,13 @@ body {
 .disabled-btn-1884b {
   background: #e6e6e6;
   border: 0;
+  border-radius: 4px;
   color: #555;
   cursor: auto;
   display: inline-block;
   .font-normal(14px);
   margin-right: 10px;
   padding: 8px 12px;
-  .rounded(4px);
 }
 
 .project-1b83a {
@@ -385,12 +398,12 @@ body {
 .compile-btn-17a78 {
   background: #e6e6e6;
   border: 0;
+  .border-radius(0, 0, 4px, 4px);
   color: #000;
   cursor: pointer;
   display: inline-block;
   .font-normal(14px);
   padding: 8px 12px;
-  .border-radius(0, 0, 4px, 4px);
 }
 
 .menu-btn-550bf {
@@ -473,8 +486,6 @@ body {
 .link-e7e58:hover {
   text-decoration: underline;
 }
-
-@modalZ: 1000;
 
 .modal-overlay-120d3 {
   background-color: #3d464d;
