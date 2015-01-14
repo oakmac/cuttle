@@ -443,11 +443,13 @@
                      :new-project-name ""
                      :new-project-step 1))
 
-(defn- close-modal []
+(defn- close-add-project-modal []
   (swap! state assoc :new-project-modal-showing? false))
 
-(defn- click-new-from-scratch-btn []
-  (swap! state assoc :new-project-step 2))
+(defn- click-new-project-btn []
+  (swap! state assoc :new-project-dir homedir
+                     :new-project-name ""
+                     :new-project-step 2))
 
 ;; TODO: handle validation here
 (defn- click-create-project-btn []
@@ -464,12 +466,6 @@
   ;; go to the next step
   (swap! state assoc :new-project-step 3)))
 
-(defn- click-new-project-done-btn []
-  (swap! state assoc :new-project-modal-showing? false
-                     :new-project-name ""
-                     :new-project-dir ""
-                     :new-project-step 1))
-
 ;; TODO: need to handle input validation here
 (defn- on-change-new-project-name-input [js-evt]
   (let [new-name (aget js-evt "currentTarget" "value")]
@@ -482,6 +478,11 @@
   [filename]
   (let [dirname (.dirname path filename)]
     (open dirname)))
+
+(defn- click-modal-overlay []
+  ;; do not let them close the modal while a new project is being created
+  (when-not (= 3 (:new-project-step @state))
+    (close-add-project-modal)))
 
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
@@ -639,12 +640,12 @@
     [:div.clr-737fa]])
 
 (sablono/defhtml modal-overlay []
-  [:div.modal-overlay-120d3 {:on-click close-modal}])
+  [:div.modal-overlay-120d3 {:on-click click-modal-overlay}])
 
 (sablono/defhtml new-project-step-1 []
   [:div.modal-body-fe4db
     [:div.modal-chunk-2041a
-      [:button.big-btn-a5d18 {:on-click click-new-from-scratch-btn}
+      [:button.big-btn-a5d18 {:on-click click-new-project-btn}
         "New Project"]
       [:p.small-info-b72e9
         "Create a new project from scratch."]]
@@ -654,7 +655,7 @@
       [:p.small-info-b72e9
         "Load an existing project from a Leiningen " [:code "project.clj"] " file."]]
     [:div.modal-bottom-050c3
-      [:span.link-e7e58 {:on-click close-modal}
+      [:span.link-e7e58 {:on-click close-add-project-modal}
         "cancel"]]])
 
 (sablono/defhtml new-project-step-2 [app-state]
@@ -692,7 +693,7 @@
 ;     [:div.modal-chunk-2041a
 ;       "*TODO: details of the new project*"]
 ;     [:div.modal-bottom-050c3
-;       [:button {:on-click click-new-project-done-btn} "Got it!"]]])
+;       [:button {:on-click close-add-project-modal} "Got it!"]]])
 
 ;;------------------------------------------------------------------------------
 ;; Quiescent Components
