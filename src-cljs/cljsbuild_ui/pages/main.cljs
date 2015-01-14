@@ -661,9 +661,9 @@
   [:div.outer-f80bb
     [:div.inner-aa3fc
       [:h4 "No active projects."]
-      [:p "Would you like to add a "
+      [:p "Would you like to "
         [:span.link-e7e58 {:on-click show-new-project-modal}
-          "new one"] "?"]]])
+          "add one"] "?"]]])
 
 (sablono/defhtml header []
   [:div.header-a4c14
