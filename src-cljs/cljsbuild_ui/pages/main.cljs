@@ -28,12 +28,13 @@
 
 ;; TODO: move [:projects :order] to :projects-order
 (def initial-app-state {
+  :add-project-modal-showing? false
   :new-project-dir homedir
   :new-project-error nil
   :new-project-name ""
-  :new-project-modal-showing? false
   :new-project-step 1
   :projects {:order []}
+  :settings-modal-showing? false
   })
 
 (def state (atom initial-app-state))
@@ -162,7 +163,7 @@
   (fn [filename]
     (when-let [added? (projects/add-to-workspace! filename)]
       (add-project! filename))
-    (swap! state assoc :new-project-modal-showing? false)))
+    (swap! state assoc :add-project-modal-showing? false)))
 
 (def delete-confirm-msg (str
   "Remove % from the build tool?\n\n"
@@ -447,11 +448,11 @@
   (swap! state update-in [:projects prj-key :builds bld-id :active?] not))
 
 (defn- show-new-project-modal []
-  (swap! state assoc :new-project-modal-showing? true
+  (swap! state assoc :add-project-modal-showing? true
                      :new-project-step 1))
 
 (defn- close-add-project-modal []
-  (swap! state assoc :new-project-modal-showing? false))
+  (swap! state assoc :add-project-modal-showing? false))
 
 (defn- click-new-project-btn []
   (swap! state assoc :new-project-dir homedir
@@ -463,7 +464,7 @@
   (let [lein-file (str fldr path-separator nme path-separator "project.clj")]
     ;; kick off the new project
     (exec/new-project fldr nme (fn []
-      (swap! state assoc :new-project-modal-showing? false)
+      (swap! state assoc :add-project-modal-showing? false)
       (projects/add-to-workspace! lein-file)
       (add-project! lein-file)))
 
@@ -693,7 +694,7 @@
       [:p.small-info-b72e9
         "Load an existing project from a Leiningen " [:code "project.clj"] " file."]]
     [:div.modal-bottom-050c3
-      [:span.link-e7e58 {:on-click close-add-project-modal}
+      [:span.bottom-link-7d8d7 {:on-click close-add-project-modal}
         "cancel"]]])
 
 ;; if dir is "C:\" on Windows, we don't need the extra path separator
@@ -725,7 +726,7 @@
     [:div.modal-bottom-050c3
       [:button.primary-d0cd0 {:on-click click-create-project-btn}
         "Create Project"]
-      [:span.link-e7e58 {:on-click click-go-back-btn}
+      [:span.bottom-link-7d8d7 {:on-click click-go-back-btn}
         "go back"]]])
 
 (sablono/defhtml new-project-step-3 [app-state]
@@ -813,7 +814,7 @@
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
     [:div
-      (when (:new-project-modal-showing? app-state)
+      (when (:add-project-modal-showing? app-state)
         (list
           (modal-overlay)
           (NewProjectModal app-state)))
