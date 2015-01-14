@@ -696,6 +696,12 @@
       [:span.link-e7e58 {:on-click close-add-project-modal}
         "cancel"]]])
 
+;; if dir is "C:\" on Windows, we don't need the extra path separator
+(defn- print-dir [dir]
+  (str dir
+       (when (not= (last dir) path-separator)
+          path-separator)))
+
 (sablono/defhtml new-project-form [app-state]
   [:div.modal-body-fe4db
     [:div.modal-chunk-2041a
@@ -710,7 +716,7 @@
       [:label.label-b0246 "Project Folder"]
       [:div
         [:span.link-e7e58 {:on-click click-new-project-dir-root}
-          (str (:new-project-dir app-state) path-separator)]
+          (print-dir (:new-project-dir app-state))]
         (:new-project-name app-state)]]
     (when (:new-project-error app-state)
       [:div.error-cdef1
