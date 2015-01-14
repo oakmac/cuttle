@@ -4,7 +4,7 @@
   (:require
     [cljs.core.async :refer [<!]]
     [clojure.walk :refer [keywordize-keys]]
-    [clojure.string :refer [replace]]
+    [clojure.string :refer [blank? replace]]
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
     [cljsbuild-ui.config :refer [config]]
@@ -13,6 +13,7 @@
     [cljsbuild-ui.projects :as projects :refer [load-project-file]]
     [cljsbuild-ui.util :refer [date-format homedir log js-log now uuid]]))
 
+(def fs (js/require "fs"))
 (def ipc (js/require "ipc"))
 (def open (js/require "open"))
 (def path (js/require "path"))
@@ -28,6 +29,7 @@
 ;; TODO: move [:projects :order] to :projects-order
 (def initial-app-state {
   :new-project-dir homedir
+  :new-project-error nil
   :new-project-name ""
   :new-project-modal-showing? false
   :new-project-step 1
@@ -201,6 +203,10 @@
     vals
     (filter #(true? (:active? %)))
     (map :id)))
+
+(defn- letter? [s]
+  (and (string? s)
+       (.test #"[a-zA-Z]" s)))
 
 ;;------------------------------------------------------------------------------
 ;; State-effecting
@@ -441,9 +447,7 @@
   (swap! state update-in [:projects prj-key :builds bld-id :active?] not))
 
 (defn- show-new-project-modal []
-  (swap! state assoc :new-project-dir homedir
-                     :new-project-modal-showing? true
-                     :new-project-name ""
+  (swap! state assoc :new-project-modal-showing? true
                      :new-project-step 1))
 
 (defn- close-add-project-modal []
@@ -451,27 +455,50 @@
 
 (defn- click-new-project-btn []
   (swap! state assoc :new-project-dir homedir
+                     :new-project-error nil
                      :new-project-name ""
                      :new-project-step 2))
 
-;; TODO: handle validation here
+(defn- create-new-project! [fldr nme]
+  (let [lein-file (str fldr path-separator nme path-separator "project.clj")]
+    ;; kick off the new project
+    (exec/new-project fldr nme (fn []
+      (swap! state assoc :new-project-modal-showing? false)
+      (projects/add-to-workspace! lein-file)
+      (add-project! lein-file)))
+
+    ;; go to the next step
+    (swap! state assoc :new-project-step 3)))
+
+(defn- validate-new-project [fldr nme]
+  (cond
+    (blank? nme)
+      "Please enter a project name."
+
+    (.test #"[^a-z0-9_-]" nme)
+      "Only a-z, hyphens, and underscores please."
+
+    (not (letter? (first nme)))
+      "First character must be a letter (a-z)."
+
+    (.existsSync fs (str fldr path-separator nme))
+      "Folder already exists."
+
+    :else nil))
+
 (defn- click-create-project-btn []
   (let [current-state @state
         fldr (:new-project-dir current-state)
         nme (:new-project-name current-state)
-        lein-file (str fldr path-separator nme path-separator "project.clj")]
-  ;; kick off the new project
-  (exec/new-project fldr nme (fn []
-    (swap! state assoc :new-project-modal-showing? false)
-    (projects/add-to-workspace! lein-file)
-    (add-project! lein-file)))
+        errors (validate-new-project fldr nme)]
+    (if errors
+      (swap! state assoc :new-project-error errors)
+      (create-new-project! fldr nme))))
 
-  ;; go to the next step
-  (swap! state assoc :new-project-step 3)))
-
-;; TODO: need to handle input validation here
 (defn- on-change-new-project-name-input [js-evt]
-  (let [new-name (aget js-evt "currentTarget" "value")]
+  (let [new-name (-> (aget js-evt "currentTarget" "value")
+                     (.toLowerCase)
+                     (replace " " "-"))]
     (swap! state assoc :new-project-name new-name)))
 
 (defn- click-go-back-btn []
@@ -685,6 +712,10 @@
         [:span.link-e7e58 {:on-click click-new-project-dir-root}
           (str (:new-project-dir app-state) path-separator)]
         (:new-project-name app-state)]]
+    (when (:new-project-error app-state)
+      [:div.error-cdef1
+        [:i.fa.fa-exclamation-triangle]
+        (:new-project-error app-state)])
     [:div.modal-bottom-050c3
       [:button {:on-click click-create-project-btn} "Create Project"]
       [:span.link-e7e58 {:on-click click-go-back-btn} "go back"]]])
@@ -761,7 +792,6 @@
             (:builds-order prj))]])))
 
 ;; TODO: need to extract only the keys we need for the modal form
-
 (quiescent/defcomponent NewProjectForm [app-state]
   (quiescent/on-mount
     (new-project-form app-state)
