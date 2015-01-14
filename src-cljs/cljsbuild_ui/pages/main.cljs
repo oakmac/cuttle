@@ -717,17 +717,16 @@
         [:i.fa.fa-exclamation-triangle]
         (:new-project-error app-state)])
     [:div.modal-bottom-050c3
-      [:button {:on-click click-create-project-btn} "Create Project"]
-      [:span.link-e7e58 {:on-click click-go-back-btn} "go back"]]])
+      [:button.primary-d0cd0 {:on-click click-create-project-btn}
+        "Create Project"]
+      [:span.link-e7e58 {:on-click click-go-back-btn}
+        "go back"]]])
 
 (sablono/defhtml new-project-step-3 [app-state]
   [:div.modal-body-fe4db
     [:div.modal-chunk-2041a.creating-6d31a
       [:i.fa.fa-gear.fa-spin.icon-e70fb]
-      "Creating a new project in "
-      [:code (str (:new-project-dir app-state)
-                  path-separator
-                  (:new-project-name app-state))]]])
+      "Creating project " [:strong (:new-project-name app-state)]]])
 
 ;; TODO: implement this, GitHub Issue #46
 ; (sablono/defhtml new-project-step-4 []
