@@ -78,7 +78,8 @@
 
 (defn- create-default-projects-file!
   [app-data-path projects-file]
-  (.mkdirSync fs app-data-path)
+  (when-not (.existsSync fs app-data-path)
+    (.mkdirSync fs app-data-path))
   (.writeFileSync fs projects-file
     (.stringify js/JSON (array) nil 2)
     (js-obj "encoding" "utf8")))
