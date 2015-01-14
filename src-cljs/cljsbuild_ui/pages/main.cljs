@@ -478,6 +478,11 @@
 (defn- click-go-back-btn []
   (swap! state assoc :new-project-step 1))
 
+(defn- click-open-project-folder!
+  [filename]
+  (let [dirname (.dirname path filename)]
+    (open dirname)))
+
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
 ;;------------------------------------------------------------------------------
@@ -709,11 +714,6 @@
                  (not (zero? (:warnings bld))))
         (map warning-row (:warnings bld)))]))
 
-(defn open-project-folder!
-  [filename]
-  (let [dirname (.dirname path filename)]
-    (open dirname)))
-
 (quiescent/defcomponent Project [prj]
   (let [prj-key (:filename prj)]
     (sablono/html
@@ -723,7 +723,7 @@
             (:name prj)
             [:span.project-icons-dd1bb
               [:i.fa.fa-folder-open-o.project-icon-1711d
-                {:on-click #(open-project-folder! prj-key)}]
+                {:on-click #(click-open-project-folder! prj-key)}]
               (when (= (:state prj) :idle)
                 (list
                   ;; NOTE: hiding edit link for now
