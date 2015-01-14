@@ -17,7 +17,9 @@
 (def open (js/require "open"))
 (def path (js/require "path"))
 (def path-separator (aget path "sep"))
+
 (def ENTER 13)
+(def new-project-input-id (uuid))
 
 ;;------------------------------------------------------------------------------
 ;; App State
@@ -489,6 +491,10 @@
   (when (= ENTER (aget js-evt "keyCode"))
     (click-create-project-btn)))
 
+(defn- on-mount-new-project-form []
+  (when-let [el (by-id new-project-input-id)]
+    (.focus el)))
+
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
 ;;------------------------------------------------------------------------------
@@ -663,12 +669,13 @@
       [:span.link-e7e58 {:on-click close-add-project-modal}
         "cancel"]]])
 
-(sablono/defhtml new-project-step-2 [app-state]
+(sablono/defhtml new-project-form [app-state]
   [:div.modal-body-fe4db
     [:div.modal-chunk-2041a
       [:label.label-b0246 "Project Name"]
       [:input.text-input-4800e
-        {:on-change on-change-new-project-name-input
+        {:id new-project-input-id
+         :on-change on-change-new-project-name-input
          :on-key-down on-keydown-new-project-name
          :type "text"
          :value (:new-project-name app-state)}]]
@@ -753,13 +760,19 @@
                                      :prj-key prj-key))))
             (:builds-order prj))]])))
 
+;; TODO: need to extract only the keys we need for the modal form
+
+(quiescent/defcomponent NewProjectForm [app-state]
+  (quiescent/on-mount
+    (new-project-form app-state)
+    on-mount-new-project-form))
+
 (quiescent/defcomponent NewProjectModal [app-state]
   (let [current-step (:new-project-step app-state)]
     (case current-step
       1 (new-project-step-1)
-      2 (new-project-step-2 app-state)
+      2 (NewProjectForm app-state)
       3 (new-project-step-3 app-state)
-      ;; 4 (new-project-step-4)
       nil)))
 
 (quiescent/defcomponent AppRoot [app-state]
