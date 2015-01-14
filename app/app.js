@@ -29,18 +29,20 @@ function showAddExistingProjectDialog() {
   dialog.showOpenDialog(existingProjectDialogOptions, function(filenames) {
     if (filenames) {
       var filename = filenames[0];
-      mainWindow.webContents.send("add-existing-project-dialog-success", filename);
+      mainWindow.webContents.send('add-existing-project-dialog-success', filename);
     }
   });
 }
 
 const newProjectDialogOptions = {
-  title: 'Select an empty directory'
+  title: 'Select a folder for your new project',
+  properties: ['openDirectory']
 };
 
-function newProjectDialogSuccess(filenames) {
-  console.log("newProjectDialogSuccess");
-  console.log(filenames);
+function newProjectDialogSuccess(folders) {
+  if (folders) {
+    mainWindow.webContents.send('new-project-folder', folders[0]);
+  }
 }
 
 function showNewProjectDialog() {
@@ -48,7 +50,7 @@ function showNewProjectDialog() {
 }
 
 ipc.on('request-add-existing-project-dialog', showAddExistingProjectDialog);
-ipc.on('request-new-project-dialog', showNewProjectDialog);
+ipc.on('request-new-project-folder-dialog', showNewProjectDialog);
 
 //------------------------------------------------------------------------------
 // Menu Builder

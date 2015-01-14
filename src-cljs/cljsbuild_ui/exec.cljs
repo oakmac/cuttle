@@ -388,7 +388,9 @@
     (when (and output-to (.existsSync fs output-to-full))
       (.unlinkSync fs output-to-full))))
 
-
+(defn new-project [folder-name project-name callback-fn]
+  (let [lein-cmd (lein (str "new mies " project-name))]
+    (js-exec lein-cmd (js-obj "cwd" folder-name) callback-fn)))
 
 
 

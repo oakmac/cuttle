@@ -30,6 +30,8 @@
 (def on-linux?
   (.test #"^linux" js/process.platform))
 
+(def homedir (aget js/process "env" "HOME"))
+
 (defn log
   "Log a Clojure thing."
   [clj-thing]

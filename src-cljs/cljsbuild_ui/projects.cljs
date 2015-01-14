@@ -54,7 +54,7 @@
       (assoc project :cljsbuild cljsbuild2))))
 
 ;; TODO:
-;; - Need to handle files listed in projects.json that no longer exist on disk
+;; - Need to handle files listed in projects.json that no longer exist on disk (GitHub Issue #45)
 ;;   (ie: did you remove this file?)
 ;; - need to do some quick validation of project.clj
 ;;   (ie: does it have :cljsbuild?)

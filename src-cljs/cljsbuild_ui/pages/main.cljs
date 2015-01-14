@@ -11,18 +11,20 @@
     [cljsbuild-ui.dom :refer [by-id hide-el! show-el!]]
     [cljsbuild-ui.exec :as exec]
     [cljsbuild-ui.projects :as projects :refer [load-project-file]]
-    [cljsbuild-ui.util :refer [date-format log js-log now uuid]]))
+    [cljsbuild-ui.util :refer [date-format homedir log js-log now uuid]]))
 
 (def ipc (js/require "ipc"))
 (def open (js/require "open"))
 (def path (js/require "path"))
+(def path-separator (aget path "sep"))
 
 ;;------------------------------------------------------------------------------
 ;; App State
 ;;------------------------------------------------------------------------------
 
+;; TODO: move [:projects :order] to :projects-order
 (def initial-app-state {
-  :new-project-dir ""
+  :new-project-dir homedir
   :new-project-name ""
   :new-project-modal-showing? false
   :new-project-step 1
@@ -140,6 +142,13 @@
 ;;------------------------------------------------------------------------------
 ;; User-initiated Project Adding and Removing (both workspace and app state)
 ;;------------------------------------------------------------------------------
+
+(.on ipc "new-project-folder"
+  (fn [new-folder]
+    (swap! state assoc :new-project-dir new-folder)))
+
+(defn- click-new-project-dir-root []
+  (.send ipc "request-new-project-folder-dialog"))
 
 (defn click-load-existing-project-btn []
   (.send ipc "request-add-existing-project-dialog"))
@@ -429,7 +438,10 @@
   (swap! state update-in [:projects prj-key :builds bld-id :active?] not))
 
 (defn- show-new-project-modal []
-  (swap! state assoc :new-project-modal-showing? true))
+  (swap! state assoc :new-project-dir homedir
+                     :new-project-modal-showing? true
+                     :new-project-name ""
+                     :new-project-step 1))
 
 (defn- close-modal []
   (swap! state assoc :new-project-modal-showing? false))
@@ -437,8 +449,20 @@
 (defn- click-new-from-scratch-btn []
   (swap! state assoc :new-project-step 2))
 
+;; TODO: handle validation here
 (defn- click-create-project-btn []
-  (swap! state assoc :new-project-step 3))
+  (let [current-state @state
+        fldr (:new-project-dir current-state)
+        nme (:new-project-name current-state)
+        lein-file (str fldr path-separator nme path-separator "project.clj")]
+  ;; kick off the new project
+  (exec/new-project fldr nme (fn []
+    (swap! state assoc :new-project-modal-showing? false)
+    (projects/add-to-workspace! lein-file)
+    (add-project! lein-file)))
+
+  ;; go to the next step
+  (swap! state assoc :new-project-step 3)))
 
 (defn- click-new-project-done-btn []
   (swap! state assoc :new-project-modal-showing? false
@@ -446,9 +470,10 @@
                      :new-project-dir ""
                      :new-project-step 1))
 
+;; TODO: need to handle input validation here
 (defn- on-change-new-project-name-input [js-evt]
-  (let [n (aget js-evt "currentTarget" "value")]
-    (swap! state assoc :new-project-name n)))
+  (let [new-name (aget js-evt "currentTarget" "value")]
+    (swap! state assoc :new-project-name new-name)))
 
 (defn- click-go-back-btn []
   (swap! state assoc :new-project-step 1))
@@ -637,30 +662,32 @@
          :value (:new-project-name app-state)}]]
     [:div.modal-chunk-2041a
       [:label.label-b0246 "Project Folder"]
-      [:div "*directory picker*"]]
+      [:div
+        [:span.link-e7e58 {:on-click click-new-project-dir-root}
+          (str (:new-project-dir app-state) path-separator)]
+        (:new-project-name app-state)]]
     [:div.modal-bottom-050c3
       [:button {:on-click click-create-project-btn} "Create Project"]
       [:span.link-e7e58 {:on-click click-go-back-btn} "go back"]]])
 
-(sablono/defhtml new-project-step-3 []
+(sablono/defhtml new-project-step-3 [app-state]
   [:div.modal-body-fe4db
-    [:div.modal-chunk-2041a.large-6d31a
+    [:div.modal-chunk-2041a.creating-6d31a
       [:i.fa.fa-gear.fa-spin.icon-e70fb]
-      "Creating a new project"]
+      "Creating a new project in "
+      [:code (str (:new-project-dir app-state)
+                  path-separator
+                  (:new-project-name app-state))]]])
 
-    ;; NOTE: temporary button, remove me
-    [:button {:on-click #(swap! state assoc :new-project-step 4)} "TMP"]
-
-    ])
-
-(sablono/defhtml new-project-step-4 []
-  [:div.modal-body-fe4db
-    [:div.modal-chunk-2041a
-      [:h4.success-hdr-0f1c6 "Success!"]]
-    [:div.modal-chunk-2041a
-      "*TODO: details of the new project*"]
-    [:div.modal-bottom-050c3
-      [:button {:on-click click-new-project-done-btn} "Got it!"]]])
+;; TODO: implement this, GitHub Issue #46
+; (sablono/defhtml new-project-step-4 []
+;   [:div.modal-body-fe4db
+;     [:div.modal-chunk-2041a
+;       [:h4.success-hdr-0f1c6 "Success!"]]
+;     [:div.modal-chunk-2041a
+;       "*TODO: details of the new project*"]
+;     [:div.modal-bottom-050c3
+;       [:button {:on-click click-new-project-done-btn} "Got it!"]]])
 
 ;;------------------------------------------------------------------------------
 ;; Quiescent Components
@@ -724,8 +751,8 @@
     (case current-step
       1 (new-project-step-1)
       2 (new-project-step-2 app-state)
-      3 (new-project-step-3)
-      4 (new-project-step-4)
+      3 (new-project-step-3 app-state)
+      ;; 4 (new-project-step-4)
       nil)))
 
 (quiescent/defcomponent AppRoot [app-state]
