@@ -30,7 +30,7 @@
 (def on-linux?
   (.test #"^linux" js/process.platform))
 
-(def homedir (aget js/process "env" "HOME"))
+(def homedir (aget js/process "env" (if on-windows? "USERPROFILE" "HOME")))
 
 (defn log
   "Log a Clojure thing."
