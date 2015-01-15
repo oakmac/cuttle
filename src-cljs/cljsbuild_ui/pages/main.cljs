@@ -11,7 +11,8 @@
     [cljsbuild-ui.dom :refer [by-id hide-el! show-el!]]
     [cljsbuild-ui.exec :as exec]
     [cljsbuild-ui.projects :as projects :refer [load-project-file]]
-    [cljsbuild-ui.util :refer [date-format homedir log js-log now uuid]]))
+    [cljsbuild-ui.util :refer [date-format homedir log js-log now uuid]
+                       :refer-macros [while-let]]))
 
 (def fs (js/require "fs"))
 (def ipc (js/require "ipc"))
@@ -70,7 +71,7 @@
   {;; tool state
    :compile-menu-showing? false
    :auto-compile? true
-   :state :idle
+   :state nil
 
    ;; from project.clj
    :name ""
@@ -99,35 +100,47 @@
 
 (def project-keys [:filename :name :version :license :dependencies :plugins])
 
-(defn attach-state-to-proj
-  "Attach state to project map, and prune out unused keys"
+(defn get-project-build-states
   [prj]
   (let [blds (->> prj :cljsbuild :builds (mapv attach-state-to-build))
         bld-ids (map :id blds)]
-    (-> initial-project-state
-        (merge (select-keys prj project-keys))
-        (assoc :builds (zipmap bld-ids blds)
-               :builds-order (vec bld-ids)))))
+    (when blds
+      {:builds (zipmap bld-ids blds)
+       :builds-order (vec bld-ids)})))
 
 ;;------------------------------------------------------------------------------
 ;; Project Adding and Removing (from app state)
 ;;------------------------------------------------------------------------------
 
-(defn- add-project*
-  [project]
-  (let [filename (:filename project)
-        project2 (attach-state-to-proj project)
+(defn- add-project-as-loading!
+  [filename]
+  (let [project (-> initial-project-state
+                    (assoc :state :loading
+                           :filename filename))
         new-state (-> @state
-                      (assoc-in [:projects filename] project2)
+                      (assoc-in [:projects filename] project)
                       (update-in [:projects :order] conj filename))]
     (reset! state new-state)))
 
+(defn- on-project-load-update!
+  [filename project]
+  (let [project (-> (select-keys project project-keys)
+                    (merge (get-project-build-states project)))]
+    (swap! state update-in [:projects filename] merge project)))
+
+(defn- finish-project-load!
+  [filename]
+  (swap! state assoc-in [:projects filename :state] :idle))
+
 (defn add-project!
   [filename]
-  (go
-    (let [project (<! (load-project-file filename))]
-      (when-not (contains? (:projects @state) (:filename project))
-        (add-project* project)))))
+  (when-not (contains? (:projects @state) filename)
+    (add-project-as-loading! filename)
+    (let [c (load-project-file filename)]
+      (go
+        (while-let [project (<! c)]
+          (on-project-load-update! filename project))
+        (finish-project-load! filename)))))
 
 (defn init-projects!
   [filenames]
@@ -652,6 +665,9 @@
     {:on-click #(click-stop-auto-btn prj-key)}
     "Stop"])
 
+(sablono/defhtml loading-state [prj-key]
+  [:span.status-d941c [:i.fa.fa-cog.fa-spin] "Loading..."])
+
 (sablono/defhtml cleaning-state [prj-key]
   [:span.status-984ee "Removing generated files..."])
 
@@ -783,6 +799,7 @@
                     {:on-click #(try-remove-project! (:name prj) prj-key)}]))]]
           [:div.right-f5656
             (case (:state prj)
+              :loading (loading-state prj-key)
               :auto (auto-state prj-key)
               :cleaning (cleaning-state prj-key)
               :idle (idle-state prj-key prj)

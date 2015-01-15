@@ -2,7 +2,7 @@
   (:require-macros
     [cljs.core.async.macros :refer [go]])
   (:require
-    [cljs.core.async :refer [<!]]
+    [cljs.core.async :refer [<! put! close! chan]]
     [clojure.string :refer [replace]]
     [cljs.reader :refer [read-string]]
     [cljsbuild-ui.cljsbuild.config :refer [extract-options]]
@@ -58,12 +58,15 @@
 ;; - need to do some quick validation of project.clj
 ;;   (ie: does it have :cljsbuild?)
 (defn load-project-file [filename]
-  (go
-    (let [file-contents (.readFileSync fs filename (js-obj "encoding" "utf8"))
-          project (parse-project-file file-contents filename)]
-      (if (:cljsbuild project)
-        project
-        (<! (fix-project-with-profiles project))))))
+  (let [c (chan)]
+    (go
+      (let [file-contents (.readFileSync fs filename (js-obj "encoding" "utf8"))
+            project (parse-project-file file-contents filename)]
+        (put! c project)
+        (when-not (:cljsbuild project)
+          (put! c (<! (fix-project-with-profiles project))))
+        (close! c)))
+    c))
 
 ;;------------------------------------------------------------------------------
 ;; Project Workspace Initialization
