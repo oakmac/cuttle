@@ -32,6 +32,28 @@
 (def js-spawn (aget child-proc "spawn"))
 
 ;;------------------------------------------------------------------------------
+;; Check for java
+;;------------------------------------------------------------------------------
+
+(defn- parse-java-version
+  [output]
+  (when-let [m (re-find #"java version \"1\.(\d+)." output)]
+    (js/parseInt (second m))))
+
+(defn correct-java-installed?
+  []
+  (let [out-chan (chan)
+        cmd "java -version"
+        callback (fn [error stdout stderr]
+                   (if error
+                     (put! out-chan false)
+                     (let [version (parse-java-version stderr)
+                           valid? (>= version 7)]
+                       (put! out-chan valid?))))]
+    (js-exec cmd callback)
+    out-chan))
+
+;;------------------------------------------------------------------------------
 ;; Lein profile for dependencies
 ;;------------------------------------------------------------------------------
 
