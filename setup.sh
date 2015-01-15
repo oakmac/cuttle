@@ -15,7 +15,7 @@ sudo npm install -g winresourcer
 echo; echo "Installing Leiningen jar..."
 grunt curl
 
-echo; echo "Installating Atom Shell..."
+echo; echo "Installing Atom Shell..."
 grunt download-atom-shell
 
 echo; echo "Building lein profile tool..."
