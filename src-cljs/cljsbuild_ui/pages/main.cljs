@@ -523,10 +523,13 @@
   (let [dirname (.dirname path filename)]
     (open dirname)))
 
-(defn- click-modal-overlay []
+(defn- click-add-project-modal-overlay []
   ;; do not let them close the modal while a new project is being created
   (when-not (= 3 (:new-project-step @state))
     (close-add-project-modal)))
+
+(defn- click-settings-modal-overlay []
+  (swap! state assoc :settings-modal-showing? false))
 
 (defn- on-keydown-new-project-name [js-evt]
   (when (= ENTER (aget js-evt "keyCode"))
@@ -535,6 +538,9 @@
 (defn- on-mount-new-project-form []
   (when-let [el (by-id new-project-input-id)]
     (.focus el)))
+
+(defn- click-settings-link []
+  (swap! state assoc :settings-modal-showing? true))
 
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
@@ -686,16 +692,16 @@
   [:div.header-a4c14
     [:div.title-8749a "ClojureScript Compiler"]
     [:div.title-links-42b06
+      ; [:span.link-3d3ad
+      ;   {:on-click click-settings-link}
+      ;   [:i.fa.fa-gear] "Settings"]
       [:span.link-3d3ad
         {:on-click show-new-project-modal}
-        [:i.fa.fa-plus] "Add project"]
-      ;; NOTE: hide settings for now
-      ;; [:span.link-3d3ad [:i.fa.fa-gear] "Settings"]
-      ]
+        [:i.fa.fa-plus] "Add project"]]
     [:div.clr-737fa]])
 
-(sablono/defhtml modal-overlay []
-  [:div.modal-overlay-120d3 {:on-click click-modal-overlay}])
+(sablono/defhtml modal-overlay [click-fn]
+  [:div.modal-overlay-120d3 {:on-click click-fn}])
 
 (sablono/defhtml new-project-step-1 []
   [:div.modal-body-fe4db
@@ -828,13 +834,19 @@
       3 (new-project-step-3 app-state)
       nil)))
 
+(quiescent/defcomponent SettingsModal [app-state]
+  (sablono/html
+    [:div.modal-body-fe4db "Settings menu!"]))
+
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
     [:div
       (when (:add-project-modal-showing? app-state)
-        (list
-          (modal-overlay)
-          (NewProjectModal app-state)))
+        (list (modal-overlay click-add-project-modal-overlay)
+              (NewProjectModal app-state)))
+      (when (:settings-modal-showing? app-state)
+        (list (modal-overlay click-settings-modal-overlay)
+              (SettingsModal app-state)))
       [:div.app-ca3cd {:on-click click-root}
         (header)
         (let [projects (-> app-state :projects get-ordered-projects)]
