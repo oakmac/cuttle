@@ -8,7 +8,7 @@
     [cljsbuild-ui.config :refer [config]]
     [cljsbuild-ui.util :refer [js-log log on-windows? path-join uuid]]))
 
-(declare extract-target-from-start-msg)
+(declare extract-target-from-start-msg parse-java-version)
 
 (defn lein-path
   "Get path to our packaged leiningen script."
@@ -32,13 +32,8 @@
 (def js-spawn (aget child-proc "spawn"))
 
 ;;------------------------------------------------------------------------------
-;; Check for java
+;; Check for Java
 ;;------------------------------------------------------------------------------
-
-(defn- parse-java-version
-  [output]
-  (when-let [m (re-find #"java version \"1\.(\d+)." output)]
-    (js/parseInt (second m))))
 
 (defn correct-java-installed?
   []
@@ -422,10 +417,17 @@
 
 
 
-;; NOTE: sublime text syntax highlighting chokes on this function, so I put it
-;; down here at the bottom so it doesn't mess up the rest of the file
+
+;; NOTE: Sublime Text syntax highlighting chokes on the regex in these
+;; functions, so I put them at the bottom so it doesn't mess up the rest of the
+;; file
 
 (defn- extract-target-from-start-msg [s]
   (-> s
     (replace #"^Compiling \"" "")
     (replace #"\".+$" "")))
+
+(defn- parse-java-version
+  [output]
+  (when-let [m (re-find #"java version \"1\.(\d+)." output)]
+    (int (second m))))
