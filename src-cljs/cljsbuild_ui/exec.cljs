@@ -6,7 +6,7 @@
     [clojure.string :refer [join replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
     [cljsbuild-ui.config :refer [config]]
-    [cljsbuild-ui.util :refer [js-log log on-windows? path-join uuid]]))
+    [cljsbuild-ui.util :refer [file-exists? js-log log on-windows? path-join uuid]]))
 
 (declare extract-target-from-start-msg parse-java-version)
 
@@ -400,9 +400,11 @@
         output-dir-full (str cwd "target" output-dir)
         output-to (-> bld :compiler :output-to)
         output-to-full (str cwd output-to)]
-    (when (and output-dir (.existsSync fs output-dir-full))
+    (when (and output-dir
+               (file-exists? output-dir-full))
       (.rmrfSync fs output-dir-full))
-    (when (and output-to (.existsSync fs output-to-full))
+    (when (and output-to
+               (file-exists? output-to-full))
       (.unlinkSync fs output-to-full))))
 
 (defn new-project [folder-name project-name callback-fn]

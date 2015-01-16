@@ -7,7 +7,7 @@
     [cljs.reader :refer [read-string]]
     [cljsbuild-ui.cljsbuild.config :refer [extract-options]]
     [cljsbuild-ui.exec :refer [get-cljsbuild-with-profiles]]
-    [cljsbuild-ui.util :refer [js-log log path-join path-dirname]]))
+    [cljsbuild-ui.util :refer [file-exists? js-log log path-join path-dirname]]))
 
 (def fs (js/require "fs"))
 
@@ -80,7 +80,7 @@
 
 (defn- create-default-projects-file!
   [app-data-path projects-file]
-  (when-not (.existsSync fs app-data-path)
+  (when-not (file-exists? app-data-path)
     (.mkdirSync fs app-data-path))
   (.writeFileSync fs projects-file
     (.stringify js/JSON (array) nil 2)
@@ -90,10 +90,10 @@
   [app-data-path]
   (set-workspace-filename! app-data-path)
   ;; TODO: need to do some quick validation on projects.json format here
-  (when-not (.existsSync fs workspace-filename)
+  (when-not (file-exists? workspace-filename)
     (create-default-projects-file! app-data-path workspace-filename))
   (let [filenames1 (js->clj (js/require workspace-filename))
-        filenames2 (vec (filter #(.existsSync fs %) filenames1))]
+        filenames2 (vec (filter file-exists? filenames1))]
 
     ;; re-write projects.json if it contains a project.clj file that no longer exists
     ;; TODO: add some UX around this to inform the user that this has happened, GitHub Issue #45

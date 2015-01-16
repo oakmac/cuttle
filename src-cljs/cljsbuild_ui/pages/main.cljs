@@ -11,10 +11,9 @@
     [cljsbuild-ui.dom :refer [by-id hide-el! show-el!]]
     [cljsbuild-ui.exec :as exec]
     [cljsbuild-ui.projects :as projects :refer [load-project-file]]
-    [cljsbuild-ui.util :refer [date-format homedir log js-log now uuid]
+    [cljsbuild-ui.util :refer [date-format file-exists? homedir log js-log now uuid]
                        :refer-macros [while-let]]))
 
-(def fs (js/require "fs"))
 (def ipc (js/require "ipc"))
 (def open (js/require "open"))
 (def path (js/require "path"))
@@ -495,7 +494,7 @@
     (not (letter? (first nme)))
       "First character must be a letter (a-z)."
 
-    (.existsSync fs (str fldr path-separator nme))
+    (file-exists? (str fldr path-separator nme))
       "Folder already exists."
 
     :else nil))
