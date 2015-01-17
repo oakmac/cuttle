@@ -96,7 +96,11 @@ if (fs.existsSync(windowInformationFile)) {
 var mainWindow = null;
 
 function onBounceDock() {
-  app.dock.bounce();
+  if (app &&
+      app.hasOwnProperty('dock') &&
+      app.dock.hasOwnProperty('bounce')) {
+    app.dock.bounce();
+  }
 }
 
 ipc.on('bounce-dock', onBounceDock);

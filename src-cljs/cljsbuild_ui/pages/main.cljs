@@ -350,7 +350,8 @@
 
 (defn- show-warnings! [prj-key bld-id warnings]
   (let [current-state @state]
-    (when (:dock-bounce-on-warnings? current-state)
+    (when (and on-mac?
+               (:dock-bounce-on-warnings? current-state))
       (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-warnings? current-state)
       (notify! (first warnings)))
@@ -360,7 +361,8 @@
 
 (defn- show-errors! [prj-key bld-id errors]
   (let [current-state @state]
-    (when (:dock-bounce-on-errors? current-state)
+    (when (and on-mac?
+               (:dock-bounce-on-errors? current-state))
       (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-errors? current-state)
       (notify! (join "\n" errors)))
