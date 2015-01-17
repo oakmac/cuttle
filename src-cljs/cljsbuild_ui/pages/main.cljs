@@ -4,14 +4,15 @@
   (:require
     [cljs.core.async :refer [<!]]
     [clojure.walk :refer [keywordize-keys]]
-    [clojure.string :refer [blank? replace]]
+    [clojure.string :refer [blank? join replace]]
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
     [cljsbuild-ui.config :refer [config]]
     [cljsbuild-ui.dom :refer [by-id hide-el! show-el!]]
     [cljsbuild-ui.exec :as exec]
     [cljsbuild-ui.projects :as projects :refer [load-project-file]]
-    [cljsbuild-ui.util :refer [date-format file-exists? homedir log js-log now uuid]
+    [cljsbuild-ui.util :refer [date-format file-exists? homedir log js-log now
+                               on-mac? uuid]
                        :refer-macros [while-let]]))
 
 (def ipc (js/require "ipc"))
@@ -29,6 +30,10 @@
 ;; TODO: move [:projects :order] to :projects-order
 (def initial-app-state {
   :add-project-modal-showing? false
+  :desktop-notification-on-errors? true
+  :desktop-notification-on-warnings? false
+  :dock-bounce-on-errors? true
+  :dock-bounce-on-warnings? false
   :new-project-dir homedir
   :new-project-error nil
   :new-project-name ""
@@ -243,6 +248,13 @@
 
     :else nil))
 
+(defn- notify! [txt]
+  (js/Notification. txt (js-obj
+    ;; TODO: need to figure out why this isn't working
+    ;;"icon" "/img/clojure-logo.png"
+    ))
+  nil)
+
 ;;------------------------------------------------------------------------------
 ;; State-effecting
 ;;------------------------------------------------------------------------------
@@ -309,14 +321,20 @@
     (swap! state assoc-in map-path new-bld)))
 
 (defn- show-warnings! [prj-key bld-id warnings]
-  (swap! state update-in [:projects prj-key :builds bld-id :warnings]
-    (fn [w]
-      (into [] (concat w warnings)))))
+  (let [current-state @state]
+    (when (:desktop-notification-on-warnings? current-state)
+      (notify! (first warnings)))
+    (swap! state update-in [:projects prj-key :builds bld-id :warnings]
+      (fn [w]
+        (into [] (concat w warnings))))))
 
-(defn- show-build-error! [prj-key bld-id errors]
-  (swap! state update-in [:projects prj-key :builds bld-id]
-    assoc :error errors
-          :state :done-with-error))
+(defn- show-errors! [prj-key bld-id errors]
+  (let [current-state @state]
+    (when (:desktop-notification-on-errors? current-state)
+      (notify! (join "\n" errors)))
+    (swap! state update-in [:projects prj-key :builds bld-id]
+      assoc :error errors
+            :state :done-with-error)))
 
 (defn- mark-missing!
   "Mark a build row as missing output if the compiler was halted before finishing."
@@ -374,17 +392,11 @@
             (show-done-compiling! prj-key @current-bld-id data)
             (reset! current-bld-id nil))
         :warning
-          (do
-            ;;NOTE: This will be changed/moved once settings menu is configured.
-            (.send ipc "start-bounce")
-            (show-warnings! prj-key @current-bld-id data))
+          (show-warnings! prj-key @current-bld-id data)
         :finished
           (compiler-done! prj-key bld-ids)
         :error
-          (do
-            ;;NOTE: This will be changed/moved once settings menu is configured.
-            (.send ipc "start-bounce")
-            (show-build-error! prj-key @current-bld-id data))
+          (show-errors! prj-key @current-bld-id data)
         nil)
 
       ;; loop back
@@ -591,9 +603,9 @@
     :blank
       [:span "-"]
     :cleaning
-      [:span [:i.fa.fa-gear.fa-spin] "Cleaning..."]
+      [:span [:i.fa.fa-gear.fa-spin] "Cleaning"]
     :compiling
-      [:span.compiling-9cc92 [:i.fa.fa-gear.fa-spin] "Compiling..."]
+      [:span.compiling-9cc92 [:i.fa.fa-gear.fa-spin] "Compiling"]
     :done
       [:span.success-5c065
         [:i.fa.fa-check] (str "Done in " compile-time " seconds")]
@@ -603,11 +615,11 @@
     :done-with-error
       [:span.errors-2718a [:i.fa.fa-times] "Compiling failed"]
     :warming-up
-      [:span [:i.fa.fa-gear.fa-spin] "Warming up..."]
+      [:span [:i.fa.fa-gear.fa-spin] "Warming up"]
     :missing
       [:span [:i.fa.fa-minus-circle] "Output missing"]
     :waiting
-      [:span [:i.fa.fa-clock-o] "Waiting..."]
+      [:span [:i.fa.fa-clock-o] "Waiting"]
     "*unknown state*"))
 
 (sablono/defhtml error-row [error-msg]
@@ -697,9 +709,9 @@
   [:div.header-a4c14
     [:div.title-8749a "ClojureScript Compiler"]
     [:div.title-links-42b06
-      ; [:span.link-3d3ad
-      ;   {:on-click click-settings-link}
-      ;   [:i.fa.fa-gear] "Settings"]
+      [:span.link-3d3ad
+        {:on-click click-settings-link}
+        [:i.fa.fa-gear] "Settings"]
       [:span.link-3d3ad
         {:on-click show-new-project-modal}
         [:i.fa.fa-plus] "Add project"]]
@@ -832,9 +844,52 @@
       3 (creating-new-project modal-state)
       nil)))
 
+;; TODO:
+;; taskbar flash on errors
+;; taskbar flash on warnings
+
+(defn- click-dock-bounce-on-errors []
+  (swap! state update-in [:dock-bounce-on-errors?] not))
+
+(defn- click-dock-bounce-on-warnings []
+  (swap! state update-in [:dock-bounce-on-warnings?] not))
+
+(defn- click-desktop-notification-on-errors []
+  (swap! state update-in [:desktop-notification-on-errors?] not))
+
+(defn- click-desktop-notification-on-warnings []
+  (swap! state update-in [:desktop-notification-on-warnings?] not))
+
 (quiescent/defcomponent SettingsModal [app-state]
   (sablono/html
-    [:div.modal-body-fe4db "Settings menu!"]))
+    [:div.modal-body-8c212
+      [:h4.modal-title-8e35b "Settings"]
+      (when on-mac? (list
+        [:label.settings-label-7daea
+          {:on-click click-dock-bounce-on-errors}
+          (if (:dock-bounce-on-errors? app-state)
+            [:i.fa.fa-check-square-o]
+            [:i.fa.fa-square-o])
+          "Dock bounce on errors."]
+        [:label.settings-label-7daea
+          {:on-click click-dock-bounce-on-warnings}
+          (if (:dock-bounce-on-warnings? app-state)
+            [:i.fa.fa-check-square-o]
+            [:i.fa.fa-square-o])
+          "Dock bounce on warnings."]
+        [:div.spacer-586a6]))
+      [:label.settings-label-7daea
+        {:on-click click-desktop-notification-on-errors}
+        (if (:desktop-notification-on-errors? app-state)
+          [:i.fa.fa-check-square-o]
+          [:i.fa.fa-square-o])
+        "Desktop notifications on errors."]
+      [:label.settings-label-7daea
+        {:on-click click-desktop-notification-on-warnings}
+        (if (:desktop-notification-on-warnings? app-state)
+          [:i.fa.fa-check-square-o]
+          [:i.fa.fa-square-o])
+        "Desktop notifications on warnings."]]))
 
 (def new-project-modal-keys
   "These are all the keys we need in order to build the Add Project modal."
