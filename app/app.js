@@ -95,30 +95,11 @@ if (fs.existsSync(windowInformationFile)) {
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// dock bounce on Mac (disabled for now)
-
-var bounceID;
-
-function onStartBounce() {
-  // run bounce and set to bounceID
-  bounceID = app.dock.bounce("critical");
-  console.log(bounceID);
-
-  // test code to see how setBadge works
-  app.dock.setBadge("E");
+function onBounceDock() {
+  app.dock.bounce();
 }
 
-ipc.on('start-bounce', onStartBounce);
-
-function onStopBounce() {
-  // need to get bounceID as returned from app.dock.bounce() and pass to
-  // app.dock.cancelBounce(id)
-  app.dock.cancelBounce(0);
-}
-
-ipc.on('stop-bounce', onStopBounce);
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+ipc.on('bounce-dock', onBounceDock);
 
 function shutdownForReal() {
   // save current window information

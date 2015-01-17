@@ -350,6 +350,8 @@
 
 (defn- show-warnings! [prj-key bld-id warnings]
   (let [current-state @state]
+    (when (:dock-bounce-on-warnings? current-state)
+      (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-warnings? current-state)
       (notify! (first warnings)))
     (swap! state update-in [:projects prj-key :builds bld-id :warnings]
@@ -358,6 +360,8 @@
 
 (defn- show-errors! [prj-key bld-id errors]
   (let [current-state @state]
+    (when (:dock-bounce-on-errors? current-state)
+      (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-errors? current-state)
       (notify! (join "\n" errors)))
     (swap! state update-in [:projects prj-key :builds bld-id]
@@ -416,7 +420,6 @@
             (show-start-compiling! prj-key bld-id))
         :success
           (do
-            (.send ipc "stop-bounce")
             (show-done-compiling! prj-key @current-bld-id data)
             (reset! current-bld-id nil))
         :warning
