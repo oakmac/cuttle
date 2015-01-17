@@ -314,8 +314,8 @@
   ;; or being stopped in the middle of compiling
   (doall (map #(mark-missing! prj-key %) bld-ids)))
 
-(defn- show-lein-startup! [prj-key bld-id]
-  (swap! state assoc-in [:projects prj-key :builds bld-id :state] :lein-startup))
+(defn- show-warming-up! [prj-key bld-id]
+  (swap! state assoc-in [:projects prj-key :builds bld-id :state] :warming-up))
 
 ;;------------------------------------------------------------------------------
 ;; Compiler Interface
@@ -375,7 +375,7 @@
   (swap! state assoc-in [:projects prj-key :state] :auto)
 
   ;; update the BuildRows state
-  (doall (map #(show-lein-startup! prj-key %) bld-ids))
+  (doall (map #(show-warming-up! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
@@ -388,7 +388,7 @@
   (swap! state assoc-in [:projects prj-key :state] :once)
 
   ;; update the BuildRows state
-  (doall (map #(show-lein-startup! prj-key %) bld-ids))
+  (doall (map #(show-warming-up! prj-key %) bld-ids))
 
   (remove-compiled-info! prj-key)
 
@@ -596,8 +596,8 @@
         [:i.fa.fa-exclamation-triangle] (warnings-state (count warnings))]
     :done-with-error
       [:span.errors-2718a [:i.fa.fa-times] "Compiling failed"]
-    :lein-startup
-      [:span [:i.fa.fa-gear.fa-spin] "Leiningen starting..."]
+    :warming-up
+      [:span [:i.fa.fa-gear.fa-spin] "Warming up..."]
     :missing
       [:span [:i.fa.fa-minus-circle] "Output missing"]
     :waiting
