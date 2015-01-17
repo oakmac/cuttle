@@ -69,3 +69,9 @@
 
 (defn- file-exists? [filename]
   (.existsSync fs filename))
+
+(defn- write-file-async!
+  "Useful when we want to write a file asynchronously and do not care when it
+   is finished."
+  [filename contents]
+  (.writeFile fs filename contents))

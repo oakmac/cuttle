@@ -4,8 +4,8 @@
     [cljsbuild-ui.util :refer [file-exists? js-log log]]))
 
 ;;------------------------------------------------------------------------------
-;; Load Config File
-;; NOTE: this is mostly for dev purposes
+;; Config File
+;; NOTE: this is mostly for development purposes
 ;;------------------------------------------------------------------------------
 
 (def config-file-path (str js/__dirname "/config.json"))
@@ -16,3 +16,11 @@
   (if (file-exists? config-file-path)
     (-> (js/require config-file-path) js->clj keywordize-keys)
     default-config))
+
+;;------------------------------------------------------------------------------
+;; Path to App Data (OS-specific)
+;;------------------------------------------------------------------------------
+
+(def app-data-path
+  "Path to the OS-specific config directory. Gets set! on app load."
+  nil)

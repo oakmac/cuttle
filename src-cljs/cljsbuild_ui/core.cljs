@@ -4,12 +4,14 @@
     [hiccups.core :as hiccups])
   (:require
     [cljs.core.async :refer [<!]]
+    [cljsbuild-ui.config :refer [app-data-path]]
     [cljsbuild-ui.dom :refer [by-id hide-el! set-html! show-el!]]
     [cljsbuild-ui.exec :refer [add-lein-profile!
                                kill-all-leiningen-instances!
                                correct-java-installed?]]
     [cljsbuild-ui.pages.main :as main-page]
     [cljsbuild-ui.projects :refer [load-workspace!]]
+    [cljsbuild-ui.util :refer [file-exists?]]
     hiccups.runtime))
 
 (enable-console-print!)
@@ -66,8 +68,6 @@
 ;; Shutdown Signal
 ;;------------------------------------------------------------------------------
 
-;; NOTE: this probably belongs somewhere other than core, just putting it here for now
-
 (defn- on-shutdown []
   (go
     (show-shutting-down-page!)
@@ -81,7 +81,8 @@
 ;;------------------------------------------------------------------------------
 
 (defn- global-init!
-  [app-data-path]
+  [new-app-data-path]
+  (set! app-data-path new-app-data-path)
   (go
     (if-not (<! (correct-java-installed?))
       (show-download-jre-page!)

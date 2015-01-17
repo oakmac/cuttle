@@ -3,16 +3,16 @@
     [cljs.core.async.macros :refer [go]])
   (:require
     [cljs.core.async :refer [<!]]
-    [clojure.walk :refer [keywordize-keys]]
     [clojure.string :refer [blank? join replace]]
+    [clojure.walk :refer [keywordize-keys]]
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]
-    [cljsbuild-ui.config :refer [config]]
+    [cljsbuild-ui.config :refer [app-data-path config]]
     [cljsbuild-ui.dom :refer [by-id hide-el! show-el!]]
     [cljsbuild-ui.exec :as exec]
     [cljsbuild-ui.projects :as projects :refer [load-project-file]]
     [cljsbuild-ui.util :refer [date-format file-exists? homedir log js-log now
-                               on-mac? uuid]
+                               on-mac? uuid write-file-async!]
                        :refer-macros [while-let]]))
 
 (def ipc (js/require "ipc"))
@@ -20,7 +20,7 @@
 (def path (js/require "path"))
 (def path-separator (aget path "sep"))
 
-(def ENTER 13)
+(def ENTER-KEY 13)
 (def new-project-input-id (uuid))
 
 ;;------------------------------------------------------------------------------
@@ -31,9 +31,9 @@
 (def initial-app-state {
   :add-project-modal-showing? false
   :desktop-notification-on-errors? true
-  :desktop-notification-on-warnings? false
+  :desktop-notification-on-warnings? true
   :dock-bounce-on-errors? true
-  :dock-bounce-on-warnings? false
+  :dock-bounce-on-warnings? true
   :new-project-dir homedir
   :new-project-error nil
   :new-project-name ""
@@ -44,7 +44,7 @@
 
 (def state (atom initial-app-state))
 
-(defn get-ordered-projects
+(defn- get-ordered-projects
   "Given a project map containing a list of keys in :order, return a vector of
    their ordered values."
   [project-map]
@@ -96,7 +96,7 @@
 
 (def build-keys [:id :source-paths :compiler])
 
-(defn attach-state-to-build
+(defn- attach-state-to-build
   "Attach state to project-build map, and prune out unused keys"
   [bld]
   (merge initial-project-build-state
@@ -104,7 +104,7 @@
 
 (def project-keys [:filename :name :version :license :dependencies :plugins])
 
-(defn get-project-build-states
+(defn- get-project-build-states
   [prj]
   (let [blds (->> prj :cljsbuild :builds (mapv attach-state-to-build))
         bld-ids (map :id blds)]
@@ -136,7 +136,7 @@
   [filename]
   (swap! state assoc-in [:projects filename :state] :idle))
 
-(defn add-project!
+(defn- add-project!
   [filename]
   (when-not (contains? (:projects @state) filename)
     (add-project-as-loading! filename)
@@ -146,12 +146,12 @@
           (on-project-load-update! filename project))
         (finish-project-load! filename)))))
 
-(defn init-projects!
+(defn- init-projects!
   [filenames]
   (doseq [f filenames]
     (add-project! f)))
 
-(defn remove-project!
+(defn- remove-project!
   [filename]
   (when (contains? (:projects @state) filename)
     (let [new-order (->> @state :projects :order
@@ -173,7 +173,7 @@
 (defn- click-new-project-dir-root []
   (.send ipc "request-new-project-folder-dialog"))
 
-(defn click-load-existing-project-btn []
+(defn- click-load-existing-project-btn []
   (.send ipc "request-add-existing-project-dialog"))
 
 (.on ipc "add-existing-project-dialog-success"
@@ -186,7 +186,7 @@
   "Remove % from the build tool?\n\n"
   "This action will have no effect on the filesystem."))
 
-(defn try-remove-project!
+(defn- try-remove-project!
   [prj-name filename]
   (let [msg (replace delete-confirm-msg "%" prj-name)
         delete? (.confirm js/window msg)]
@@ -254,6 +254,34 @@
     ;;"icon" "/img/clojure-logo.png"
     ))
   nil)
+
+;;------------------------------------------------------------------------------
+;; Load Settings
+;;------------------------------------------------------------------------------
+
+(defn- load-settings-file!
+  "Load settings from file if it exists."
+  []
+  (let [settings-file (str app-data-path path-separator "settings.json")]
+    (when (file-exists? settings-file)
+      (when-let [settings (-> (js/require settings-file)
+                          js->clj
+                          keywordize-keys)]
+        (swap! state merge settings)))))
+
+(def settings-keys
+  #{:dock-bounce-on-errors?
+    :dock-bounce-on-warnings?
+    :desktop-notification-on-errors?
+    :desktop-notification-on-warnings?})
+
+(defn- save-settings!
+  "Save settings to disk."
+  []
+  (let [settings-file (str app-data-path path-separator "settings.json")
+        settings (select-keys @state settings-keys)
+        settings-json (.stringify js/JSON (clj->js settings))]
+    (write-file-async! settings-file settings-json)))
 
 ;;------------------------------------------------------------------------------
 ;; State-effecting
@@ -468,8 +496,7 @@
       (swap! state assoc-in [:projects prj-key :state] :cleaning)
 
       ;; clean the builds
-      (doall
-        (map #(start-build-clean! prj-key %) bld-ids))
+      (doall (map #(start-build-clean! prj-key %) bld-ids))
 
       ;; start the compile
       (compile-now! prj-key prj bld-ids))))
@@ -479,8 +506,8 @@
   (exec/stop-auto! prj-key)
 
   ;; update project state
-  ;; NOTE: this is really unnecessary as the project state gets updated in
-  ;; compiler-done! - but it doesn't hurt to have it here too
+  ;; NOTE: the project state gets updated in (compiler-done!), but it doesn't
+  ;; hurt to have it here too
   (swap! state assoc-in [:projects prj-key :state] :idle))
 
 (defn- click-compile-options [js-evt prj-key]
@@ -499,6 +526,8 @@
 
 (defn- close-add-project-modal []
   (swap! state assoc :add-project-modal-showing? false))
+
+;; TODO: change the new-project-step's to keywords instead of magic numbers
 
 (defn- click-new-project-btn []
   (swap! state assoc :new-project-dir homedir
@@ -549,15 +578,40 @@
   (swap! state assoc :settings-modal-showing? false))
 
 (defn- on-keydown-new-project-name [js-evt]
-  (when (= ENTER (aget js-evt "keyCode"))
+  (when (= ENTER-KEY (aget js-evt "keyCode"))
     (click-create-project-btn)))
 
-(defn- on-mount-new-project-form []
+(defn- on-mount-new-project-form
+  "Put the cursor focus on the input field when we mount this component."
+  []
   (when-let [el (by-id new-project-input-id)]
     (.focus el)))
 
 (defn- click-settings-link []
   (swap! state assoc :settings-modal-showing? true))
+
+;; TODO:
+;; taskbar flash on errors
+;; taskbar flash on warnings
+
+;; TODO: would probably be better to save settings once on app close than
+;; everytime they change; this is fine for now
+
+(defn- click-dock-bounce-on-errors []
+  (swap! state update-in [:dock-bounce-on-errors?] not)
+  (save-settings!))
+
+(defn- click-dock-bounce-on-warnings []
+  (swap! state update-in [:dock-bounce-on-warnings?] not)
+  (save-settings!))
+
+(defn- click-desktop-notification-on-errors []
+  (swap! state update-in [:desktop-notification-on-errors?] not)
+  (save-settings!))
+
+(defn- click-desktop-notification-on-warnings []
+  (swap! state update-in [:desktop-notification-on-warnings?] not)
+  (save-settings!))
 
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
@@ -603,9 +657,9 @@
     :blank
       [:span "-"]
     :cleaning
-      [:span [:i.fa.fa-gear.fa-spin] "Cleaning"]
+      [:span [:i.fa.fa-cog.fa-spin] "Cleaning"]
     :compiling
-      [:span.compiling-9cc92 [:i.fa.fa-gear.fa-spin] "Compiling"]
+      [:span.compiling-9cc92 [:i.fa.fa-cog.fa-spin] "Compiling"]
     :done
       [:span.success-5c065
         [:i.fa.fa-check] (str "Done in " compile-time " seconds")]
@@ -615,7 +669,7 @@
     :done-with-error
       [:span.errors-2718a [:i.fa.fa-times] "Compiling failed"]
     :warming-up
-      [:span [:i.fa.fa-gear.fa-spin] "Warming up"]
+      [:span [:i.fa.fa-cog.fa-spin] "Warming up"]
     :missing
       [:span [:i.fa.fa-minus-circle] "Output missing"]
     :waiting
@@ -711,7 +765,7 @@
     [:div.title-links-42b06
       [:span.link-3d3ad
         {:on-click click-settings-link}
-        [:i.fa.fa-gear] "Settings"]
+        [:i.fa.fa-cog] "Settings"]
       [:span.link-3d3ad
         {:on-click show-new-project-modal}
         [:i.fa.fa-plus] "Add project"]]
@@ -765,7 +819,7 @@
 (sablono/defhtml creating-new-project [modal-state]
   [:div.modal-body-fe4db
     [:div.modal-chunk-2041a.creating-6d31a
-      [:i.fa.fa-gear.fa-spin.icon-e70fb]
+      [:i.fa.fa-cog.fa-spin.icon-e70fb]
       "Creating project " [:strong (:new-project-name modal-state)]]])
 
 ;; TODO: implement this, GitHub Issue #46
@@ -844,22 +898,6 @@
       3 (creating-new-project modal-state)
       nil)))
 
-;; TODO:
-;; taskbar flash on errors
-;; taskbar flash on warnings
-
-(defn- click-dock-bounce-on-errors []
-  (swap! state update-in [:dock-bounce-on-errors?] not))
-
-(defn- click-dock-bounce-on-warnings []
-  (swap! state update-in [:dock-bounce-on-warnings?] not))
-
-(defn- click-desktop-notification-on-errors []
-  (swap! state update-in [:desktop-notification-on-errors?] not))
-
-(defn- click-desktop-notification-on-warnings []
-  (swap! state update-in [:desktop-notification-on-warnings?] not))
-
 (quiescent/defcomponent SettingsModal [app-state]
   (sablono/html
     [:div.modal-body-8c212
@@ -891,22 +929,29 @@
           [:i.fa.fa-square-o])
         "Desktop notifications on warnings."]]))
 
-(def new-project-modal-keys
+(def add-project-modal-keys
   "These are all the keys we need in order to build the Add Project modal."
   #{:new-project-dir
     :new-project-error
     :new-project-name
     :new-project-step })
 
+(def settings-modal-keys
+  "All the keys we need in order to build the Settings modal."
+  #{:dock-bounce-on-errors?
+    :dock-bounce-on-warnings?
+    :desktop-notification-on-errors?
+    :desktop-notification-on-warnings? })
+
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
     [:div
       (when (:add-project-modal-showing? app-state)
         (list (modal-overlay click-add-project-modal-overlay)
-              (AddProjectModal (select-keys app-state new-project-modal-keys))))
+              (AddProjectModal (select-keys app-state add-project-modal-keys))))
       (when (:settings-modal-showing? app-state)
         (list (modal-overlay click-settings-modal-overlay)
-              (SettingsModal app-state)))
+              (SettingsModal (select-keys app-state settings-modal-keys))))
       [:div.app-ca3cd {:on-click click-root}
         (header)
         (let [projects (-> app-state :projects get-ordered-projects)]
@@ -939,12 +984,15 @@
 ;; Init
 ;;------------------------------------------------------------------------------
 
-(defn init! [proj-filenames]
-  (init-projects! proj-filenames)
-
+(defn- show-main-page! []
   (hide-el! "loadingPage")
   (hide-el! "shutdownPage")
-  (show-el! "mainPage")
+  (show-el! "mainPage"))
+
+(defn init! [proj-filenames]
+  (load-settings-file!)
+  (init-projects! proj-filenames)
+  (show-main-page!)
 
   ;; trigger initial UI render even if proj-filenames is empty
   ;; TODO: probably should change the way init-projects! works
