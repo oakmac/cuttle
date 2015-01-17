@@ -523,18 +523,22 @@ body {
   z-index: (@modalZ - 1);
 }
 
-.modal-body-fe4db {
+.Modal() {
   box-sizing: border-box;
   background: #f8f9fa;
   border: 1px solid #e3e3e3;
   border-radius: 3px;
   left: 50%;
   min-width: 500px;
-  padding: 30px 0 0 0;
   position: absolute;
-  top: 10%;
+  top: 15%;
   transform: translate(-50%, 0%);
   z-index: @modalZ;
+}
+
+.modal-body-fe4db {
+  .Modal();
+  padding: 30px 0 0 0;
 
   code {
     font-family: 'Droid Sans Mono';
@@ -542,17 +546,8 @@ body {
 }
 
 .modal-body-8c212 {
-  box-sizing: border-box;
-  background: #f8f9fa;
-  border: 1px solid #e3e3e3;
-  border-radius: 3px;
-  left: 50%;
-  min-width: 500px;
+  .Modal();
   padding: 20px;
-  position: absolute;
-  top: 10%;
-  transform: translate(-50%, 0%);
-  z-index: @modalZ;
 }
 
 .big-btn-a5d18 {
