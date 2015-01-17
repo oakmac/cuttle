@@ -227,6 +227,22 @@
        (when (not= (last dir) path-separator)
           path-separator)))
 
+(defn- validate-new-project [fldr nme]
+  (cond
+    (blank? nme)
+      "Please enter a project name."
+
+    (.test #"[^a-z0-9_-]" nme)
+      "Only a-z, hyphens, and underscores please."
+
+    (not (letter? (first nme)))
+      "First character must be a letter (a-z)."
+
+    (file-exists? (str fldr path-separator nme))
+      "Folder already exists."
+
+    :else nil))
+
 ;;------------------------------------------------------------------------------
 ;; State-effecting
 ;;------------------------------------------------------------------------------
@@ -488,22 +504,6 @@
 
     ;; go to the next step
     (swap! state assoc :new-project-step 3)))
-
-(defn- validate-new-project [fldr nme]
-  (cond
-    (blank? nme)
-      "Please enter a project name."
-
-    (.test #"[^a-z0-9_-]" nme)
-      "Only a-z, hyphens, and underscores please."
-
-    (not (letter? (first nme)))
-      "First character must be a letter (a-z)."
-
-    (file-exists? (str fldr path-separator nme))
-      "Folder already exists."
-
-    :else nil))
 
 (defn- click-create-project-btn []
   (let [current-state @state
