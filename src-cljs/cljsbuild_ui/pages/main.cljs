@@ -221,6 +221,12 @@
   (and (string? s)
        (.test #"[a-zA-Z]" s)))
 
+;; if dir is "C:\" on Windows, we don't need the extra path separator
+(defn- print-dir [dir]
+  (str dir
+       (when (not= (last dir) path-separator)
+          path-separator)))
+
 ;;------------------------------------------------------------------------------
 ;; State-effecting
 ;;------------------------------------------------------------------------------
@@ -702,7 +708,7 @@
 (sablono/defhtml modal-overlay [click-fn]
   [:div.modal-overlay-120d3 {:on-click click-fn}])
 
-(sablono/defhtml new-project-step-1 []
+(sablono/defhtml new-or-existing-project []
   [:div.modal-body-fe4db
     [:div.modal-chunk-2041a
       [:button.big-btn-a5d18 {:on-click click-new-project-btn}
@@ -717,12 +723,6 @@
     [:div.modal-bottom-050c3
       [:span.bottom-link-7d8d7 {:on-click close-add-project-modal}
         "cancel"]]])
-
-;; if dir is "C:\" on Windows, we don't need the extra path separator
-(defn- print-dir [dir]
-  (str dir
-       (when (not= (last dir) path-separator)
-          path-separator)))
 
 (sablono/defhtml new-project-form [app-state]
   [:div.modal-body-fe4db
@@ -750,11 +750,11 @@
       [:span.bottom-link-7d8d7 {:on-click click-go-back-btn}
         "go back"]]])
 
-(sablono/defhtml new-project-step-3 [app-state]
+(sablono/defhtml creating-new-project [modal-state]
   [:div.modal-body-fe4db
     [:div.modal-chunk-2041a.creating-6d31a
       [:i.fa.fa-gear.fa-spin.icon-e70fb]
-      "Creating project " [:strong (:new-project-name app-state)]]])
+      "Creating project " [:strong (:new-project-name modal-state)]]])
 
 ;; TODO: implement this, GitHub Issue #46
 ; (sablono/defhtml new-project-step-4 []
@@ -819,30 +819,36 @@
                                      :prj-key prj-key))))
             (:builds-order prj))]])))
 
-;; TODO: need to extract only the keys we need for the modal form
-(quiescent/defcomponent NewProjectForm [app-state]
+(quiescent/defcomponent NewProjectForm [modal-state]
   (quiescent/on-mount
-    (new-project-form app-state)
+    (new-project-form modal-state)
     on-mount-new-project-form))
 
-(quiescent/defcomponent NewProjectModal [app-state]
-  (let [current-step (:new-project-step app-state)]
+(quiescent/defcomponent AddProjectModal [modal-state]
+  (let [current-step (:new-project-step modal-state)]
     (case current-step
-      1 (new-project-step-1)
-      2 (NewProjectForm app-state)
-      3 (new-project-step-3 app-state)
+      1 (new-or-existing-project)
+      2 (NewProjectForm modal-state)
+      3 (creating-new-project modal-state)
       nil)))
 
 (quiescent/defcomponent SettingsModal [app-state]
   (sablono/html
     [:div.modal-body-fe4db "Settings menu!"]))
 
+(def new-project-modal-keys
+  "These are all the keys we need in order to build the Add Project modal."
+  #{:new-project-dir
+    :new-project-error
+    :new-project-name
+    :new-project-step })
+
 (quiescent/defcomponent AppRoot [app-state]
   (sablono/html
     [:div
       (when (:add-project-modal-showing? app-state)
         (list (modal-overlay click-add-project-modal-overlay)
-              (NewProjectModal app-state)))
+              (AddProjectModal (select-keys app-state new-project-modal-keys))))
       (when (:settings-modal-showing? app-state)
         (list (modal-overlay click-settings-modal-overlay)
               (SettingsModal app-state)))
