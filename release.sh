@@ -64,7 +64,7 @@ cp -R app $RELEASE_RSRC
 
 CONFIG=$RELEASE_RSRC/app/config.json
 if [ -f $CONFIG ]; then
-  sed -i .bak 's/"dev-tools"[[:space:]]*:[[:space:]]*true/"dev-tools": false/' $CONFIG
+  rm $CONFIG
 fi
 
 #----------------------------------------------------------------------
