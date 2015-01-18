@@ -57,28 +57,6 @@ ipc.on('request-add-existing-project-dialog', showAddExistingProjectDialog);
 ipc.on('request-new-project-folder-dialog', showNewProjectDialog);
 
 //------------------------------------------------------------------------------
-// Menu Builder
-//------------------------------------------------------------------------------
-
-const menuTemplate = [
-  {
-    label: 'File', // NOTE: On Mac, the first menu item is always the name of the Application
-                   //       (uses CFBundleName in Info.plist, set by "release.sh")
-    submenu: [
-      {
-        label: 'Add Existing Project',
-        click: showAddExistingProjectDialog
-      }
-    ]
-  }
-];
-
-var menu = Menu.buildFromTemplate(menuTemplate);
-
-// FIXME: custom menu disabled, since CMD+Q doesn't work without the menu item for it
-// Menu.setApplicationMenu(menu);
-
-//------------------------------------------------------------------------------
 // Main
 //------------------------------------------------------------------------------
 
