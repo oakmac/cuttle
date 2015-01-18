@@ -9,6 +9,10 @@ var app = require('app'),
 // report crashes to atom-shell
 require('crash-reporter').start();
 
+// Keep a global reference of the window object, if you don't, the window will
+// be closed automatically when the javascript object is GCed.
+var mainWindow = null;
+
 //------------------------------------------------------------------------------
 // Dialogs
 // (These have to be created on the "browser" side, i.e. here, not on the "page")
@@ -91,10 +95,6 @@ if (fs.existsSync(windowInformationFile)) {
   windowInformation = require(windowInformationFile);
 }
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the javascript object is GCed.
-var mainWindow = null;
-
 function onBounceDock() {
   if (app &&
       app.hasOwnProperty('dock') &&
@@ -105,6 +105,8 @@ function onBounceDock() {
 
 ipc.on('bounce-dock', onBounceDock);
 
+var shutdownForRealSignalReceived = false;
+
 function shutdownForReal() {
   // save current window information
   windowInformation.maximized = mainWindow.isMaximized();
@@ -112,11 +114,9 @@ function shutdownForReal() {
   windowInformation.size = mainWindow.getSize();
   fs.writeFileSync(windowInformationFile, JSON.stringify(windowInformation));
 
-  // NOTE: so the docs say to only use this when the page has crashed, but I think
-  // it's ok in this case because of the way we're "trapping" the regular close event
-  // https://github.com/atom/atom-shell/blob/master/docs/api/browser-window.md#browserwindowdestroy
-  // TODO: look into using app.quit() here instead
-  mainWindow.destroy();
+  // toggle the shutdown for real flag and close the window
+  shutdownForRealSignalReceived = true;
+  mainWindow.close();
 }
 
 ipc.on('shutdown-for-real', shutdownForReal);
@@ -129,11 +129,13 @@ function onWindowClosed() {
 }
 
 function onWindowClose(evt) {
-  // prevent window close
-  evt.preventDefault();
+  // prevent window close if we have not shut down for real
+  if (shutdownForRealSignalReceived !== true) {
+    evt.preventDefault();
 
-  // send shutdown signal to the window
-  mainWindow.webContents.send('shutdown');
+    // send shutdown signal to the window
+    mainWindow.webContents.send('shutdown');
+  }
 }
 
 // send the OS-normalized app data path to the webpage
