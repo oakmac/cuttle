@@ -335,7 +335,7 @@
 ;; TODO: write a general-purpose "js-exec" function that returns a core.async
 ;; channel; would prefer that to using callbacks here
 (defn- kill-auto-on-unix [pid callback-fn]
-  (let [child (js-spawn "ps" (array "-o" "pid,ppid"))]
+  (let [child (js-spawn "ps" (array "-eo" "pid,ppid"))]
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stdout child) "data" #(kill-auto-on-unix2 pid % callback-fn))))
 
