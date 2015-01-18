@@ -83,7 +83,7 @@ function onBounceDock() {
 
 ipc.on('bounce-dock', onBounceDock);
 
-var shutdownForRealSignalReceived = false;
+var shutdownForRealHasHappened = false;
 
 function shutdownForReal() {
   // save current window information
@@ -93,7 +93,7 @@ function shutdownForReal() {
   fs.writeFileSync(windowInformationFile, JSON.stringify(windowInformation));
 
   // toggle the shutdown for real flag and close the window
-  shutdownForRealSignalReceived = true;
+  shutdownForRealHasHappened = true;
   mainWindow.close();
 }
 
@@ -108,11 +108,11 @@ function onWindowClosed() {
 
 function onWindowClose(evt) {
   // prevent window close if we have not shut down for real
-  if (shutdownForRealSignalReceived !== true) {
+  if (shutdownForRealHasHappened !== true) {
     evt.preventDefault();
 
     // send shutdown signal to the window
-    mainWindow.webContents.send('shutdown');
+    mainWindow.webContents.send('shutdown-attempt');
   }
 }
 

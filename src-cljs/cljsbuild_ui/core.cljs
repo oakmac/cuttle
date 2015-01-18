@@ -74,7 +74,7 @@
     (<! (kill-all-leiningen-instances!))
     (.send ipc "shutdown-for-real")))
 
-(.on ipc "shutdown" on-shutdown)
+(.on ipc "shutdown-attempt" on-shutdown)
 
 ;;------------------------------------------------------------------------------
 ;; Client Init
