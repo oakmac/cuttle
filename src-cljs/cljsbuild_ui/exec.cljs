@@ -127,65 +127,91 @@
 
 (defn- extract-time-from-success-msg [s]
   (-> s
-    (replace #"^.+ in " "")
-    (replace #" seconds.+$" "")
-    float))
-
-;; TODO: need to collect a list of all the possible error messages
-;; https://github.com/oakmac/cljsbuild-ui/issues/3
-
-;; TODO: if the error contains column and line information, we should extract
-;; that out of the file and show the user
-
-(defn- extract-error-info [s]
-  (-> s
-    (replace #"^.*\{:column" "{:column")
-    (replace #"reader-exception\}.*$" "reader-exception}")
-    read-string))
-
-(defn- error-has-line-info? [s]
-  (and (.test #"\{\:column" s)
-       (.test #" \:line " s)
-       (.test #"\:reader-exception\}" s)))
-
-; (defn- default-extract-error-msg [s]
-;   (-> s
-;     (replace #"^.*Caused by:" "")
-;     (replace #"^.*clojure.lang.ExceptionInfo: " "")
-;     (replace #" at clojure.core.*$" "")))
-
-(defn- clean-error-text
-  "Remove bash color coding characters."
-  [s]
-  (-> s
-    (replace #"\[\dm" "")
-    (replace #"\[\d\dm" "")))
-
-; (defn- extract-error-msg [full-error-txt]
-;   (->> full-error-txt
-;     split-lines
-;     (filter red-line?)
-;     (map clean-error-text)))
+      (replace #"^.+ in " "")
+      (replace #" seconds.+$" "")
+      float))
 
 (defn- clean-warning-line [s]
   (-> s
-    (replace "WARNING: " "")
-    trim))
+      (replace "WARNING: " "")
+      trim))
 
 (defn- extract-warning-msgs [s]
   (->> s
-    split-lines
-    (map clean-warning-line)
-    (into [])))
+      split-lines
+      (map clean-warning-line)
+      (into [])))
+
+(defn- extract-file-from-error-line [s]
+  (-> s
+      (replace #"^.*failed compiling file:" "")
+      (replace #" \{:.*$" "")))
+
+(defn- has-file-info? [l]
+  (.test #"failed compiling file\:" l))
+
+(defn- caused-by-line? [l]
+  (.test #"^Caused by:" l))
+
+(defn- extract-error-file
+  "Returns the file that has the error (or nil) from error lines."
+  [lines]
+  (reduce (fn [v l]
+    (if (has-file-info? l)
+      (extract-file-from-error-line l)
+      v))
+    nil lines))
+
+(defn- extract-human-error* [s]
+  (-> s
+      (replace #"^Caused by: clojure\.lang\.ExceptionInfo: " "")
+      (replace #" \{:.*$" "")))
+
+(defn- extract-human-error
+  "Returns a human-readable error message (or nil) from error lines."
+  [lines]
+  (reduce (fn [v l]
+    (if (caused-by-line? l)
+      (extract-human-error* l)
+      v))
+    nil lines))
+
+(defn- has-line-info? [s]
+  (.test #"line \d+" s))
+
+;; NOTE: some lines contain more than one line number, from my small sample size
+;; it seems like we always want the first one
+(defn- extract-line-number* [s]
+  (-> s
+      ;; NOTE: js .replace here, not clojure.string/replace
+      ;; I'm not sure if clojure.string/replace does capture groups?
+      (.replace #"(^.+line )(\d+)(.*$)" "$2")
+      int))
+
+(defn- extract-line-number [lines]
+  (reduce (fn [v l]
+    (if (and (has-line-info? l)
+             (nil? v))
+      (extract-line-number* l)
+      v))
+    nil lines))
+
+(defn- extract-error-info
+  "Extract a map of error information from a vector of error lines."
+  [lines]
+  {:file (extract-error-file lines)
+   :line (extract-line-number lines)
+   :human-msg (extract-human-error lines)
+   :raw-lines lines })
 
 (defn- clean-line
   "Clean bash escape characters from a console output line."
   [s]
   (-> s
-    (replace #"\033" "")    ;; remove escape characters
-    (replace #"\[\dm" "")   ;; remove color codes
-    (replace #"\[\d\dm" "")
-    trim))
+      (replace #"\033" "")    ;; remove escape characters
+      (replace #"\[\dm" "")   ;; remove color codes
+      (replace #"\[\d\dm" "")
+      trim))
 
 (defn- on-console-line
   "Handles each line from the compiler console output.
@@ -217,7 +243,7 @@
                line-type
                (not= line-type :error))
       (reset! inside-error? false)
-      (put! return-chan [:error @err-msg-buffer]))
+      (put! return-chan [:error (extract-error-info @err-msg-buffer)]))
 
     ;; start compiling signal
     (when (= line-type :start)

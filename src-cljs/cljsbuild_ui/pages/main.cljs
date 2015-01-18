@@ -248,8 +248,9 @@
 
     :else nil))
 
-(defn- notify! [txt]
-  (js/Notification. txt (js-obj
+(defn- notify! [title txt]
+  (js/Notification. title (js-obj
+    "body" txt
     ;; TODO: need to figure out why this isn't working
     ;;"icon" "/img/clojure-logo.png"
     ))
@@ -354,10 +355,17 @@
                (:dock-bounce-on-warnings? current-state))
       (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-warnings? current-state)
-      (notify! (first warnings)))
+      (notify! "CLJS Warning" (first warnings)))
     (swap! state update-in [:projects prj-key :builds bld-id :warnings]
       (fn [w]
         (into [] (concat w warnings))))))
+
+(defn- error-notify-body [error]
+  (if (:human-msg error)
+    (str (:human-msg error)
+         (when (:file error)
+           (str " in file " (:file error))))
+    (join "\n" (:raw-lines error))))
 
 (defn- show-errors! [prj-key bld-id errors]
   (let [current-state @state]
@@ -365,7 +373,7 @@
                (:dock-bounce-on-errors? current-state))
       (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-errors? current-state)
-      (notify! (join "\n" errors)))
+      (notify! "CLJS Error" (error-notify-body errors)))
     (swap! state update-in [:projects prj-key :builds bld-id]
       assoc :error errors
             :state :done-with-error)))
@@ -420,16 +428,21 @@
           (let [bld-id (output-to->bld-id prj-key data)]
             (reset! current-bld-id bld-id)
             (show-start-compiling! prj-key bld-id))
+
         :success
           (do
             (show-done-compiling! prj-key @current-bld-id data)
             (reset! current-bld-id nil))
+
         :warning
           (show-warnings! prj-key @current-bld-id data)
+
         :finished
           (compiler-done! prj-key bld-ids)
+
         :error
           (show-errors! prj-key @current-bld-id data)
+
         nil)
 
       ;; loop back
@@ -681,13 +694,11 @@
       [:span [:i.fa.fa-clock-o] "Waiting"]
     "*unknown state*"))
 
-(sablono/defhtml error-row [error-msg]
+(sablono/defhtml error-row [error]
   [:tr.error-row-b3028
     [:td.error-cell-1ccea {:col-span "6"}
       [:i.fa.fa-times]
-      (if (coll? error-msg)
-        (map (fn [l] (sablono/html [:div l])) error-msg)
-        error-msg)]])
+      (error-notify-body error)]])
 
 (sablono/defhtml warning-row [w]
   [:tr.warning-row-097c8
