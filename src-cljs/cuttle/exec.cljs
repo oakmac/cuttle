@@ -20,7 +20,7 @@
 (defn lein
   "Make lein command string"
   [args]
-  (str (lein-path) " with-profile +cljsbuild-ui " args))
+  (str (lein-path) " with-profile +cuttle " args))
 
 ;;------------------------------------------------------------------------------
 ;; Require Modules
@@ -54,7 +54,7 @@
 
 (def lein-profile
   "Lein profile containing dependencies required for our tool."
-  '{:cljsbuild-ui {:plugins [[lein-pprint "1.1.1"]]}})
+  '{:cuttle {:plugins [[lein-pprint "1.1.1"]]}})
 
 (defn add-lein-profile!
   "Adds our Lein profile to the user's global profiles.clj."

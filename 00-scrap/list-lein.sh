@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This kills all cljsbuild-ui leiningen processes
+# This kills all Cuttle leiningen processes
 # We need this on Mac currently since "stop" is not killing them yet.
 
-ps -ef | grep -v grep | grep "with-profile +cljsbuild-ui"
+ps -ef | grep -v grep | grep "with-profile +cuttle"
