@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Create cljsbuild-ui release using our local Atom Shell installation
+# Create Cuttle release using our local Atom Shell installation
 # (Mac, Linux, or Cygwin)
 
 #----------------------------------------------------------------------
@@ -76,14 +76,14 @@ if [ "$OS" == "mac" ]; then
   FULL_PLIST="$(pwd)/$RELEASE_DIR/$PLIST"
 
   defaults write $FULL_PLIST CFBundleIconFile 'app/img/clojure-logo.icns'
-  defaults write $FULL_PLIST CFBundleDisplayName 'CLJS-UI'
-  defaults write $FULL_PLIST CFBundleName 'CLJS-UI'
+  defaults write $FULL_PLIST CFBundleDisplayName 'Cuttle'
+  defaults write $FULL_PLIST CFBundleName 'Cuttle'
 
-  mv $RELEASE_DIR/Atom.app $RELEASE_DIR/ClojureScript.app
+  mv $RELEASE_DIR/Atom.app $RELEASE_DIR/Cuttle.app
 
 elif [ "$OS" == "linux" ]; then
 
-  mv $RELEASE_DIR/atom $RELEASE_DIR/ClojureScript
+  mv $RELEASE_DIR/atom $RELEASE_DIR/Cuttle
 
 elif [ "$OS" == "windows" ]; then
 
@@ -93,7 +93,7 @@ elif [ "$OS" == "windows" ]; then
                --resourceName:1 \
                --resourceFile:$RELEASE_RSRC/app/img/clojure-logo.ico
 
-  mv $RELEASE_DIR/atom.exe $RELEASE_DIR/ClojureScript.exe
+  mv $RELEASE_DIR/atom.exe $RELEASE_DIR/Cuttle.exe
 
 fi
 

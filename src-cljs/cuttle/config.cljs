@@ -1,7 +1,7 @@
-(ns cljsbuild-ui.config
+(ns cuttle.config
   (:require
     [clojure.walk :refer [keywordize-keys]]
-    [cljsbuild-ui.util :refer [file-exists? js-log log]]))
+    [cuttle.util :refer [file-exists? js-log log]]))
 
 ;;------------------------------------------------------------------------------
 ;; Config File

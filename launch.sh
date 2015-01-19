@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Launch cljsbuild-ui using our local Atom Shell installation
+# Launch Cuttle using our local Atom Shell installation
 # (Mac, Linux, or Cygwin)
 
 # from: http://stackoverflow.com/a/17072017/142317

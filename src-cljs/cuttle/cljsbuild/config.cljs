@@ -1,3 +1,8 @@
+(ns cuttle.cljsbuild.config
+  "Utilities for parsing the cljsbuild config."
+  #_(:require
+    [clojure.pprint :as pprint]))
+
 ;;; Taken from "lein-cljsbuild" for retrieving normalized cljsbuild configs.
 ;;;
 ;;; Source:
@@ -7,11 +12,6 @@
 ;;;     We can either reproduce the code from lein to do this,
 ;;;     or wait for this cljsbuild pull-request to retrieve opts
 ;;;     with `lein cljsbuild list`: https://github.com/emezeske/lein-cljsbuild/pull/338
-
-(ns cljsbuild-ui.cljsbuild.config
-  "Utilities for parsing the cljsbuild config."
-  #_(:require
-    [clojure.pprint :as pprint]))
 
 (defn in-target-path [target-path subpath]
   (str target-path "/cljsbuild-" subpath))

@@ -1,17 +1,17 @@
-(ns cljsbuild-ui.core
+(ns cuttle.core
   (:require-macros
     [cljs.core.async.macros :refer [go]]
     [hiccups.core :as hiccups])
   (:require
     [cljs.core.async :refer [<!]]
-    [cljsbuild-ui.config :refer [app-data-path]]
-    [cljsbuild-ui.dom :refer [by-id hide-el! set-html! show-el!]]
-    [cljsbuild-ui.exec :refer [add-lein-profile!
+    [cuttle.config :refer [app-data-path]]
+    [cuttle.dom :refer [by-id hide-el! set-html! show-el!]]
+    [cuttle.exec :refer [add-lein-profile!
                                kill-all-leiningen-instances!
                                correct-java-installed?]]
-    [cljsbuild-ui.pages.main :as main-page]
-    [cljsbuild-ui.projects :refer [load-workspace!]]
-    [cljsbuild-ui.util :refer [file-exists?]]
+    [cuttle.pages.main :as main-page]
+    [cuttle.projects :refer [load-workspace!]]
+    [cuttle.util :refer [file-exists?]]
     hiccups.runtime))
 
 (enable-console-print!)

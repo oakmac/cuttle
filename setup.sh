@@ -21,4 +21,4 @@ grunt download-atom-shell
 echo; echo "Building lein profile tool..."
 ./build-lein-profile-tool.sh
 
-echo; echo "Setup complete."
+echo; echo "Cuttle setup complete."

@@ -1,19 +1,19 @@
-(ns cljsbuild-ui.pages.main
+(ns cuttle.pages.main
   (:require-macros
     [cljs.core.async.macros :refer [go]])
   (:require
     [cljs.core.async :refer [<!]]
     [clojure.string :refer [blank? join replace]]
     [clojure.walk :refer [keywordize-keys]]
-    [quiescent :include-macros true]
-    [sablono.core :as sablono :include-macros true]
-    [cljsbuild-ui.config :refer [app-data-path config]]
-    [cljsbuild-ui.dom :refer [by-id hide-el! show-el!]]
-    [cljsbuild-ui.exec :as exec]
-    [cljsbuild-ui.projects :as projects :refer [load-project-file]]
-    [cljsbuild-ui.util :refer [date-format file-exists? homedir log js-log now
+    [cuttle.config :refer [app-data-path config]]
+    [cuttle.dom :refer [by-id hide-el! show-el!]]
+    [cuttle.exec :as exec]
+    [cuttle.projects :as projects :refer [load-project-file]]
+    [cuttle.util :refer [date-format file-exists? homedir log js-log now
                                on-mac? uuid write-file-async!]
-                       :refer-macros [while-let]]))
+                       :refer-macros [while-let]]
+    [quiescent :include-macros true]
+    [sablono.core :as sablono :include-macros true]))
 
 (def ipc (js/require "ipc"))
 (def open (js/require "open"))

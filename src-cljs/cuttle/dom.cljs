@@ -1,6 +1,6 @@
-(ns cljsbuild-ui.dom
+(ns cuttle.dom
   (:require
-    [cljsbuild-ui.util :refer [js-log log]]))
+    [cuttle.util :refer [js-log log]]))
 
 ;;------------------------------------------------------------------------------
 ;; DOM Helper Functions

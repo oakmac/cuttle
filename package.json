@@ -1,10 +1,10 @@
 {
-  "name": "cljsbuild-ui",
-  "homepage": "https://github.com/oakmac/cljsbuild-ui",
+  "name": "Cuttle",
+  "homepage": "https://github.com/oakmac/cuttle",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/oakmac/cljsbuild-ui.git"
+    "url": "https://github.com/oakmac/cuttle.git"
   },
   "dependencies": {
     "express": "4.1.x",

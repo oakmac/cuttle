@@ -1,12 +1,12 @@
-(ns cljsbuild-ui.exec
+(ns cuttle.exec
   (:require-macros
     [cljs.core.async.macros :refer [go]])
   (:require
     [cljs.reader :refer [read-string]]
     [clojure.string :refer [join replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
-    [cljsbuild-ui.config :refer [config]]
-    [cljsbuild-ui.util :refer [file-exists? js-log log on-windows? path-join uuid]]))
+    [cuttle.config :refer [config]]
+    [cuttle.util :refer [file-exists? js-log log on-windows? path-join uuid]]))
 
 (declare extract-target-from-start-msg parse-java-version)
 

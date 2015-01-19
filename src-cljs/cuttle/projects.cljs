@@ -1,13 +1,13 @@
-(ns cljsbuild-ui.projects
+(ns cuttle.projects
   (:require-macros
     [cljs.core.async.macros :refer [go]])
   (:require
     [cljs.core.async :refer [<! put! close! chan]]
-    [clojure.string :refer [replace]]
     [cljs.reader :refer [read-string]]
-    [cljsbuild-ui.cljsbuild.config :refer [extract-options]]
-    [cljsbuild-ui.exec :refer [get-cljsbuild-with-profiles]]
-    [cljsbuild-ui.util :refer [file-exists? js-log log path-join path-dirname]]))
+    [clojure.string :refer [replace]]
+    [cuttle.cljsbuild.config :refer [extract-options]]
+    [cuttle.exec :refer [get-cljsbuild-with-profiles]]
+    [cuttle.util :refer [file-exists? js-log log path-join path-dirname]]))
 
 (def fs (js/require "fs"))
 

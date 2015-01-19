@@ -18,4 +18,4 @@ call grunt download-atom-shell
 echo. & echo Building lein profile tool...
 call build-lein-profile-tool.bat
 
-echo. & echo Setup complete.
+echo. & echo Cuttle setup complete.
