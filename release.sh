@@ -78,6 +78,7 @@ if [ "$OS" == "mac" ]; then
   defaults write $FULL_PLIST CFBundleIconFile 'app/img/clojure-logo.icns'
   defaults write $FULL_PLIST CFBundleDisplayName 'Cuttle'
   defaults write $FULL_PLIST CFBundleName 'Cuttle'
+  defaults write $FULL_PLIST CFBundleIdentifier 'org.cuttle'
 
   mv $RELEASE_DIR/Atom.app $RELEASE_DIR/Cuttle.app
 
