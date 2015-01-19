@@ -12,6 +12,7 @@
     [cuttle.util :refer [date-format file-exists? homedir log js-log now
                                on-mac? uuid write-file-async!]
                        :refer-macros [while-let]]
+    goog.events.KeyCodes
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]))
 
@@ -20,7 +21,9 @@
 (def path (js/require "path"))
 (def path-separator (aget path "sep"))
 
-(def ENTER-KEY 13)
+(def ENTER goog.events.KeyCodes.ENTER)
+(def ESC goog.events.KeyCodes.ESC)
+
 (def new-project-input-id (uuid))
 
 ;;------------------------------------------------------------------------------
@@ -596,7 +599,7 @@
   (swap! state assoc :settings-modal-showing? false))
 
 (defn- on-keydown-new-project-name [js-evt]
-  (when (= ENTER-KEY (aget js-evt "keyCode"))
+  (when (= ENTER (aget js-evt "keyCode"))
     (click-create-project-btn)))
 
 (defn- on-mount-new-project-form
@@ -804,7 +807,7 @@
         "Load an existing project from a Leiningen " [:code "project.clj"] " file."]]
     [:div.modal-bottom-050c3
       [:span.bottom-link-7d8d7 {:on-click close-add-project-modal}
-        "cancel"]]])
+        "close"]]])
 
 (sablono/defhtml new-project-form [app-state]
   [:div.modal-body-fe4db
@@ -997,6 +1000,30 @@
 (add-watch state :main on-change-state)
 
 ;;------------------------------------------------------------------------------
+;; Non-react Events
+;;------------------------------------------------------------------------------
+
+(defn- on-keydown-body [js-evt]
+  (let [key-code (aget js-evt "keyCode")
+        escape-key-pressed? (= ESC key-code)
+        current-state @state]
+    (when escape-key-pressed?
+      (when (:add-project-modal-showing? current-state)
+        (click-add-project-modal-overlay))
+      (when (:settings-modal-showing? current-state)
+        (click-settings-modal-overlay)))))
+
+(def events-added? (atom false))
+
+(defn- add-events!
+  "Add non-react events.
+   NOTE: this is a run-once function"
+  []
+  (when-not @events-added?
+    (.addEventListener js/document.body "keydown" on-keydown-body)
+    (reset! events-added? true)))
+
+;;------------------------------------------------------------------------------
 ;; Init
 ;;------------------------------------------------------------------------------
 
@@ -1006,6 +1033,7 @@
   (show-el! "mainPage"))
 
 (defn init! [proj-filenames]
+  (add-events!)
   (load-settings-file!)
   (init-projects! proj-filenames)
   (show-main-page!)
