@@ -66,8 +66,11 @@ provided. This is disabled in the release.
 
 Cuttle is named after the [Cuttlefish] because [Shaun] likes cephalopods.
 
-Cuttle is not an acronym and should be capitalized like a proper noun when used
-in a sentence.
+The first three letters of Cuttle might stand for "ClojureScript User Tool", but
+the last three letters don't stand for anything because Cuttle is not an
+acronym.
+
+Cuttle should be capitalized like a proper noun when used in a sentence.
 
 ## License
 
