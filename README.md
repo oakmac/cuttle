@@ -2,7 +2,7 @@
 
 A user interface for the ClojureScript Compiler.
 
-<img src="screenshots/2014-10-30-preview.png">
+<img src="screenshots/2015-01-18-preview.png">
 
 ## Goal
 
