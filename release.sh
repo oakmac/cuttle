@@ -58,6 +58,11 @@ echo "Creating $RELEASE_DIR ..."
 cp -R $ATOM_DIR $RELEASE_DIR
 cp -R app $RELEASE_RSRC
 
+# copy node_modules
+mkdir $RELEASE_RSRC/app/node_modules
+cp -R node_modules/fs.extra $RELEASE_RSRC/app/node_modules/fs.extra
+cp -R node_modules/open $RELEASE_RSRC/app/node_modules/open
+
 #----------------------------------------------------------------------
 # Disable Dev-Tools
 #----------------------------------------------------------------------
