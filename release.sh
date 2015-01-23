@@ -3,6 +3,12 @@
 # Create Cuttle release using our local Atom Shell installation
 # (Mac, Linux, or Cygwin)
 
+# NOTE:
+# for Windows you will need "makensis" on your PATH
+# http://nsis.sourceforge.net/Main_Page
+# you also may need ConEmu for bash
+# https://code.google.com/p/conemu-maximus5/
+
 #----------------------------------------------------------------------
 # Get OS-specific Atom details
 #----------------------------------------------------------------------
