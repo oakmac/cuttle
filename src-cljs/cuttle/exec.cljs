@@ -30,6 +30,18 @@
 (def fs (js/require "fs.extra"))
 (def js-exec (aget child-proc "exec"))
 (def js-spawn (aget child-proc "spawn"))
+(def path (js/require "path"))
+(def path-separator (aget path "sep"))
+
+;;------------------------------------------------------------------------------
+;; Util
+;;------------------------------------------------------------------------------
+
+(defn- windows-shell-escape
+  "NOTE: This is almost certainly incomplete and there is probably already a
+   very robust library for doing this sort of thing."
+  [s]
+  (replace s "\"" "\\\""))
 
 ;;------------------------------------------------------------------------------
 ;; Check for Java
@@ -437,7 +449,23 @@
   (let [lein-cmd (lein (str "new mies " project-name))]
     (js-exec lein-cmd (js-obj "cwd" folder-name) callback-fn)))
 
-
+(defn windows-growl-notify! [title message]
+  (let [icon (str (aget js/global "__dirname")
+                  path-separator
+                  "img"
+                  path-separator
+                  "clojure-logo.png")
+        cmd (str (aget js/global "__dirname")
+                 path-separator
+                 "bin"
+                 path-separator
+                 "growlnotify.exe "
+                 ;;"/a:Cuttle " ;; this is not working until we register the
+                                ;; application first?
+                 "/t:\"" (windows-shell-escape title) "\" "
+                 "/i:\"" (windows-shell-escape icon) "\" "
+                 "\"" (windows-shell-escape message) "\"")]
+    (js-exec cmd)))
 
 
 

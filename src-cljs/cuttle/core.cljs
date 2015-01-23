@@ -9,7 +9,7 @@
     [cuttle.exec :refer [add-lein-profile!
                                kill-all-leiningen-instances!
                                correct-java-installed?]]
-    [cuttle.pages.main :as main-page]
+    [cuttle.main-page :as main-page]
     [cuttle.projects :refer [load-workspace!]]
     [cuttle.util :refer [file-exists?]]
     hiccups.runtime))

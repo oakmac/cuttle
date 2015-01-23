@@ -1,4 +1,4 @@
-(ns cuttle.pages.main
+(ns cuttle.main-page
   (:require-macros
     [cljs.core.async.macros :refer [go]])
   (:require
@@ -10,7 +10,7 @@
     [cuttle.exec :as exec]
     [cuttle.projects :as projects :refer [load-project-file]]
     [cuttle.util :refer [date-format file-exists? homedir log js-log now
-                               on-mac? uuid write-file-async!]
+                         on-linux? on-mac? on-windows? uuid write-file-async!]
                        :refer-macros [while-let]]
     goog.events.KeyCodes
     [quiescent :include-macros true]
@@ -252,11 +252,16 @@
     :else nil))
 
 (defn- notify! [title txt]
-  (js/Notification. title (js-obj
-    "body" txt
-    ;; TODO: need to figure out why this isn't working
-    ;;"icon" "/img/clojure-logo.png"
-    ))
+  (when on-windows?
+    (exec/windows-growl-notify! title txt))
+
+  (when (or on-linux?
+            on-mac?)
+    (js/Notification. title (js-obj
+      "body" txt
+      ;; TODO: need to figure out why this isn't working
+      ;;"icon" "/img/clojure-logo.png"
+      )))
   nil)
 
 ;;------------------------------------------------------------------------------
