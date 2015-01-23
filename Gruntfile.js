@@ -5,7 +5,7 @@ module.exports = function(grunt) {
 // Grunt Config
 //------------------------------------------------------------------------------
 
-const leinJarUrl = 'https://github.com/technomancy/leiningen/releases/download/2.5.0/leiningen-2.5.0-standalone.jar';
+var leinJarUrl = 'https://github.com/technomancy/leiningen/releases/download/2.5.0/leiningen-2.5.0-standalone.jar';
 
 grunt.initConfig({
 
