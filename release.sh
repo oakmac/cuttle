@@ -101,6 +101,9 @@ elif [ "$OS" == "windows" ]; then
 
   mv $RELEASE_DIR/atom.exe $RELEASE_DIR/Cuttle.exe
 
+  makensis exe_script.nsi
+  mv $RELEASE.exe $BUILDS/$RELEASE.exe
+
 fi
 
 #----------------------------------------------------------------------
