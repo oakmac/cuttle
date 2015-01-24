@@ -28,10 +28,12 @@
           :optimizations :whitespace
           :output-to "app/js/main.js"}}
 
-      :main-min {
-        :source-paths ["src-cljs"]
-        :compiler {
-          :externs ["externs/react-0.11.0.js" "externs/misc.js"]
-          :output-to "app/js/main.min.js"
-          :optimizations :advanced
-          :pretty-print false }}}})
+      ; :main-min {
+      ;   :source-paths ["src-cljs"]
+      ;   :compiler {
+      ;     :externs ["externs/react-0.11.0.js" "externs/misc.js"]
+      ;     :output-to "app/js/main.min.js"
+      ;     :optimizations :advanced
+      ;     :pretty-print false }}
+
+}})
