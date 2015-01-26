@@ -785,6 +785,7 @@
 
 (sablono/defhtml header []
   [:div.header-a4c14
+    [:img.logo-0a166 {:src "img/cljs-ring.svg"}]
     [:div.title-8749a "ClojureScript Compiler"]
     [:div.title-links-42b06
       [:span.link-3d3ad

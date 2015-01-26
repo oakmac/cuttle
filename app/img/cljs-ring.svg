@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+The CLJS Ring is released under the Creative Commons CC0 1.0 Universal license.
+
+To the extent possible under law, Chris Oakman has waived all copyright and related or
+neighboring rights to the CLJS Ring. This work is published from the United States.
+
+You can read more about the Creative Commons CC0 license here:
+https://creativecommons.org/publicdomain/zero/1.0/
+-->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+  viewBox="0 0 428 426" enable-background="new 0 0 428 426" xml:space="preserve">
+<g>
+<path fill="#96CA4B" d="M198.4,39.7l4.6-0.4V9.2l-5.4,0.4c-50.9,4.1-98.2,27-133.1,64.7C29.3,112.2,10,161.5,10,213
+  c0,51.5,19.3,100.8,54.5,138.6c34.9,37.7,82.2,60.6,133.1,64.7l5.4,0.4v-30.1l-4.6-0.4c-43.1-3.8-83-23.6-112.5-55.6
+  c-29.6-32.2-46-74-46-117.7c0-43.7,16.3-85.5,46-117.7C115.4,63.3,155.4,43.5,198.4,39.7z"/>
+<path fill="#5F7FBF" d="M363.5,74.4c-34.9-37.7-82.2-60.6-133.1-64.7L225,9.2v30.1l4.6,0.4c43.1,3.8,83,23.6,112.5,55.6
+  c29.6,32.2,46,74,46,117.7c0,43.7-16.3,85.5-46,117.7c-29.5,32-69.4,51.8-112.5,55.6l-4.6,0.4v30.1l5.4-0.4
+  c50.9-4.1,98.2-27,133.1-64.7C398.7,313.8,418,264.5,418,213C418,161.5,398.7,112.2,363.5,74.4z"/>
+</g>
+</svg>
