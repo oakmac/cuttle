@@ -252,16 +252,17 @@
     :else nil))
 
 (defn- notify! [title txt]
-  (when on-windows?
-    (exec/windows-growl-notify! title txt))
+  (cond
+    on-windows?
+      (exec/windows-growl-notify! title txt)
 
-  (when (or on-linux?
-            on-mac?)
-    (js/Notification. title (js-obj
-      "body" txt
-      ;; TODO: need to figure out why this isn't working
-      ;;"icon" "/img/clojure-logo.png"
-      )))
+    on-linux?
+      (exec/linux-notify! title txt)
+
+    :else
+      (js/Notification. title (js-obj "body" txt)))
+
+  ;; return nil so it doesn't return the js/Notification object
   nil)
 
 ;;------------------------------------------------------------------------------
@@ -363,7 +364,7 @@
                (:dock-bounce-on-warnings? current-state))
       (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-warnings? current-state)
-      (notify! "CLJS Warning" (first warnings)))
+      (notify! "Compiler Warning" (first warnings)))
     (swap! state update-in [:projects prj-key :builds bld-id :warnings]
       (fn [w]
         (into [] (concat w warnings))))))
@@ -381,7 +382,7 @@
                (:dock-bounce-on-errors? current-state))
       (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-errors? current-state)
-      (notify! "CLJS Error" (error-notify-body errors)))
+      (notify! "Compiler Error" (error-notify-body errors)))
     (swap! state update-in [:projects prj-key :builds bld-id]
       assoc :error errors
             :state :done-with-error)))

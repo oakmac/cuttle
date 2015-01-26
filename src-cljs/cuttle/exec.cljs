@@ -34,14 +34,17 @@
 (def path-separator (aget path "sep"))
 
 ;;------------------------------------------------------------------------------
-;; Util
+;; Shell Escape Util
 ;;------------------------------------------------------------------------------
 
-(defn- windows-shell-escape
-  "NOTE: This is almost certainly incomplete and there is probably already a
-   very robust library for doing this sort of thing."
-  [s]
+;; NOTE: there is probably already a very robust library for doing this sort
+;; of thing
+
+(defn- windows-shell-escape [s]
   (replace s "\"" "\\\""))
+
+(defn- unix-shell-escape [s]
+  (replace s "'" "\\'"))
 
 ;;------------------------------------------------------------------------------
 ;; Check for Java
@@ -449,13 +452,22 @@
   (let [lein-cmd (lein (str "new mies " project-name))]
     (js-exec lein-cmd (js-obj "cwd" folder-name) callback-fn)))
 
+(def cljs-icon (str
+  (aget js/global "__dirname")
+  path-separator
+  "img"
+  path-separator
+  "cljs-logo.png"))
+
+(defn linux-notify! [title message]
+  (let [cmd (str "notify-send "
+                 "--icon='" cljs-icon "' "
+                 "'" (unix-shell-escape title) "' "
+                 "'" (unix-shell-escape message) "'")]
+    (js-exec cmd)))
+
 (defn windows-growl-notify! [title message]
-  (let [icon (str (aget js/global "__dirname")
-                  path-separator
-                  "img"
-                  path-separator
-                  "clojure-logo.png")
-        cmd (str (aget js/global "__dirname")
+  (let [cmd (str (aget js/global "__dirname")
                  path-separator
                  "bin"
                  path-separator
@@ -463,7 +475,7 @@
                  ;;"/a:Cuttle " ;; this is not working until we register the
                                 ;; application first?
                  "/t:\"" (windows-shell-escape title) "\" "
-                 "/i:\"" (windows-shell-escape icon) "\" "
+                 "/i:\"" (windows-shell-escape cljs-icon) "\" "
                  "\"" (windows-shell-escape message) "\"")]
     (js-exec cmd)))
 
