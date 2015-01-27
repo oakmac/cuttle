@@ -119,6 +119,12 @@
 ;; Project Adding and Removing (from app state)
 ;;------------------------------------------------------------------------------
 
+(defn- conj-if-absent
+  [seq- elm]
+  (if (some #(= elm %) seq-)
+    seq-
+    (conj seq- elm)))
+
 (defn- add-project-as-loading!
   [filename]
   (let [project (-> initial-project-state
@@ -126,7 +132,7 @@
                            :filename filename))
         new-state (-> @state
                       (assoc-in [:projects filename] project)
-                      (update-in [:projects :order] conj filename))]
+                      (update-in [:projects :order] conj-if-absent filename))]
     (reset! state new-state)))
 
 (defn- on-project-load-update!
@@ -141,13 +147,12 @@
 
 (defn- add-project!
   [filename]
-  (when-not (contains? (:projects @state) filename)
-    (add-project-as-loading! filename)
-    (let [c (load-project-file filename)]
-      (go
-        (while-let [project (<! c)]
-          (on-project-load-update! filename project))
-        (finish-project-load! filename)))))
+  (add-project-as-loading! filename)
+  (let [c (load-project-file filename)]
+    (go
+      (while-let [project (<! c)]
+                 (on-project-load-update! filename project))
+      (finish-project-load! filename))))
 
 (defn- init-projects!
   [filenames]
@@ -893,13 +898,18 @@
             (:name prj)
             [:span.project-icons-dd1bb
               [:i.fa.fa-folder-open-o.project-icon-1711d
-                {:on-click #(click-open-project-folder! prj-key)}]
+                {:title "Open Folder"
+                 :on-click #(click-open-project-folder! prj-key)}]
               (when (= (:state prj) :idle)
                 (list
                   ;; NOTE: hiding edit link for now
                   ;; [:i.fa.fa-edit.project-icon-1711d]
+                  [:i.fa.fa-refresh.project-icon-1711d
+                   {:title "Refresh"
+                    :on-click #(add-project! prj-key)}]
                   [:i.fa.fa-times.project-icon-1711d
-                    {:on-click #(try-remove-project! (:name prj) prj-key)}]))]]
+                    {:title "Remove"
+                     :on-click #(try-remove-project! (:name prj) prj-key)}]))]]
           [:div.right-f5656
             (case (:state prj)
               :loading (loading-state prj-key)
