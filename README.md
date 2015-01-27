@@ -1,10 +1,10 @@
 ![Cuttle](cuttle-banner.png)
 
-Cuttle is a standalone application that aims to be the simplest way for
-newcomers to try ClojureScript.  It provides a user-friendly interface,
-allowing you to build projects by clicking a button, and to see meaningful
-warnings and errors at a glance.  In a way, it provides the "builder" parts of
-an IDE without making you leave your favorite editor.
+Cuttle is a standalone application that aims to be __the simplest way to use
+ClojureScript__.  It provides a user-friendly interface, allowing you to build
+projects by clicking a button, and to see meaningful warnings and errors at a
+glance.  In a way, it provides the "builder" parts of an IDE without making you
+leave your favorite editor.
 
 <img src="screenshots/2015-01-27-init.png" width="350px"> <img src="screenshots/2015-01-27-errors.png" width="350px">
 
