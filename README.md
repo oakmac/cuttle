@@ -45,7 +45,7 @@ platforms.
   change.  Click the button proper to start building.
 - __Multiple Projects__: You can add multiple projects to this workspace.  The
   projects are treated with isolated compiler instances and can be built in
-  parallel with problems.
+  parallel.
 - __Project Buttons__: The project buttons at the top-left of the build table
   are also helpful for opening the project folder, re-fetching the build
   configs, and removing the project from the workspace.
@@ -73,8 +73,8 @@ its behavior simple and predictable.  Some ideas we are thinking about:
 
 ## Development Setup
 
-To setup a environment for building Cuttle:  (you can of course replace the
-leiningen bits with Cuttle :P)
+To setup a environment for building Cuttle:  (you can replace the `lein` bits
+with Cuttle :P)
 
 1. Install [Leiningen] and [Node.js].
 1. One-time setup. Run from the project directory:
@@ -120,7 +120,7 @@ leiningen bits with Cuttle :P)
 ## About the Name/Logo
 
 Cuttle is named after the [Cuttlefish] because [Shaun] likes cephalopods.
-The logo is modeled after its uniquely shaped pupils.
+The logo is modeled after its uniquely shaped eye.
 
 The first three letters of Cuttle might stand for "ClojureScript User Tool", but
 the last three letters don't stand for anything because Cuttle is not an
