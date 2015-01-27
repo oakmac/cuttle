@@ -11,6 +11,9 @@ call npm install
 echo. & echo Installing grunt...
 call npm install -g grunt-cli
 
+echo. & echo Installing json command line tool...
+call npm install -g json
+
 echo. & echo Installing winresourcer...
 call npm install -g winresourcer
 

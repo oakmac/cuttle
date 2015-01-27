@@ -16,6 +16,9 @@ npm install
 echo; echo "Installing grunt..."
 sudo npm install -g grunt-cli
 
+echo; echo "Installing json command line tool..."
+sudo npm install -g json
+
 echo; echo "Installing winresourcer..."
 sudo npm install -g winresourcer
 
