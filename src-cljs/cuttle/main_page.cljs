@@ -364,7 +364,7 @@
                (:dock-bounce-on-warnings? current-state))
       (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-warnings? current-state)
-      (notify! "Compiler Warning" (first warnings)))
+      (notify! "CLJS Compiler Warning" (first warnings)))
     (swap! state update-in [:projects prj-key :builds bld-id :warnings]
       (fn [w]
         (into [] (concat w warnings))))))
@@ -382,7 +382,7 @@
                (:dock-bounce-on-errors? current-state))
       (.send ipc "bounce-dock"))
     (when (:desktop-notification-on-errors? current-state)
-      (notify! "Compiler Error" (error-notify-body errors)))
+      (notify! "CLJS Compiler Error" (error-notify-body errors)))
     (swap! state update-in [:projects prj-key :builds bld-id]
       assoc :error errors
             :state :done-with-error)))
@@ -786,8 +786,8 @@
 
 (sablono/defhtml header []
   [:div.header-a4c14
-    [:img.logo-0a166 {:src "img/cljs-ring.svg"}]
-    [:div.title-8749a "ClojureScript Compiler"]
+    [:img.logo-0a166 {:src "img/cuttle-logo.svg"}]
+    [:div.title-8749a "Cuttle"]
     [:div.title-links-42b06
       [:span.link-3d3ad
         {:on-click click-settings-link}

@@ -126,8 +126,8 @@ function onFinishLoad() {
 // on all operating systems
 const browserWindowOptions = {
   height: 850,
-  icon: __dirname + '/img/clojure-logo.png',
-  title: 'ClojureScript Compiler',
+  icon: __dirname + '/img/cuttle-logo.png',
+  title: 'Cuttle',
   width: 1000
 };
 

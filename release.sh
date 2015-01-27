@@ -86,7 +86,7 @@ if [ "$OS" == "mac" ]; then
 
   FULL_PLIST="$(pwd)/$RELEASE_DIR/$PLIST"
 
-  defaults write $FULL_PLIST CFBundleIconFile 'app/img/clojure-logo.icns'
+  defaults write $FULL_PLIST CFBundleIconFile 'app/img/cuttle-logo.icns'
   defaults write $FULL_PLIST CFBundleDisplayName 'Cuttle'
   defaults write $FULL_PLIST CFBundleName 'Cuttle'
   defaults write $FULL_PLIST CFBundleIdentifier 'org.cuttle'
@@ -103,7 +103,7 @@ elif [ "$OS" == "windows" ]; then
                --exeFile=$RELEASE_DIR/atom.exe \
                --resourceType=Icongroup \
                --resourceName:1 \
-               --resourceFile:$RELEASE_RSRC/app/img/clojure-logo.ico
+               --resourceFile:$RELEASE_RSRC/app/img/cuttle-logo.ico
 
   mv $RELEASE_DIR/atom.exe $RELEASE_DIR/Cuttle.exe
 

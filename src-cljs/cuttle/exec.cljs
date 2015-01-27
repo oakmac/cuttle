@@ -452,16 +452,16 @@
   (let [lein-cmd (lein (str "new mies " project-name))]
     (js-exec lein-cmd (js-obj "cwd" folder-name) callback-fn)))
 
-(def cljs-icon (str
+(def cuttle-icon (str
   (aget js/global "__dirname")
   path-separator
   "img"
   path-separator
-  "cljs-logo.png"))
+  "cuttle-logo.png"))
 
 (defn linux-notify! [title message]
   (let [cmd (str "notify-send "
-                 "--icon='" cljs-icon "' "
+                 "--icon='" cuttle-icon "' "
                  "'" (unix-shell-escape title) "' "
                  "'" (unix-shell-escape message) "'")]
     (js-exec cmd)))
@@ -475,7 +475,7 @@
                  ;;"/a:Cuttle " ;; this is not working until we register the
                                 ;; application first?
                  "/t:\"" (windows-shell-escape title) "\" "
-                 "/i:\"" (windows-shell-escape cljs-icon) "\" "
+                 "/i:\"" (windows-shell-escape cuttle-icon) "\" "
                  "\"" (windows-shell-escape message) "\"")]
     (js-exec cmd)))
 
