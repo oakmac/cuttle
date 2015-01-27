@@ -9,8 +9,9 @@
     [cuttle.dom :refer [by-id hide-el! show-el!]]
     [cuttle.exec :as exec]
     [cuttle.projects :as projects :refer [load-project-file]]
-    [cuttle.util :refer [date-format file-exists? homedir log js-log now
-                         on-linux? on-mac? on-windows? uuid write-file-async!]
+    [cuttle.util :refer [current-version date-format file-exists? homedir log
+                         js-log now on-linux? on-mac? on-windows? uuid
+                         write-file-async!]
                        :refer-macros [while-let]]
     goog.events.KeyCodes
     [quiescent :include-macros true]
@@ -801,7 +802,7 @@
 (sablono/defhtml header []
   [:div.header-a4c14
     [:img.logo-0a166 {:src "img/cuttle-logo.svg"}]
-    [:div.title-8749a "Cuttle"]
+    [:div.title-8749a "Cuttle" [:span.version-8838a (str "v" current-version)]]
     [:div.title-links-42b06
       [:span.link-3d3ad
         {:on-click click-settings-link}
@@ -908,7 +909,7 @@
                   ;; NOTE: hiding edit link for now
                   ;; [:i.fa.fa-edit.project-icon-1711d]
                   [:i.fa.fa-refresh.project-icon-1711d
-                   {:title "Refresh"
+                   {:title "Refresh the project.clj file"
                     :on-click #(add-project! prj-key)}]
                   [:i.fa.fa-times.project-icon-1711d
                     {:title "Remove"
