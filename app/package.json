@@ -1,5 +1,7 @@
 {
   "name" : "Cuttle",
-  "version" : "1.0-RC1",
+  "version" : "DEV",
+  "build-commit" : "",
+  "build-timestamp" : "",
   "main" : "app.js"
 }
