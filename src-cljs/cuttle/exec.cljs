@@ -88,7 +88,7 @@
         js-options (js-obj "cwd" path)
         callback (fn [error stdout stderr]
                    (let [project (read-string stdout)]
-                     (put! out-chan project)))]
+                     (put! out-chan (or project {}))))]
     (js-exec cmd js-options callback)
     out-chan))
 
