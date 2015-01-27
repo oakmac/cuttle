@@ -1,4 +1,4 @@
-# Cuttle
+![Cuttle](cuttle-banner.png)
 
 A user interface for the ClojureScript Compiler.
 
