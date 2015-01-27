@@ -2,7 +2,11 @@
 
 A user interface for the ClojureScript Compiler.
 
-<img src="screenshots/2015-01-18-preview.png">
+<img src="screenshots/2015-01-26 cuttle v1.0.png">
+
+Desktop notifications on errors and warnings:
+
+<img src="screenshots/2015-01-26 linux-desktop-notifications.png">
 
 ## Goal
 
