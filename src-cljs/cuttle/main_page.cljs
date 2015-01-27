@@ -719,6 +719,12 @@
     [:td.warning-cell-b9f12 {:col-span "6"}
       [:i.fa.fa-exclamation-triangle] w]])
 
+(sablono/defhtml loading-builds-row []
+  [:tr
+   [:td.load-builds-1b35d {:col-span 6}
+    [:i.fa.fa-cog] ;; can't add ".fa-spin" without a weird border bug occurring
+    "Loading builds..."]])
+
 (sablono/defhtml no-builds-row []
   [:tr
    [:td.no-builds-2295f {:col-span 6}
@@ -777,9 +783,6 @@
   [:button.btn-da85d
     {:on-click #(click-stop-auto-btn prj-key)}
     "Stop"])
-
-(sablono/defhtml loading-state [prj-key]
-  [:span.status-d941c [:i.fa.fa-cog.fa-spin] "Loading..."])
 
 (sablono/defhtml cleaning-state [prj-key]
   [:span.status-984ee "Removing generated files..."])
@@ -912,7 +915,7 @@
                      :on-click #(try-remove-project! (:name prj) prj-key)}]))]]
           [:div.right-f5656
             (case (:state prj)
-              :loading (loading-state prj-key)
+              :loading nil
               :auto (auto-state prj-key)
               :cleaning (cleaning-state prj-key)
               :idle (idle-state prj-key prj)
@@ -920,15 +923,16 @@
               "*unknown project state*")]]
         [:table.tbl-bdf39
          (bld-tbl-hdr)
-          (if (and (not= (:state prj) :loading)
-                   (empty? (:builds prj)))
-            (no-builds-row)
-            (map-indexed
-              (fn [idx bld-id]
-                (let [bld (get-in prj [:builds bld-id])]
-                  (BuildRow (assoc bld :idx idx
-                                   :prj-key prj-key))))
-              (:builds-order prj)))]])))
+          (if (= (:state prj) :loading)
+            (loading-builds-row)
+            (if (empty? (:builds prj))
+              (no-builds-row)
+              (map-indexed
+                (fn [idx bld-id]
+                  (let [bld (get-in prj [:builds bld-id])]
+                    (BuildRow (assoc bld :idx idx
+                                     :prj-key prj-key))))
+                (:builds-order prj))))]])))
 
 (quiescent/defcomponent NewProjectForm [modal-state]
   (quiescent/on-mount
