@@ -26,33 +26,35 @@ platforms.
 
 ## User Guide
 
-When first opening Cuttle, you will be prompted to add an existing project or
-to create a new one.  If you are adding an __existing project__, you must
-navigate the presented dialog to the project's `project.clj` file so that we
-can find your configured builds.  (We currently do not support cljsbuild
-configurations outside of the default `:dev` profile).
-
-If you are creating a __new project__, you will be prompted for a name and
-location for its folder.  (The standard `lein new mies` template will be used
-to create the project.)
-
-Once you have loaded a project, you will be presented with a table of build
-configurations available for that project.  At the top-right of the table, you
-should see a __build button__.  You can first select the dropdown arrow to
-specifically set which builds to compile and whether or not to automatically
-recompile when files change.  Click the button to start building.
-
-You can add __multiple projects__ to this workspace.  When closing the
-application, all compiler instances are shutdown.  Your configurations are
-saved and reloaded when re-opening the application.
-
-The __project buttons__ at the top-left are also helpful for opening the
-project folder, re-fetching the build configs, and removing the project from
-the workspace.
-
-Finally, the __settings__ link at the top-right of the page currently holds
-options for toggling compiler notifications (via Mac native Notifications,
-Linux `notify-send`, or Growl For Windows).
+- When first opening Cuttle, you will be prompted to add an existing project or
+  to create a new one.
+- __Add Existing Project__: If you are adding an existing project, you must
+  navigate the presented dialog to the project's `project.clj` file so that we
+  can find your configured builds.
+  - (We currently do not support cljsbuild configurations outside of the
+    default `:dev` profile).
+- __Add New Project__: If you are creating a new project, you will be prompted
+  for a name and location for its folder.
+  - (The standard `lein new mies` template will be used to create the project.)
+- __Build Table__: Once you have loaded a project, you will be presented with a
+  table of build configurations available for that project. Current status of
+  the build, along with warnings and errors will be displayed here.
+- __Build Button__: At the top-right of the build table, you should see a build
+  button.  You can first select the dropdown arrow to specifically set which
+  builds to compile and whether or not to automatically recompile when files
+  change.  Click the button proper to start building.
+- __Multiple Projects__: You can add multiple projects to this workspace.  The
+  projects are treated with isolated compiler instances and can be built in
+  parallel with problems.
+- __Project Buttons__: The project buttons at the top-left of the build table
+  are also helpful for opening the project folder, re-fetching the build
+  configs, and removing the project from the workspace.
+- __Notifications__: The settings link at the top-right of the page currently
+  holds options for toggling compiler notifications
+  - (via Mac native Notifications, Linux `notify-send`, or Growl For Windows).
+- __Shutting Down__: When closing the application, all compiler instances that
+  happen to still be running are shutdown.  Your configurations are saved and
+  reloaded when re-opening the application.
 
 
 ## Future
