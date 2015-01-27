@@ -56,10 +56,10 @@ they should see meaningful errors and warnings at a glance.
 
     ```sh
     # Create a release folder
-    scripts/release.sh
+    ./release.sh
 
     # Create a release zip
-    scripts/release.sh -z
+    ./release.sh -z
     ```
 
 ## About the Name
