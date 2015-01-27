@@ -23,3 +23,5 @@ pom.xml
 *.diff
 
 /atom-shell
+
+/scripts/add-lein-profile
