@@ -714,6 +714,12 @@
     [:td.warning-cell-b9f12 {:col-span "6"}
       [:i.fa.fa-exclamation-triangle] w]])
 
+(sablono/defhtml no-builds-row []
+  [:tr
+   [:td.no-builds-2295f {:col-span 6}
+    [:i.fa.fa-exclamation-triangle]
+    "No builds found in this project."]])
+
 (defn- build-row-class [{:keys [idx active?]}]
   (str "build-row-fdd97 "
     (if (zero? (mod idx 2))
@@ -903,13 +909,16 @@
               :once (once-state prj-key)
               "*unknown project state*")]]
         [:table.tbl-bdf39
-          (bld-tbl-hdr)
-          (map-indexed
-            (fn [idx bld-id]
-              (let [bld (get-in prj [:builds bld-id])]
-                (BuildRow (assoc bld :idx idx
-                                     :prj-key prj-key))))
-            (:builds-order prj))]])))
+         (bld-tbl-hdr)
+          (if (and (not= (:state prj) :loading)
+                   (empty? (:builds prj)))
+            (no-builds-row)
+            (map-indexed
+              (fn [idx bld-id]
+                (let [bld (get-in prj [:builds bld-id])]
+                  (BuildRow (assoc bld :idx idx
+                                   :prj-key prj-key))))
+              (:builds-order prj)))]])))
 
 (quiescent/defcomponent NewProjectForm [modal-state]
   (quiescent/on-mount
