@@ -10,11 +10,12 @@ IDE without making you leave your favorite editor.
 
 Under the hood, Cuttle is not hiding a lot of magic from you.  It uses standard
 ClojureScript workflow tools to perform its operations.  It uses Leiningen with
-the lein-cljsbuild plugin, and the mies template for creating new projects.
-Thus, it should produce the same expected behavior as these standard tools.
+the lein-cljsbuild plugin listed in your project.clj, and the mies template for
+creating new projects.  Thus, it should produce the same expected behavior as
+these standard tools.
 
-Cuttle is itself a ClojureScript application which runs on a Node/Chromium
-amalgamation called Atom Shell. :)  We hope this tool encourages you to explore
+Cuttle is itself a ClojureScript application :) (running on a Node/Chromium
+framework called Atom Shell). We hope this tool encourages you to explore
 building ClojureScript apps for the browser, Node, and other JS-targetted
 platforms.
 
@@ -40,7 +41,7 @@ its behavior simple and predictable.  Some ideas we are thinking about:
 ## Development Setup
 
 To setup a environment for building Cuttle:  (you can of course replace the
-leiningen bits with Cuttle ;p)
+leiningen bits with Cuttle :P)
 
 1. Install [Leiningen] and [Node.js].
 1. One-time setup. Run from the project directory:
@@ -83,7 +84,7 @@ leiningen bits with Cuttle ;p)
     ./release.sh -z
     ```
 
-## About the Name
+## About the Name/Logo
 
 Cuttle is named after the [Cuttlefish] because [Shaun] likes cephalopods.
 The logo is modeled after its uniquely shaped pupils.
