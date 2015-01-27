@@ -21,8 +21,39 @@ platforms.
 
 ## Installation
 
-1. [Install JRE 7+](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
+1. [Install JRE >= 7](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
 1. [Get latest Cuttle for your OS](https://github.com/oakmac/cuttle/releases)
+
+## User Guide
+
+When first opening Cuttle, you will be prompted to add an existing project or
+to create a new one.  If you are adding an __existing project__, you must
+navigate the presented dialog to the project's `project.clj` file so that we
+can find your configured builds.  (We currently do not support cljsbuild
+configurations outside of the default `:dev` profile).
+
+If you are creating a __new project__, you will be prompted for a name and
+location for its folder.  (The standard `lein new mies` template will be used
+to create the project.)
+
+Once you have loaded a project, you will be presented with a table of build
+configurations available for that project.  At the top-right of the table, you
+should see a __build button__.  You can first select the dropdown arrow to
+specifically set which builds to compile and whether or not to automatically
+recompile when files change.  Click the button to start building.
+
+You can add __multiple projects__ to this workspace.  When closing the
+application, all compiler instances are shutdown.  Your configurations are
+saved and reloaded when re-opening the application.
+
+The __project buttons__ at the top-left are also helpful for opening the
+project folder, re-fetching the build configs, and removing the project from
+the workspace.
+
+Finally, the __settings__ link at the top-right of the page currently holds
+options for toggling compiler notifications (via Mac native Notifications,
+Linux `notify-send`, or Growl For Windows).
+
 
 ## Future
 
