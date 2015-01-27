@@ -1,25 +1,44 @@
 ![Cuttle](cuttle-banner.png)
 
-A user interface for the ClojureScript Compiler.
+Cuttle is a standalone application that aims to be the simplest way for
+newcomers to try ClojureScript.  It provides a user-friendly interface,
+allowing you to build projects by clicking a button, and to see meaningful
+warnings and errors at a glance.  In a way, it provides the builder parts of an
+IDE without making you leave your favorite editor.
 
-<img src="screenshots/2015-01-26 cuttle v1.0.png">
+Under the hood, Cuttle is not hiding a lot of magic from you.  It uses standard
+ClojureScript workflow tools to perform its operations.  It uses Leiningen with
+the lein-cljsbuild plugin, and the mies template for creating new projects.
+Thus, it should produce the same expected behavior as these standard tools.
 
-Desktop notifications on errors and warnings:
+Cuttle is itself a ClojureScript application which runs on a Node/Chromium
+amalgamation called Atom Shell. :)  We hope this tool encourages you to explore
+building ClojureScript apps for the browser, Node, and other JS-targetted
+platforms.
 
-<img src="screenshots/2015-01-26 linux-desktop-notifications.png">
+## Installation
 
-## Goal
+1. [Install JRE 7+](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
+1. [Get latest Cuttle for your OS](https://github.com/oakmac/cuttle/releases)
 
-Getting started with ClojureScript is one of the more difficult things about the
-language. JavaScript developers are often unfamiliar with Leiningen and
-project.clj seems very foreign initially. The goal of this project is to reduce
-the barrier to entry for new ClojureScript devs.
+## Future
 
-We also want to improve the usability of the compiler in day-to-day workflows.
-The user should be able to build/clean their projects with a few clicks, and
-they should see meaningful errors and warnings at a glance.
+We welcome your ideas, bug reports, and pull requests!
+
+With the ClojureScript tooling community rapidly growing, we hope to keep
+improving the user experience to integrate new workflows, while also keeping
+its behavior simple and predictable.  Some ideas we are thinking about:
+
+- [Integration with Figwheel](https://github.com/oakmac/cuttle/issues/53)
+- a basic REPL for experimenting
+- [a full project-connected REPL](https://github.com/oakmac/cuttle/issues/54)
+- an interface for reading/modifying project.clj
+- [a test-runner for cljs.test](https://github.com/oakmac/cuttle/issues/28)
 
 ## Development Setup
+
+To setup a environment for building Cuttle:  (you can of course replace the
+leiningen bits with Cuttle ;p)
 
 1. Install [Leiningen] and [Node.js].
 1. One-time setup. Run from the project directory:
@@ -65,6 +84,7 @@ they should see meaningful errors and warnings at a glance.
 ## About the Name
 
 Cuttle is named after the [Cuttlefish] because [Shaun] likes cephalopods.
+The logo is modeled after its uniquely shaped pupils.
 
 The first three letters of Cuttle might stand for "ClojureScript User Tool", but
 the last three letters don't stand for anything because Cuttle is not an
@@ -80,5 +100,5 @@ License](https://github.com/oakmac/cuttle/blob/master/LICENSE.md).
 [Leiningen]:http://leiningen.org
 [Node.js]:http://nodejs.org
 [Atom Shell]:https://github.com/atom/atom-shell
-[Cuttlefish]:http://en.wikipedia.org/wiki/Cuttlefish
+[Cuttlefish]:https://flic.kr/p/8oVLuC
 [Shaun]:https://github.com/shaunlebron
