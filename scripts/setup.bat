@@ -2,6 +2,9 @@
 
 pushd "%~dp0\.."
 
+echo. & echo Creating default config file...
+if not exist app\config.json copy app\example.config.json app\config.json
+
 echo. & echo Installing node dependencies...
 call npm install
 

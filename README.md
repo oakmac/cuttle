@@ -62,10 +62,6 @@ they should see meaningful errors and warnings at a glance.
     scripts/release.sh -z
     ```
 
-If you want Chrome Dev Tools to auto-open when you start the program, add a
-`config.json` file in the `app/` folder. An `example.config.json` is
-provided. This is disabled in the release.
-
 ## About the Name
 
 Cuttle is named after the [Cuttlefish] because [Shaun] likes cephalopods.

@@ -5,6 +5,11 @@ set -e
 
 cd "`dirname $0`/.."
 
+echo; echo "Creating default config file..."
+if [ ! -f "app/config.json" ]; then
+  cp app/example.config.json app/config.json
+fi
+
 echo; echo "Installing node dependencies..."
 npm install
 
