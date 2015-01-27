@@ -9,6 +9,10 @@
 # you also may need ConEmu for bash
 # https://code.google.com/p/conemu-maximus5/
 
+set -e
+
+cd "`dirname $0`/.."
+
 #----------------------------------------------------------------------
 # Get OS-specific Atom details
 #----------------------------------------------------------------------

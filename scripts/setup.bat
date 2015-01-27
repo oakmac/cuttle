@@ -1,5 +1,7 @@
 @echo off
 
+pushd "%~dp0\.."
+
 echo. & echo Installing node dependencies...
 call npm install
 
@@ -19,3 +21,5 @@ echo. & echo Building lein profile tool...
 call build-lein-profile-tool.bat
 
 echo. & echo Cuttle setup complete.
+
+popd

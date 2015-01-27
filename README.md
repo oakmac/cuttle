@@ -26,10 +26,10 @@ they should see meaningful errors and warnings at a glance.
 
     ```sh
     # setup on linux/mac
-    ./setup.sh
+    scripts/setup.sh
 
     # setup on windows
-    setup.bat
+    scripts/setup.bat
     ```
 
 1. Compile when files change:
@@ -46,20 +46,20 @@ they should see meaningful errors and warnings at a glance.
 
     ```sh
     # launch on Mac/Linux/Cygwin
-    ./launch.sh
+    scripts/launch.sh
 
     # launch on Windows
-    launch.bat
+    scripts/launch.bat
     ```
 
 1. Assemble a release (can only do this for your OS):
 
     ```sh
     # Create a release folder
-    ./release.sh
+    scripts/release.sh
 
     # Create a release zip
-    ./release.sh -z
+    scripts/release.sh -z
     ```
 
 If you want Chrome Dev Tools to auto-open when you start the program, add a

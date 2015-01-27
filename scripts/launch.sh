@@ -3,6 +3,8 @@
 # Launch Cuttle using our local Atom Shell installation
 # (Mac, Linux, or Cygwin)
 
+cd "`dirname $0`/.."
+
 # from: http://stackoverflow.com/a/17072017/142317
 if [ "$(uname)" == "Darwin" ]; then
   ATOM="atom-shell/Atom.app/Contents/MacOS/Atom"

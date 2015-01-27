@@ -3,6 +3,8 @@
 # exit on errors
 set -e
 
+cd "`dirname $0`/.."
+
 echo; echo "Installing node dependencies..."
 npm install
 
@@ -19,6 +21,6 @@ echo; echo "Installing Atom Shell..."
 grunt download-atom-shell
 
 echo; echo "Building lein profile tool..."
-./build-lein-profile-tool.sh
+scripts/build-lein-profile-tool.sh
 
 echo; echo "Cuttle setup complete."
