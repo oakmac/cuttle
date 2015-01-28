@@ -3,7 +3,7 @@
     [cljs.core.async.macros :refer [go]])
   (:require
     [cljs.core.async :refer [<!]]
-    [clojure.string :refer [blank? join replace]]
+    [clojure.string :refer [blank? join replace split trim]]
     [clojure.walk :refer [keywordize-keys]]
     [cuttle.config :refer [app-data-path config]]
     [cuttle.dom :refer [by-id hide-el! show-el!]]
@@ -17,6 +17,7 @@
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]))
 
+(def http (js/require "http"))
 (def ipc (js/require "ipc"))
 (def open (js/require "open"))
 (def path (js/require "path"))
@@ -42,7 +43,8 @@
   :new-project-error nil
   :new-project-name ""
   :new-project-step 1
-  :new-version-bar-showing? true
+  :new-version-bar-showing? false
+  :new-version-num nil
   :projects {:order []}
   :settings-modal-showing? false
   })
@@ -55,6 +57,39 @@
   [project-map]
   (let [proj-keys (-> project-map :order)]
     (mapv #(get project-map %) proj-keys)))
+
+;;------------------------------------------------------------------------------
+;; Check for Updates
+;;------------------------------------------------------------------------------
+
+(def latest-version-url "http://cljs.info/latest-cuttle-version.txt")
+
+;; NOTE: I was sick while writing this function; please don't judge ;)
+;; TODO: should do some simple checking that the version number is in a valid
+;; format
+(defn- check-version2 [new-version]
+  (when (string? new-version)
+    (let [arr (split (trim new-version) ".")
+          new-major (int (first arr))
+          new-minor (int (second arr))
+          new-num (+ (* new-major 10000) new-minor)
+
+          arr2 (split (trim current-version) ".")
+          our-major (int (first arr2))
+          our-minor (int (second arr2))
+          our-num (+ (* our-major 10000) our-minor)]
+      (when (> new-num our-num)
+        (swap! state assoc :new-version-bar-showing? true
+                           :new-version-num (trim new-version))))))
+
+(defn- check-version! []
+  (.get http latest-version-url (fn [js-res]
+    (let [data (atom "")]
+      (.setEncoding js-res "utf8")
+      (.on js-res "data" #(swap! data str %))
+      (.on js-res "end" #(check-version2 @data))))))
+
+(check-version!)
 
 ;;------------------------------------------------------------------------------
 ;; Project State
@@ -496,6 +531,9 @@
 ;; Events
 ;;------------------------------------------------------------------------------
 
+(defn- click-maybe-later []
+  (swap! state assoc :new-version-bar-showing? false))
+
 ;; TODO: this will not work if they click outside the app root element
 ;; need to refactor
 (defn- click-root []
@@ -597,6 +635,11 @@
 
 (defn- click-go-back-btn []
   (swap! state assoc :new-project-step 1))
+
+(def releases-url "https://github.com/oakmac/cuttle/releases")
+
+(defn- click-show-me-btn []
+  (open releases-url))
 
 (defn- click-open-project-folder!
   [filename]
@@ -882,6 +925,18 @@
 ;     [:div.modal-bottom-050c3
 ;       [:button {:on-click close-add-project-modal} "Got it!"]]])
 
+;; TODO: make this a quiescent component
+(sablono/defhtml new-version-bar [new-version]
+  [:div.info-bar-b38b4
+    [:i.fa.fa-info-circle]
+    (str "A new version of Cuttle (v" new-version ") is available!")
+    [:button.show-me-btn-16a12
+      {:on-click click-show-me-btn}
+      "Show me"]
+    [:span.ignore-link-ff917
+      {:on-click click-maybe-later}
+      "Maybe later"]])
+
 ;;------------------------------------------------------------------------------
 ;; Quiescent Components
 ;;------------------------------------------------------------------------------
@@ -1011,6 +1066,8 @@
       (when (:settings-modal-showing? app-state)
         (list (modal-overlay click-settings-modal-overlay)
               (SettingsModal (select-keys app-state settings-modal-keys))))
+      (when (:new-version-bar-showing? app-state)
+        (new-version-bar (:new-version-num app-state)))
       [:div.app-ca3cd {:on-click click-root}
         (header)
         (let [projects (-> app-state :projects get-ordered-projects)]
