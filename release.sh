@@ -128,7 +128,7 @@ elif [ "$OS" == "windows" ]; then
   NSI_FILE=scripts/build-windows-exe.nsi
 
   makensis \
-    /DPRODUCT_VERSION=$VERSION \
+    //DPRODUCT_VERSION=$VERSION \
     $NSI_FILE
 
   mv scripts/$RELEASE.exe $BUILDS/$RELEASE.exe
