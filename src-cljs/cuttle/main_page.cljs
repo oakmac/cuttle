@@ -63,7 +63,7 @@
 ;;------------------------------------------------------------------------------
 
 (def latest-version-url (str
-  "http://cljs.info/latest-cuttle-version.txt?_="
+  "http://cljs.info/cuttle-latest.json?_="
   (uuid)))
 
 ;; NOTE: I was sick while writing this function; please don't judge ;)
@@ -89,7 +89,11 @@
     (let [data (atom "")]
       (.setEncoding js-res "utf8")
       (.on js-res "data" #(swap! data str %))
-      (.on js-res "end" #(check-version2 @data))))))
+      (.on js-res "end" (fn []
+        (when-let [result (try (.parse js/JSON @data)
+                               (catch js/Error _error nil))]
+          (js-log result)
+          (check-version2 (aget result "version")))))))))
 
 ;;------------------------------------------------------------------------------
 ;; Project State
