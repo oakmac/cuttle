@@ -46,8 +46,8 @@ fi
 META=`head -n 1 project.clj`
 NAME=`echo $META | cut -d' ' -f2`
 VERSION=`echo $META | cut -d' ' -f3 | tr -d '"'`
-BUILD_TIMESTAMP=`date`
 BUILD_COMMIT=`git rev-parse HEAD`
+BUILD_DATE=`date +'%F'`
 
 BUILDS=builds
 mkdir -p $BUILDS
@@ -71,8 +71,8 @@ cp -R app $RELEASE_RSRC
 # write build version, timestamp, and commit hash
 json -I -f $RELEASE_RSRC/app/package.json \
   -e "this[\"version\"]=\"$VERSION\"" \
-  -e "this[\"build-timestamp\"]=\"$BUILD_TIMESTAMP\"" \
-  -e "this[\"build-commit\"]=\"$BUILD_COMMIT\""
+  -e "this[\"build-commit\"]=\"$BUILD_COMMIT\"" \
+  -e "this[\"build-date\"]=\"$BUILD_DATE\""
 
 # copy node_modules
 mkdir $RELEASE_RSRC/app/node_modules
