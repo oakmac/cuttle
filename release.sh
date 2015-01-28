@@ -23,6 +23,7 @@ if [ "$(uname)" == "Darwin" ]; then
   EXE="Atom.app/Contents/MacOS/Atom"
   PLIST="Atom.app/Contents/Info.plist"
   RESOURCES="Atom.app/Contents/Resources"
+  INSTALL_EXT="dmg"
 
 elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
   OS="linux"
@@ -33,6 +34,7 @@ elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
   OS="windows"
   EXE="atom.exe"
   RESOURCES="resources"
+  INSTALL_EXT="exe"
 
 else
   echo "Cannot detect a supported OS."
@@ -57,7 +59,9 @@ RELEASE_DIR="$BUILDS/$RELEASE"
 RELEASE_ZIP="$BUILDS/${RELEASE}.zip"
 RELEASE_RSRC="$RELEASE_DIR/$RESOURCES"
 
-rm -rf $RELEASE_DIR $RELEASE_ZIP
+RELEASE_INSTALL="$BUILDS/$RELEASE.$INSTALL_EXT"
+
+rm -rf $RELEASE_DIR $RELEASE_ZIP $RELEASE_INSTALL
 
 #----------------------------------------------------------------------
 # Copy Atom installation and app directory into output location
@@ -102,13 +106,11 @@ if [ "$OS" == "mac" ]; then
   defaults write $FULL_PLIST CFBundleIdentifier 'org.cuttle'
 
   FINAL_APP=$BUILDS/latest/Cuttle.app # appdmg.json uses this path to find the app
-  FINAL_DMG=$BUILDS/$RELEASE.dmg
 
   rm -rf $FINAL_APP
-  rm -rf $FINAL_DMG
   mv $RELEASE_DIR/Atom.app $FINAL_APP
 
-  appdmg scripts/dmg/appdmg.json $FINAL_DMG
+  appdmg scripts/dmg/appdmg.json $RELEASE_INSTALL
 
 
 elif [ "$OS" == "linux" ]; then
@@ -131,7 +133,7 @@ elif [ "$OS" == "windows" ]; then
     //DPRODUCT_VERSION=$VERSION \
     $NSI_FILE
 
-  mv scripts/$RELEASE.exe $BUILDS/$RELEASE.exe
+  mv scripts/$RELEASE.exe $RELEASE_INSTALL
 
 fi
 
