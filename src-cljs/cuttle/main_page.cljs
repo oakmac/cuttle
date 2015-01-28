@@ -9,10 +9,10 @@
     [cuttle.dom :refer [by-id hide-el! show-el!]]
     [cuttle.exec :as exec]
     [cuttle.projects :as projects :refer [load-project-file]]
-    [cuttle.util :refer [current-version date-format file-exists? homedir log
-                         js-log now on-linux? on-mac? on-windows? uuid
-                         write-file-async!]
-                       :refer-macros [while-let]]
+    [cuttle.util :refer [
+      build-commit build-date current-version date-format file-exists? homedir
+      js-log log now on-linux? on-mac? on-windows? uuid write-file-async!]
+      :refer-macros [while-let]]
     goog.events.KeyCodes
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]))
@@ -42,6 +42,7 @@
   :new-project-error nil
   :new-project-name ""
   :new-project-step 1
+  :new-version-bar-showing? true
   :projects {:order []}
   :settings-modal-showing? false
   })
@@ -799,10 +800,18 @@
         [:span.link-e7e58 {:on-click show-new-project-modal}
           "add one"] "?"]]])
 
+(defn- version-tooltip []
+  (str
+    "Version: " current-version "\n"
+    "Released: " build-date "\n"
+    "Commit: " (subs build-commit 0 10)))
+
 (sablono/defhtml header []
   [:div.header-a4c14
     [:img.logo-0a166 {:src "img/cuttle-logo.svg"}]
-    [:div.title-8749a "Cuttle" [:span.version-8838a (str "v" current-version)]]
+    [:div.title-8749a
+      "Cuttle"
+      [:span.version-8838a {:title (version-tooltip)} (str "v" current-version)]]
     [:div.title-links-42b06
       [:span.link-3d3ad
         {:on-click click-settings-link}

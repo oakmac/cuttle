@@ -11,7 +11,10 @@
 ;; Version
 ;;------------------------------------------------------------------------------
 
-(def current-version (aget (js/require "./package.json") "version"))
+(def package-json (js/require "./package.json"))
+(def current-version (aget package-json "version"))
+(def build-date (aget package-json "build-date"))
+(def build-commit (aget package-json "build-commit"))
 
 ;;------------------------------------------------------------------------------
 ;; Util Functions
