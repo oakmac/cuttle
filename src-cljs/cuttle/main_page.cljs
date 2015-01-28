@@ -62,9 +62,7 @@
 ;; Check for Updates
 ;;------------------------------------------------------------------------------
 
-(def latest-version-url (str
-  "http://cljs.info/cuttle-latest.json?_="
-  (uuid)))
+(def latest-version-url "http://cljs.info/cuttle-latest.json")
 
 ;; NOTE: I was sick while writing this function; please don't judge ;)
 ;; TODO: should do some simple checking that the version number is in a valid
