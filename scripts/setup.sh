@@ -16,6 +16,9 @@ npm install
 echo; echo "Installing grunt..."
 sudo npm install -g grunt-cli
 
+echo; echo "Installing app dmg..."
+sudo npm install -g appdmg
+
 echo; echo "Installing json command line tool..."
 sudo npm install -g json
 

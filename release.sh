@@ -101,7 +101,10 @@ if [ "$OS" == "mac" ]; then
   defaults write $FULL_PLIST CFBundleName 'Cuttle'
   defaults write $FULL_PLIST CFBundleIdentifier 'org.cuttle'
 
-  mv $RELEASE_DIR/Atom.app $RELEASE_DIR/Cuttle.app
+  mv $RELEASE_DIR/Atom.app builds/latest/Cuttle.app
+
+  appdmg scripts/dmg/appdmg.json builds/latest/Cuttle.dmg
+
 
 elif [ "$OS" == "linux" ]; then
 
