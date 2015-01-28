@@ -89,8 +89,6 @@
       (.on js-res "data" #(swap! data str %))
       (.on js-res "end" #(check-version2 @data))))))
 
-(check-version!)
-
 ;;------------------------------------------------------------------------------
 ;; Project State
 ;;------------------------------------------------------------------------------
@@ -1137,4 +1135,8 @@
 
   ;; trigger initial UI render even if proj-filenames is empty
   ;; TODO: probably should change the way init-projects! works
-  (swap! state identity))
+  (swap! state identity)
+
+  ;; check for updates if we are not in dev mode
+  (when (neg? (.indexOf current-version "DEV"))
+    (check-version!)))
