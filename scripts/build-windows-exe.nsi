@@ -3,7 +3,7 @@
 
 ;; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "Cuttle"
-!define PRODUCT_VERSION "1.0-RC1"
+;; !define PRODUCT_VERSION "0.0"  ;; This is auto-defined by the caller in the release script
 !define PRODUCT_WEB_SITE "https://github.com/oakmac/cuttle"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\Cuttle.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"

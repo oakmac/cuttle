@@ -125,7 +125,12 @@ elif [ "$OS" == "windows" ]; then
 
   mv $RELEASE_DIR/atom.exe $RELEASE_DIR/Cuttle.exe
 
-  makensis scripts/build-windows-exe.nsi
+  NSI_FILE=scripts/build-windows-exe.nsi
+
+  makensis \
+    /DPRODUCT_VERSION=$VERSION \
+    $NSI_FILE
+
   mv scripts/$RELEASE.exe $BUILDS/$RELEASE.exe
 
 fi
