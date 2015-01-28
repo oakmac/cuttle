@@ -16,14 +16,13 @@ npm install
 echo; echo "Installing grunt..."
 sudo npm install -g grunt-cli
 
-echo; echo "Installing app dmg creator..."
-sudo npm install -g appdmg
+if [ "$(uname)" == "Darwin" ]; then
+  echo; echo "Installing app dmg creator..."
+  sudo npm install -g appdmg
+fi
 
 echo; echo "Installing json command line tool..."
 sudo npm install -g json
-
-echo; echo "Installing winresourcer..."
-sudo npm install -g winresourcer
 
 echo; echo "Installing Leiningen jar..."
 grunt curl
