@@ -21,8 +21,11 @@ platforms.
 
 ## Installation
 
-1. [Install JRE >= 7](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
-1. [Get latest Cuttle for your OS](https://github.com/oakmac/cuttle/releases)
+1. [Download and Install JRE >= 7](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
+1. Download and Install Cuttle:
+  - [Windows Installer](https://github.com/oakmac/cuttle/releases/download/v1.0/cuttle-1.0-windows.exe)
+  - [Mac DMG](https://github.com/oakmac/cuttle/releases/download/v1.0/cuttle-v1.0-mac.dmg)
+  - [Linux zip](https://github.com/oakmac/cuttle/releases/download/v1.0/cuttle-v1.0-linux-x86_64.tar.gz)
 
 ## User Guide
 
