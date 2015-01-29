@@ -50,7 +50,7 @@
 
 (hiccups/defhtml download-jre-page []
   [:div.jre-5d930
-    "The ClojureScript compiler requires " [:a#jre-link "Java SE Runtime 7+"] "."
+    "The ClojureScript compiler requires " [:a#jre-link "Java SE Runtime >= 7"] "."
     [:br]
     "Please install, then restart this tool."])
 
