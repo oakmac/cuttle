@@ -4,7 +4,16 @@ var app = require('app'),
   fs = require('fs')
   ipc = require('ipc'),
   Menu = require('menu'),
-  path = require('path');
+  path = require('path'),
+  winston = require('winston');
+
+// add logger
+winston.add(winston.transports.File, {
+  filename: "cuttle-browser.log",
+  json: false,
+  timestamp: true,
+  prettyPrint: true,
+});
 
 // report crashes to atom-shell
 require('crash-reporter').start();
@@ -30,6 +39,7 @@ const existingProjectDialogOptions = {
 };
 
 function showAddExistingProjectDialog() {
+  winston.info("showing existing-project dialog");
   dialog.showOpenDialog(existingProjectDialogOptions, function(filenames) {
     if (filenames) {
       var filename = filenames[0];
@@ -45,11 +55,16 @@ const newProjectDialogOptions = {
 
 function newProjectDialogSuccess(folders) {
   if (folders) {
+    winston.info("new-project dialog selected folders", folders);
     mainWindow.webContents.send('new-project-folder', folders[0]);
+  }
+  else {
+    winston.info("new-project dialog cancelled");
   }
 }
 
 function showNewProjectDialog() {
+  winston.info("showing new project dialog");
   dialog.showOpenDialog(newProjectDialogOptions, newProjectDialogSuccess);
 }
 
@@ -61,22 +76,27 @@ ipc.on('request-new-project-folder-dialog', showNewProjectDialog);
 //------------------------------------------------------------------------------
 
 // load development config (optional)
+const devConfigFile = __dirname + '/config.json';
+winston.info("loading optional config", devConfigFile);
 var devConfig = {};
-if (fs.existsSync(__dirname + '/config.json')) {
-  devConfig = require(__dirname + '/config.json');
+if (fs.existsSync(devConfigFile)) {
+  devConfig = require(devConfigFile);
 }
 
 // load window information
 const windowInformationFile = app.getDataPath() + path.sep + 'window.json';
+winston.info("loading window information", windowInformationFile);
 var windowInformation = {};
 if (fs.existsSync(windowInformationFile)) {
   windowInformation = require(windowInformationFile);
 }
 
 function onBounceDock() {
+  winston.info("trying to make dock bounce");
   if (app &&
       app.hasOwnProperty('dock') &&
       app.dock.hasOwnProperty('bounce')) {
+    winston.info("making dock bounce");
     app.dock.bounce();
   }
 }
@@ -86,6 +106,8 @@ ipc.on('bounce-dock', onBounceDock);
 var shutdownForRealHasHappened = false;
 
 function shutdownForReal() {
+  winston.info("starting to shut down for real");
+
   // save current window information
   windowInformation.maximized = mainWindow.isMaximized();
   windowInformation.position = mainWindow.getPosition();
@@ -94,10 +116,12 @@ function shutdownForReal() {
   // it's not super-important that this succeeds
   // https://github.com/oakmac/cuttle/issues/74
   try {
+    winston.info("saving window information", windowInformationFile);
     fs.writeFileSync(windowInformationFile, JSON.stringify(windowInformation));
   }
   catch (e) {
     // do nothing
+    winston.warn("couldn't save window information");
   }
 
   // toggle the shutdown for real flag and close the window
@@ -110,16 +134,21 @@ ipc.on('shutdown-for-real', shutdownForReal);
 // NOTE: copied this directly from the atom-shell docs
 // is this really necessary?
 function onWindowClosed() {
+  winston.info("window closed");
+
   // dereference the window object
   mainWindow = null;
 }
 
 function onWindowClose(evt) {
+  winston.info("window trying to close");
+
   // prevent window close if we have not shut down for real
   if (shutdownForRealHasHappened !== true) {
     evt.preventDefault();
 
     // send shutdown signal to the window
+    winston.info("sending client shutdown attempt");
     mainWindow.webContents.send('shutdown-attempt');
   }
 }
@@ -127,7 +156,9 @@ function onWindowClose(evt) {
 // send the OS-normalized app data path to the webpage
 // NOTE: this event triggers the "global app init" on the webpage side
 function onFinishLoad() {
-  mainWindow.webContents.send('config-file-location', app.getDataPath());
+  var path = app.getDataPath();
+  winston.info("sending path to client", path);
+  mainWindow.webContents.send('config-file-location', path);
 }
 
 // NOTE: not all of the browserWindow options listed on the docs page work
@@ -140,7 +171,10 @@ const browserWindowOptions = {
 };
 
 function startApp() {
+  winston.info("starting app");
+
   // create the browser window
+  winston.info("creating browser window");
   mainWindow = new BrowserWindow(browserWindowOptions);
 
   // load index.html
@@ -162,6 +196,7 @@ function startApp() {
   }
 
   // position window initially
+  winston.info("initializing window position");
   if (windowInformation.hasOwnProperty('maximized') &&
       windowInformation.maximized === true) {
     mainWindow.maximize();
@@ -179,5 +214,6 @@ app.on('ready', startApp);
 
 // Quit the application when all windows are closed.
 app.on('window-all-closed', function() {
+  winston.info("all windows closed; exiting app");
   app.quit();
 });
