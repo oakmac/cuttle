@@ -11,13 +11,30 @@
                                correct-java-installed?]]
     [cuttle.main-page :as main-page]
     [cuttle.projects :refer [load-workspace!]]
-    [cuttle.util :refer [file-exists?]]
+    [cuttle.util :refer [file-exists? on-windows? path-join windows-bin-dir]]
     hiccups.runtime))
 
 (enable-console-print!)
 
+(def fs (js/require "fs-extra"))
 (def ipc (js/require "ipc"))
 (def shell (js/require "shell"))
+
+;;------------------------------------------------------------------------------
+;; Check for our lein files on Windows
+;;------------------------------------------------------------------------------
+
+(defn- lein-files-in-place? []
+  ;; TODO: write me
+  false)
+
+(defn- copy-lein-files! [next-fn]
+  (.ensureDirSync fs windows-bin-dir)
+  (.copySync fs (path-join js/__dirname "bin" "lein.bat")
+                (str windows-bin-dir "lein.bat"))
+  (.copySync fs (path-join js/__dirname "bin" "lein.jar")
+                (str windows-bin-dir "lein.jar"))
+  (next-fn))
 
 ;;------------------------------------------------------------------------------
 ;; Loading / Shutting Down Pages
@@ -80,7 +97,7 @@
 ;; Client Init
 ;;------------------------------------------------------------------------------
 
-(defn- global-init!
+(defn- global-init2!
   [new-app-data-path]
   (set! app-data-path new-app-data-path)
   (go
@@ -89,6 +106,12 @@
       (let [filenames (load-workspace! app-data-path)]
         (<! (add-lein-profile!))
         (main-page/init! filenames)))))
+
+(defn- global-init! [new-app-data-path]
+  (if (and on-windows?
+           (not (lein-files-in-place?)))
+    (copy-lein-files! (partial global-init2! new-app-data-path))
+    (global-init2! new-app-data-path)))
 
 ;; You can find the atom-shell entry point at "app/app.js".
 ;; It sends the OS-normalized app data path to this event,

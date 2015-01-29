@@ -76,6 +76,8 @@
 ;; File Util
 ;;------------------------------------------------------------------------------
 
+(def windows-bin-dir "C:\\cuttle-bin\\")
+
 (defn file-exists? [filename]
   (.existsSync fs filename))
 

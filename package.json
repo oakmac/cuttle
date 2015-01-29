@@ -7,7 +7,7 @@
     "url": "https://github.com/oakmac/cuttle.git"
   },
   "dependencies": {
-    "fs.extra": "1.2.1",
+    "fs-extra": "0.16.3",
     "open": "0.0.5"
   },
   "devDependencies": {

@@ -6,18 +6,17 @@
     [clojure.string :refer [join replace split-lines split trim]]
     [cljs.core.async :refer [chan close! put!]]
     [cuttle.config :refer [config]]
-    [cuttle.util :refer [file-exists? js-log log on-windows? path-join uuid]]))
+    [cuttle.util :refer [file-exists? js-log log on-windows? path-join
+      windows-bin-dir uuid]]))
 
 (declare extract-target-from-start-msg parse-java-version)
 
 (defn lein-path
   "Get path to our packaged leiningen script."
   []
-  (let [dir (aget js/global "__dirname")
-        exe (if on-windows? "lein.bat" "lein")
-        full-path (-> (path-join dir "bin" exe)
-                      (replace " " "\\ "))]
-    full-path))
+  (if on-windows?
+    (path-join windows-bin-dir "lein.bat")
+    (path-join js/__dirname "bin" "lein")))
 
 (defn lein
   "Make lein command string"
@@ -29,7 +28,7 @@
 ;;------------------------------------------------------------------------------
 
 (def child-proc (js/require "child_process"))
-(def fs (js/require "fs.extra"))
+(def fs (js/require "fs-extra"))
 (def js-exec (aget child-proc "exec"))
 (def js-spawn (aget child-proc "spawn"))
 (def path (js/require "path"))
