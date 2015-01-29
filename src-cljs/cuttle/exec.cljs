@@ -14,9 +14,10 @@
   "Get path to our packaged leiningen script."
   []
   (let [dir (aget js/global "__dirname")
-        exe (if on-windows? "lein.bat" "lein")
-        full-path (-> (path-join dir "bin" exe)
-                      (replace " " "\\ "))]
+        full-path (if on-windows?
+                    "C:\\Windows\\System32\\cuttle-lein.bat"
+                    (-> (path-join dir "bin" "lein")
+                        (replace " " "\\ ")))]
     full-path))
 
 (defn lein

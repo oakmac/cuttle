@@ -36,7 +36,7 @@ grunt.initConfig({
 
   curl: {
     // download leiningen jar
-    'app/bin/lein.jar': leinJarUrl
+    'app/bin/cuttle-lein.jar': leinJarUrl
   },
 
   'download-atom-shell': {

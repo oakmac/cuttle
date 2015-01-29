@@ -114,7 +114,7 @@ fi
 
 # NOTE: hard-modified to use local lein.jar file
 #   original: LEIN_JAR="$LEIN_HOME/self-installs/leiningen-$LEIN_VERSION-standalone.jar"
-LEIN_JAR="$SCRIPT_PATH/lein.jar"
+LEIN_JAR="$SCRIPT_PATH/cuttle-lein.jar"
 
 # normalize $0 on certain BSDs
 if [ "$(dirname "$0")" = "." ]; then

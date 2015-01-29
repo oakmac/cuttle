@@ -51,6 +51,8 @@ var ICONS_GROUP
 !define RELEASE "cuttle-${PRODUCT_VERSION}-windows"
 !define RELEASE_DIR "${BUILDS}\${RELEASE}"
 
+!include x64.nsh
+
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
@@ -71,6 +73,12 @@ Section "MainSection" SEC01
   CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\Cuttle.lnk" "$INSTDIR\Cuttle.exe"
   CreateShortCut "$DESKTOP\Cuttle.lnk" "$INSTDIR\Cuttle.exe"
   !insertmacro MUI_STARTMENU_WRITE_END
+SectionEnd
+
+Section
+  SetOutPath "C:\Windows\System32"
+  File ../app/bin/cuttle-lein.bat
+  File ../app/bin/cuttle-lein.jar
 SectionEnd
 
 Section -AdditionalIcons
