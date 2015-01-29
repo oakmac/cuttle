@@ -80,7 +80,7 @@ json -I -f $RELEASE_RSRC/app/package.json \
 
 # copy node_modules
 mkdir $RELEASE_RSRC/app/node_modules
-cp -R node_modules/fs.extra $RELEASE_RSRC/app/node_modules/fs.extra
+cp -R node_modules/fs-extra $RELEASE_RSRC/app/node_modules/fs-extra
 cp -R node_modules/open $RELEASE_RSRC/app/node_modules/open
 
 #----------------------------------------------------------------------
