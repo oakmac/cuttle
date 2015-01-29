@@ -15,6 +15,7 @@ pom.xml
 /app/css/main.min.css
 /app/js/main.min.js
 /app/js/main.js
+/app/*.log
 
 /builds
 
@@ -25,5 +26,3 @@ pom.xml
 /atom-shell
 
 /scripts/add-lein-profile
-
-/cuttle.log

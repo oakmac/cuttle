@@ -19,7 +19,7 @@ var mainWindow = null;
 //------------------------------------------------------------------------------
 
 const winstonFileOptions = {
-  filename: "cuttle.log",
+  filename: __dirname + path.sep + "cuttle.log",
   json: false,
   maxFiles: 10,
   maxsize: 10000000, // 10MB
