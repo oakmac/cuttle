@@ -72,8 +72,13 @@ echo "Creating $RELEASE_DIR ..."
 cp -R $ATOM_DIR $RELEASE_DIR
 cp -R app $RELEASE_RSRC
 
-# install production node dependencies to release (we have to temporarily copy
-# our root package.json, to the release directory for npm install)
+# don't copy our development log file to release
+rm -f $RELEASE_RSRC/app/cuttle.log
+
+# We are storing production and development dependencies in Node's package.json.
+# Production dependencies must be copied to the release folder, so we do this
+# by swapping out the Atom Shell package.json for Node's package.json, then
+# `npm install` helps us copy the correct dependencies over.
 cp package.json $RELEASE_RSRC/app
 pushd $RELEASE_RSRC/app
 npm install --production
