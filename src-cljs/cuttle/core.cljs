@@ -6,14 +6,12 @@
     [cljs.core.async :refer [<!]]
     [cuttle.config :refer [app-data-path]]
     [cuttle.dom :refer [by-id hide-el! set-html! show-el!]]
-    [cuttle.exec :refer [add-lein-profile!
-                         kill-all-leiningen-instances!
-                         correct-java-installed?
-                         lein]]
+    [cuttle.exec :refer [add-lein-profile! correct-java-installed?
+                         kill-all-leiningen-instances! lein]]
+    [cuttle.log :refer [log-info]]
     [cuttle.main-page :as main-page]
     [cuttle.projects :refer [load-workspace!]]
-    [cuttle.util :refer [file-exists? on-windows? path-join windows-bin-dir]]
-    [cuttle.log :refer [log-info]]
+    [cuttle.util :refer [on-windows? path-join windows-bin-dir]]
     hiccups.runtime))
 
 (enable-console-print!)
