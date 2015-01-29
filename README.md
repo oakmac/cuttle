@@ -123,7 +123,7 @@ with Cuttle :P)
 ## About the Name/Logo
 
 Cuttle is named after the [Cuttlefish] because [Shaun] likes cephalopods.
-The logo is modeled after its uniquely shaped eye.
+The logo is modeled after its uniquely shaped [eye].
 
 The first three letters of Cuttle might stand for "ClojureScript User Tool", but
 the last three letters don't stand for anything because Cuttle is not an
@@ -141,3 +141,4 @@ License](https://github.com/oakmac/cuttle/blob/master/LICENSE.md).
 [Atom Shell]:https://github.com/atom/atom-shell
 [Cuttlefish]:https://flic.kr/p/8oVLuC
 [Shaun]:https://github.com/shaunlebron
+[eye]:http://mentaldstruction.deviantart.com/art/Baby-Cuttlefish-112140710
