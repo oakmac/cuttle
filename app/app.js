@@ -90,7 +90,15 @@ function shutdownForReal() {
   windowInformation.maximized = mainWindow.isMaximized();
   windowInformation.position = mainWindow.getPosition();
   windowInformation.size = mainWindow.getSize();
-  fs.writeFileSync(windowInformationFile, JSON.stringify(windowInformation));
+
+  // it's not super-important that this succeeds
+  // https://github.com/oakmac/cuttle/issues/74
+  try {
+    fs.writeFileSync(windowInformationFile, JSON.stringify(windowInformation));
+  }
+  catch (e) {
+    // do nothing
+  }
 
   // toggle the shutdown for real flag and close the window
   shutdownForRealHasHappened = true;
