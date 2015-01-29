@@ -55,7 +55,7 @@ var ICONS_GROUP
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "${RELEASE}.exe"
-InstallDir "C:\Cuttle"
+InstallDir "$PROGRAMFILES\Cuttle"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
 ShowUnInstDetails show
