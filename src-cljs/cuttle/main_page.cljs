@@ -48,6 +48,7 @@
   :new-version-num nil
   :projects {:order []}
   :settings-modal-showing? false
+  :version-tooltip-showing? false
   })
 
 (def state (atom initial-app-state))
@@ -91,7 +92,6 @@
       (.on js-res "end" (fn []
         (when-let [result (try (.parse js/JSON @data)
                                (catch js/Error _error nil))]
-          (js-log result)
           (check-version2 (aget result "version")))))))))
 
 ;;------------------------------------------------------------------------------
@@ -693,6 +693,12 @@
   (swap! state update-in [:desktop-notification-on-warnings?] not)
   (save-settings!))
 
+(defn- on-mouse-enter-tooltip []
+  (swap! state assoc :version-tooltip-showing? true))
+
+(defn- on-mouse-leave-tooltip []
+  (swap! state assoc :version-tooltip-showing? false))
+
 ;;------------------------------------------------------------------------------
 ;; Sablono Templates
 ;;------------------------------------------------------------------------------
@@ -845,27 +851,6 @@
       [:p "Would you like to "
         [:span.link-e7e58 {:on-click show-new-project-modal}
           "add one"] "?"]]])
-
-(defn- version-tooltip []
-  (str
-    "Version: " current-version "\n"
-    "Released: " build-date "\n"
-    "Commit: " (subs build-commit 0 10)))
-
-(sablono/defhtml header []
-  [:div.header-a4c14
-    [:img.logo-0a166 {:src "img/cuttle-logo.svg"}]
-    [:div.title-8749a
-      "Cuttle"
-      [:span.version-8838a {:title (version-tooltip)} (str "v" current-version)]]
-    [:div.title-links-42b06
-      [:span.link-3d3ad
-        {:on-click click-settings-link}
-        [:i.fa.fa-cog] "Settings"]
-      [:span.link-3d3ad
-        {:on-click show-new-project-modal}
-        [:i.fa.fa-plus] "Add project"]]
-    [:div.clr-737fa]])
 
 (sablono/defhtml modal-overlay [click-fn]
   [:div.modal-overlay-120d3 {:on-click click-fn}])
@@ -1046,6 +1031,37 @@
           [:i.fa.fa-square-o])
         "Desktop notifications on warnings."]]))
 
+(quiescent/defcomponent Header [version-tooltip-showing?]
+  (sablono/html
+    [:div.header-a4c14
+      [:img.logo-0a166 {:src "img/cuttle-logo.svg"}]
+      [:div.title-8749a
+        "Cuttle"
+        [:span.version-8838a
+          {:on-mouse-enter on-mouse-enter-tooltip
+           :on-mouse-leave on-mouse-leave-tooltip}
+          (str "v" current-version)]]
+      (when version-tooltip-showing?
+        [:div.tooltip-aca75
+          [:table
+            [:tr
+              [:td.label-be32b "Version"]
+              [:td.value-aee48 current-version]]
+            [:tr
+              [:td.label-be32b "Released"]
+              [:td.value-aee48 build-date]]
+            [:tr
+              [:td.label-be32b "Commit"]
+              [:td.value-aee48.mono-cd368 (subs build-commit 0 10)]]]])
+      [:div.title-links-42b06
+        [:span.link-3d3ad
+          {:on-click click-settings-link}
+          [:i.fa.fa-cog] "Settings"]
+        [:span.link-3d3ad
+          {:on-click show-new-project-modal}
+          [:i.fa.fa-plus] "Add project"]]
+      [:div.clr-737fa]]))
+
 (def add-project-modal-keys
   "These are all the keys we need in order to build the Add Project modal."
   #{:new-project-dir
@@ -1072,7 +1088,7 @@
       (when (:new-version-bar-showing? app-state)
         (new-version-bar (:new-version-num app-state)))
       [:div.app-ca3cd {:on-click click-root}
-        (header)
+        (Header (:version-tooltip-showing? app-state))
         (let [projects (-> app-state :projects get-ordered-projects)]
           (if (zero? (count projects))
             (no-projects)

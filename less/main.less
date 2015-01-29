@@ -80,6 +80,8 @@
 @inactiveGrey: #666;
 @warningOrange: #c47f00;
 @primaryGreen: #309630;
+@tooltipBackgroundColor: #333;
+@tooltipZ: 10;
 
 @modalZ: 1000;
 
@@ -172,6 +174,7 @@ body {
   border-bottom: 1px solid @borderGrey;
   margin-bottom: 25px;
   padding-bottom: 20px;
+  position: relative;
 }
 
 .btn-da85d {
@@ -730,4 +733,50 @@ body {
   cursor: pointer;
   display: inline-block;
   margin-left: 10px;
+}
+
+.tooltip-aca75 {
+  background: @tooltipBackgroundColor;
+  border-radius: 4px;
+  color: #fff;
+  left: 135px;
+  padding: 10px;
+  position: absolute;
+  top: 44px;
+  z-index: @tooltipZ;
+
+  td {
+    height: 20px;
+  }
+}
+
+.tooltip-aca75:after {
+  bottom: 100%;
+  left: 17px;
+  border: solid transparent;
+  content: " ";
+  height: 0;
+  width: 0;
+  position: absolute;
+  pointer-events: none;
+  border-color: rgba(51, 51, 51, 0);
+  border-bottom-color: #333;
+  border-width: 5px;
+  margin-left: -5px;
+}
+
+.label-be32b {
+  color: #999;
+  .font-bold(11px);
+  text-transform: uppercase;
+}
+
+.value-aee48 {
+  padding-left: 6px;
+  font-size: 14px;
+}
+
+.mono-cd368 {
+  font-family: "Droid Sans Mono";
+  font-size: 14px;
 }
