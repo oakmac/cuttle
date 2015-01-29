@@ -33,4 +33,8 @@ grunt download-atom-shell
 echo; echo "Building lein profile tool..."
 scripts/build-lein-profile-tool.sh
 
+echo; echo "Building Cuttle locally..."
+grunt less
+lein cljsbuild once
+
 echo; echo "Cuttle setup complete."
