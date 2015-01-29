@@ -12,6 +12,21 @@
 
 (declare extract-target-from-start-msg parse-java-version)
 
+;;------------------------------------------------------------------------------
+;; Require Modules
+;;------------------------------------------------------------------------------
+
+(def child-proc (js/require "child_process"))
+(def fs (js/require "fs-extra"))
+(def js-exec (aget child-proc "exec"))
+(def js-spawn (aget child-proc "spawn"))
+(def path (js/require "path"))
+(def path-separator (aget path "sep"))
+
+;;------------------------------------------------------------------------------
+;; Lein
+;;------------------------------------------------------------------------------
+
 (defn- lein-path
   "Get path to our packaged leiningen script."
   []
@@ -24,17 +39,6 @@
   "Make lein command string"
   [args]
   (str (lein-path) " with-profile +cuttle " args))
-
-;;------------------------------------------------------------------------------
-;; Require Modules
-;;------------------------------------------------------------------------------
-
-(def child-proc (js/require "child_process"))
-(def fs (js/require "fs-extra"))
-(def js-exec (aget child-proc "exec"))
-(def js-spawn (aget child-proc "spawn"))
-(def path (js/require "path"))
-(def path-separator (aget path "sep"))
 
 ;;------------------------------------------------------------------------------
 ;; Shell Escape Util
