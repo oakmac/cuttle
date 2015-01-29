@@ -11,14 +11,15 @@
 
 (declare extract-target-from-start-msg parse-java-version)
 
-(defn lein-path
+(defn- lein-path
   "Get path to our packaged leiningen script."
   []
   (if on-windows?
     (path-join windows-bin-dir "lein.bat")
-    (path-join js/__dirname "bin" "lein")))
+    (-> (path-join js/__dirname "bin" "lein")
+        (replace " " "\\ "))))
 
-(defn lein
+(defn- lein
   "Make lein command string"
   [args]
   (str (lein-path) " with-profile +cuttle " args))

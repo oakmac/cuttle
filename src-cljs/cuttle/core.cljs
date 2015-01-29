@@ -26,15 +26,21 @@
 
 (defn- lein-files-in-place? []
   ;; TODO: write me
+  ;; we shouldn't have to copy the files from app/bin to c:\cuttle-bin if they
+  ;; are already there
   false)
 
+;; NOTE: this function is the poster-child for how go blocks are cleaner than
+;; nested callbacks
+;; don't judge me please; I was sick when I wrote this
 (defn- copy-lein-files! [next-fn]
-  (.ensureDirSync fs windows-bin-dir)
-  (.copySync fs (path-join js/__dirname "bin" "lein.bat")
-                (str windows-bin-dir "lein.bat"))
-  (.copySync fs (path-join js/__dirname "bin" "lein.jar")
-                (str windows-bin-dir "lein.jar"))
-  (next-fn))
+  (.ensureDir fs windows-bin-dir (fn []
+    (.copy fs (path-join js/__dirname "bin" "lein.bat")
+              (str windows-bin-dir "lein.bat")
+              (fn []
+                (.copy fs (path-join js/__dirname "bin" "lein.jar")
+                          (str windows-bin-dir "lein.jar")
+                          next-fn))))))
 
 ;;------------------------------------------------------------------------------
 ;; Loading / Shutting Down Pages
@@ -108,8 +114,7 @@
         (main-page/init! filenames)))))
 
 (defn- global-init! [new-app-data-path]
-  (if (and on-windows?
-           (not (lein-files-in-place?)))
+  (if on-windows?
     (copy-lein-files! (partial global-init2! new-app-data-path))
     (global-init2! new-app-data-path)))
 
