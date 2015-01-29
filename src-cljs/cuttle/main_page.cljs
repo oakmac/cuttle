@@ -13,6 +13,7 @@
       build-commit build-date current-version date-format file-exists? homedir
       js-log log now on-linux? on-mac? on-windows? uuid write-file-async!]
       :refer-macros [while-let]]
+    [cuttle.log :refer [log-info log-warn log-error]]
     goog.events.KeyCodes
     [quiescent :include-macros true]
     [sablono.core :as sablono :include-macros true]))
@@ -1132,6 +1133,7 @@
   (show-el! "mainPage"))
 
 (defn init! [proj-filenames]
+  (log-info "initializing main page")
   (add-events!)
   (load-settings-file!)
   (init-projects! proj-filenames)

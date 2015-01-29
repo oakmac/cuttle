@@ -7,8 +7,9 @@
     [cuttle.config :refer [app-data-path]]
     [cuttle.dom :refer [by-id hide-el! set-html! show-el!]]
     [cuttle.exec :refer [add-lein-profile!
-                               kill-all-leiningen-instances!
-                               correct-java-installed?]]
+                         kill-all-leiningen-instances!
+                         correct-java-installed?
+                         lein]]
     [cuttle.main-page :as main-page]
     [cuttle.projects :refer [load-workspace!]]
     [cuttle.util :refer [file-exists? on-windows? path-join windows-bin-dir]]
@@ -36,6 +37,7 @@
 ;; don't judge me please; I was sick when I wrote this
 ;; TODO: we need to handle when there is a permission error here
 (defn- copy-lein-files! [next-fn]
+  (log-info "copying lein.bat to our windows bin dir")
   (.ensureDir fs windows-bin-dir (fn []
     (.copy fs (path-join js/__dirname "bin" "lein.bat")
               (str windows-bin-dir "lein.bat")
@@ -94,9 +96,11 @@
 ;;------------------------------------------------------------------------------
 
 (defn- on-shutdown []
+  (log-info "attempting to shutdown")
   (go
     (show-shutting-down-page!)
     (<! (kill-all-leiningen-instances!))
+    (log-info "done killing leiningen instances")
     (.send ipc "shutdown-for-real")))
 
 (.on ipc "shutdown-attempt" on-shutdown)
@@ -116,7 +120,8 @@
         (main-page/init! filenames)))))
 
 (defn- global-init! [new-app-data-path]
-  (log-info "starting app; received " new-app-data-path)
+  (log-info "starting app; received" new-app-data-path)
+  (log-info "using lein at" (lein ""))
   (if on-windows?
     (copy-lein-files! (partial global-init2! new-app-data-path))
     (global-init2! new-app-data-path)))

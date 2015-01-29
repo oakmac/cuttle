@@ -7,7 +7,8 @@
     [cljs.core.async :refer [chan close! put!]]
     [cuttle.config :refer [config]]
     [cuttle.util :refer [file-exists? js-log log on-windows? path-join
-      windows-bin-dir uuid]]))
+                         windows-bin-dir uuid]]
+    [cuttle.log :refer [log-info log-warn log-error]]))
 
 (declare extract-target-from-start-msg parse-java-version)
 
@@ -19,7 +20,7 @@
     (-> (path-join js/__dirname "bin" "lein")
         (replace " " "\\ "))))
 
-(defn- lein
+(defn lein
   "Make lein command string"
   [args]
   (str (lein-path) " with-profile +cuttle " args))
@@ -54,14 +55,19 @@
 
 (defn correct-java-installed?
   []
+  (log-info "checking java version")
   (let [out-chan (chan)
         cmd "java -version"
-        callback (fn [error stdout stderr]
-                   (if error
-                     (put! out-chan false)
-                     (let [version (parse-java-version stderr)
-                           valid? (>= version 7)]
-                       (put! out-chan valid?))))]
+        callback
+        (fn [error stdout stderr]
+          (if error
+            (do
+              (log-info "couldn't run java -version")
+              (put! out-chan false))
+            (let [version (parse-java-version stderr)
+                  valid? (>= version 7)]
+              (log-info "found java version:" version "from" stderr)
+              (put! out-chan valid?))))]
     (js-exec cmd callback)
     out-chan))
 
@@ -76,15 +82,18 @@
 (defn add-lein-profile!
   "Adds our Lein profile to the user's global profiles.clj."
   []
+  (log-info "adding cuttle's global lein profile")
   (let [dir (aget js/global "__dirname")
         jar (path-join dir "bin" "add-lein-profile.jar")
         cmd (str "java -jar " jar " '" (pr-str lein-profile) "'")
         out-chan (chan)]
+    (log-info "running" cmd)
     (js-exec cmd #(close! out-chan))
     out-chan))
 
 (defn get-cljsbuild-with-profiles
   [path]
+  (log-info "checking" path "for cljsbuild config in :dev profile")
   (let [out-chan (chan)
         cmd (lein "pprint :cljsbuild")
         js-options (js-obj "cwd" path)
@@ -371,6 +380,7 @@
         inside-error? (atom false)
         err-msg-buffer (atom "")
         stopped-output-timeout (atom nil)]
+    (log-info "starting auto-compile for" prj-key "builds" (pr-str bld-ids))
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stderr child) "data"
@@ -391,6 +401,7 @@
     (stop-auto! prj-key (fn [] nil)))
   ([prj-key callback-fn]
     (let [main-pid (get @auto-pids prj-key)]
+      (log-info "trying to stop auto-compile for" prj-key "at pid" main-pid)
       (if on-windows?
         (js-exec (str "taskkill /pid " main-pid " /T /F") callback-fn)
         (kill-auto-on-unix main-pid callback-fn))
@@ -407,6 +418,7 @@
                       (swap! num-finished inc)
                       (when (= num-running @num-finished)
                         (put! ch :all-finished)))]
+    (log-info "killing lein processes for" (pr-str currently-running-prj-keys))
     (doall
       (map #(stop-auto! % callback-fn) currently-running-prj-keys))
     ;; close the channel immediately if there are no running processes
@@ -425,6 +437,7 @@
         inside-error? (atom false)
         err-msg-buffer (atom "")
         stopped-output-timeout (atom nil)]
+    (log-info "building once for" prj-key "builds" (pr-str bld-ids))
     (.setEncoding (.-stderr child) "utf8")
     (.setEncoding (.-stdout child) "utf8")
     (.on (.-stderr child) "data"
@@ -438,6 +451,7 @@
 ;; TODO: "target" here is probably configurable in build; need to look closer
 ;; at Leiningen's code
 (defn clean-build! [prj-key bld]
+  (log-info "cleaning build for" prj-key)
   (let [cwd (convert-cwd prj-key)
         output-dir (-> bld :compiler :output-dir)
         output-dir-full (str cwd "target" output-dir)
@@ -451,6 +465,7 @@
       (.unlinkSync fs output-to-full))))
 
 (defn new-project [folder-name project-name callback-fn]
+  (log-info "creating a new project" project-name "at" project-name)
   (let [lein-cmd (lein (str "new mies " project-name))]
     (js-exec lein-cmd (js-obj "cwd" folder-name) callback-fn)))
 
@@ -462,6 +477,7 @@
   "cuttle-logo.png"))
 
 (defn linux-notify! [title message]
+  (log-info "trying to notify linux" title "-" message)
   (let [cmd (str "notify-send "
                  "--icon='" cuttle-icon "' "
                  "'" (unix-shell-escape title) "' "
@@ -469,6 +485,7 @@
     (js-exec cmd)))
 
 (defn windows-growl-notify! [title message]
+  (log-info "trying to notify windows" title "-" message)
   (let [cmd (str (aget js/global "__dirname")
                  path-separator
                  "bin"

@@ -25,3 +25,5 @@ pom.xml
 /atom-shell
 
 /scripts/add-lein-profile
+
+/cuttle.log
