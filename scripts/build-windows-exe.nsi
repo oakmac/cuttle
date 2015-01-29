@@ -48,7 +48,7 @@ var ICONS_GROUP
 
 ; Source directory
 !define BUILDS "..\builds"
-!define RELEASE "cuttle-${PRODUCT_VERSION}-windows"
+!define RELEASE "cuttle-v${PRODUCT_VERSION}-windows"
 !define RELEASE_DIR "${BUILDS}\${RELEASE}"
 
 ; MUI end ------
