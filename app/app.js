@@ -7,20 +7,28 @@ var app = require('app'),
   path = require('path'),
   winston = require('winston');
 
-// add logger
-winston.add(winston.transports.File, {
-  filename: "cuttle-browser.log",
-  json: false,
-  timestamp: true,
-  prettyPrint: true,
-});
-
 // report crashes to atom-shell
 require('crash-reporter').start();
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
+
+//------------------------------------------------------------------------------
+// Logging
+//------------------------------------------------------------------------------
+
+// add logger
+winston.add(winston.transports.File, {
+  filename: "cuttle.log",
+  json: false,
+  timestamp: true,
+  prettyPrint: true,
+});
+
+ipc.on('log-info',  function(e, msg) { winston.info("client:", msg); });
+ipc.on('log-warn',  function(e, msg) { winston.warn("client:", msg); });
+ipc.on('log-error', function(e, msg) { winston.error("client:", msg); });
 
 //------------------------------------------------------------------------------
 // Dialogs

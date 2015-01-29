@@ -12,6 +12,7 @@
     [cuttle.main-page :as main-page]
     [cuttle.projects :refer [load-workspace!]]
     [cuttle.util :refer [file-exists? on-windows? path-join windows-bin-dir]]
+    [cuttle.log :refer [log-info]]
     hiccups.runtime))
 
 (enable-console-print!)
@@ -115,6 +116,7 @@
         (main-page/init! filenames)))))
 
 (defn- global-init! [new-app-data-path]
+  (log-info "starting app; received " new-app-data-path)
   (if on-windows?
     (copy-lein-files! (partial global-init2! new-app-data-path))
     (global-init2! new-app-data-path)))
