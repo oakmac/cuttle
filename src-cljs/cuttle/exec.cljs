@@ -463,10 +463,10 @@
         output-to-full (str cwd output-to)]
     (when (and output-dir
                (file-exists? output-dir-full))
-      (.rmrfSync fs output-dir-full))
+      (.removeSync fs output-dir-full))
     (when (and output-to
                (file-exists? output-to-full))
-      (.unlinkSync fs output-to-full))))
+      (.removeSync fs output-to-full))))
 
 (defn new-project [folder-name project-name callback-fn]
   (log-info "creating a new project" project-name "at" project-name)
