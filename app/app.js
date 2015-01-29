@@ -18,17 +18,24 @@ var mainWindow = null;
 // Logging
 //------------------------------------------------------------------------------
 
-// add logger
-winston.add(winston.transports.File, {
+const winstonFileOptions = {
   filename: "cuttle.log",
   json: false,
+  maxFiles: 10,
+  maxsize: 10000000, // 10MB
+  tailable: true,
   timestamp: true,
   prettyPrint: true
-});
+};
+
+// add logger
+winston.add(winston.transports.File, winstonFileOptions);
 
 ipc.on('log-info',  function(e, msg) { winston.info("client:", msg); });
 ipc.on('log-warn',  function(e, msg) { winston.warn("client:", msg); });
 ipc.on('log-error', function(e, msg) { winston.error("client:", msg); });
+
+winston.info("Cuttle started, winston logging initialized");
 
 //------------------------------------------------------------------------------
 // Dialogs
@@ -85,17 +92,17 @@ ipc.on('request-new-project-folder-dialog', showNewProjectDialog);
 
 // load development config (optional)
 const devConfigFile = __dirname + '/config.json';
-winston.info("loading optional config", devConfigFile);
 var devConfig = {};
 if (fs.existsSync(devConfigFile)) {
+  winston.info("loading optional dev config", devConfigFile);
   devConfig = require(devConfigFile);
 }
 
 // load window information
 const windowInformationFile = app.getDataPath() + path.sep + 'window.json';
-winston.info("loading window information", windowInformationFile);
 var windowInformation = {};
 if (fs.existsSync(windowInformationFile)) {
+  winston.info("loading window information", windowInformationFile);
   windowInformation = require(windowInformationFile);
 }
 
@@ -179,7 +186,7 @@ const browserWindowOptions = {
 };
 
 function startApp() {
-  winston.info("starting app");
+  winston.info("atom-shell ready event triggered, starting app");
 
   // create the browser window
   winston.info("creating browser window");
@@ -204,13 +211,14 @@ function startApp() {
   }
 
   // position window initially
-  winston.info("initializing window position");
   if (windowInformation.hasOwnProperty('maximized') &&
       windowInformation.maximized === true) {
+    winston.info("maximizing window");
     mainWindow.maximize();
   }
   else if (windowInformation.hasOwnProperty('size') &&
            windowInformation.hasOwnProperty('position')) {
+    winston.info("setting window size and x,y position");
     mainWindow.setPosition(windowInformation.position[0], windowInformation.position[1]);
     mainWindow.setSize(windowInformation.size[0], windowInformation.size[1]);
   }
