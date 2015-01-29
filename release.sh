@@ -72,16 +72,22 @@ echo "Creating $RELEASE_DIR ..."
 cp -R $ATOM_DIR $RELEASE_DIR
 cp -R app $RELEASE_RSRC
 
+# Copy appropriate node_modules to release directory.
+# NOTE: this must come before we write the version number,
+#   since `npm install` won't tolerate a non-semver version
+#   (we remove the version in this copy script)
+scripts/copy-node-deps-to-release.js \
+  package.json \
+  $RELEASE_RSRC/app/package.json
+pushd $RELEASE_RSRC/app
+npm install
+popd
+
 # write build version, timestamp, and commit hash
 json -I -f $RELEASE_RSRC/app/package.json \
   -e "this[\"version\"]=\"$VERSION\"" \
   -e "this[\"build-commit\"]=\"$BUILD_COMMIT\"" \
   -e "this[\"build-date\"]=\"$BUILD_DATE\""
-
-# copy node_modules
-mkdir $RELEASE_RSRC/app/node_modules
-cp -R node_modules/fs.extra $RELEASE_RSRC/app/node_modules/fs.extra
-cp -R node_modules/open $RELEASE_RSRC/app/node_modules/open
 
 #----------------------------------------------------------------------
 # Disable Dev-Tools
