@@ -33,6 +33,7 @@
 ;; NOTE: this function is the poster-child for how go blocks are cleaner than
 ;; nested callbacks
 ;; don't judge me please; I was sick when I wrote this
+;; TODO: we need to handle when there is a permission error here
 (defn- copy-lein-files! [next-fn]
   (.ensureDir fs windows-bin-dir (fn []
     (.copy fs (path-join js/__dirname "bin" "lein.bat")
