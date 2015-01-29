@@ -23,7 +23,7 @@ winston.add(winston.transports.File, {
   filename: "cuttle.log",
   json: false,
   timestamp: true,
-  prettyPrint: true,
+  prettyPrint: true
 });
 
 ipc.on('log-info',  function(e, msg) { winston.info("client:", msg); });
