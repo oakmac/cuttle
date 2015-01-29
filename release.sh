@@ -113,8 +113,10 @@ if [ "$OS" == "mac" ]; then
   defaults write $FULL_PLIST CFBundleName 'Cuttle'
   defaults write $FULL_PLIST CFBundleIdentifier 'org.cuttle'
 
-  FINAL_APP=$BUILDS/latest/Cuttle.app # appdmg.json uses this path to find the app
-
+  # move app to a static "latest-mac" folder since it would difficult
+  # to rewrite appdmg.json with the correct versioned path.
+  mkdir -p $BUILDS/latest-mac
+  FINAL_APP=$BUILDS/latest-mac/Cuttle.app # appdmg.json uses this path to find the app
   rm -rf $FINAL_APP
   mv $RELEASE_DIR/Atom.app $FINAL_APP
 
