@@ -28,6 +28,7 @@ call "scripts\build-lein-profile-tool.bat"
 
 echo. & echo Building Cuttle locally...
 call grunt less
+call lein cljsbuild clean
 call lein cljsbuild once
 
 echo. & echo Cuttle setup complete.
