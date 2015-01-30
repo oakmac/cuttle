@@ -62,7 +62,7 @@
   (log-info "checking java version")
   (let [out-chan (chan)
         cmd "java -version"
-        callback
+        callback-fn
         (fn [error stdout stderr]
           (if error
             (do
@@ -72,7 +72,7 @@
                   valid? (>= version 7)]
               (log-info "found java version:" version "from" stderr)
               (put! out-chan valid?))))]
-    (js-exec cmd callback)
+    (js-exec cmd callback-fn)
     out-chan))
 
 ;;------------------------------------------------------------------------------
@@ -96,11 +96,11 @@
     out-chan))
 
 (defn get-cljsbuild-with-profiles
-  [path]
-  (log-info "checking" path "for cljsbuild config in :dev profile")
+  [profile-path]
+  (log-info "checking" profile-path "for cljsbuild config in :dev profile")
   (let [out-chan (chan)
         cmd (lein "pprint :cljsbuild")
-        js-options (js-obj "cwd" path)
+        js-options (js-obj "cwd" profile-path)
         callback (fn [error stdout stderr]
                    (let [project (read-string stdout)]
                      (put! out-chan (or project {}))))]
@@ -213,7 +213,7 @@
 ;; it seems like we always want the first one
 (defn- extract-line-number* [s]
   (-> s
-      ;; NOTE: js .replace here, not clojure.string/replace
+      ;; NOTE: native JS .replace here, not clojure.string/replace
       ;; I'm not sure if clojure.string/replace does capture groups?
       (.replace #"(^.+line )(\d+)(.*$)" "$2")
       int))
