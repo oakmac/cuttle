@@ -461,7 +461,7 @@
 ;; TODO: "target" here is probably configurable in build; need to look closer
 ;; at Leiningen's code
 (defn clean-build! [prj-key bld]
-  (log-info "cleaning build for" prj-key)
+  (log-info "cleaning build" bld "for" prj-key)
   (let [cwd (convert-cwd prj-key)
         output-dir (-> bld :compiler :output-dir)
         output-dir-full (str cwd "target" output-dir)

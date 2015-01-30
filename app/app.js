@@ -5,7 +5,8 @@ var app = require('app'),
   ipc = require('ipc'),
   Menu = require('menu'),
   path = require('path'),
-  winston = require('winston');
+  winston = require('winston'),
+  packageJson = require(__dirname + '/package.json');
 
 // report crashes to atom-shell
 require('crash-reporter').start();
@@ -18,14 +19,22 @@ var mainWindow = null;
 // Logging
 //------------------------------------------------------------------------------
 
+const isDev = packageJson["version"] == "0.0-DEV";
+
 const onMac = (process.platform === 'darwin');
 
 function getLogPath() {
-  if (onMac) {
-    return path.join(process.env['HOME'], "Library", "Logs");
+  if (isDev) {
+    return __dirname;
   }
-
-  return app.getDataPath();
+  else {
+    if (onMac) {
+      return path.join(process.env['HOME'], "Library", "Logs");
+    }
+    else {
+      return app.getDataPath();
+    }
+  }
 }
 
 const winstonFileOptions = {
@@ -45,7 +54,13 @@ ipc.on('log-info',  function(e, msg) { winston.info("client:", msg); });
 ipc.on('log-warn',  function(e, msg) { winston.warn("client:", msg); });
 ipc.on('log-error', function(e, msg) { winston.error("client:", msg); });
 
-winston.info("Cuttle started, winston logging initialized");
+winston.info("-------------------------------------------");
+winston.info("Cuttle started");
+
+winston.info("build version:", packageJson["version"]);
+winston.info("build date:   ", packageJson["build-date"]);
+winston.info("build commit: ", packageJson["build-commit"]);
+winston.info("-------------------------------------------");
 
 //------------------------------------------------------------------------------
 // Dialogs

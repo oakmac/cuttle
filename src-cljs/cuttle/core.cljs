@@ -11,7 +11,8 @@
     [cuttle.log :refer [log-info]]
     [cuttle.main-page :as main-page]
     [cuttle.projects :refer [load-workspace!]]
-    [cuttle.util :refer [on-windows? path-join windows-bin-dir]]
+    [cuttle.util :refer [on-windows? path-join windows-bin-dir
+                         current-version build-date build-commit]]
     hiccups.runtime))
 
 (enable-console-print!)
@@ -118,8 +119,9 @@
         (main-page/init! filenames)))))
 
 (defn- global-init! [new-app-data-path]
-  (log-info "starting app; received" new-app-data-path)
-  (log-info "using lein at" (lein ""))
+  (log-info "STARTING CLIENT")
+  (log-info "received app data path:" new-app-data-path)
+  (log-info "using lein at:" (lein ""))
   (if on-windows?
     (copy-lein-files! (partial global-init2! new-app-data-path))
     (global-init2! new-app-data-path)))

@@ -70,6 +70,7 @@
 ;; TODO: should do some simple checking that the version number is in a valid
 ;; format
 (defn- check-version2 [new-version]
+  (log-info "latest version is" new-version)
   (when (string? new-version)
     (let [arr (split (trim new-version) ".")
           new-major (int (first arr))
@@ -85,6 +86,7 @@
                            :new-version-num (trim new-version))))))
 
 (defn- check-version! []
+  (log-info "checking for new version")
   (.get http latest-version-url (fn [js-res]
     (let [data (atom "")]
       (.setEncoding js-res "utf8")
@@ -187,12 +189,18 @@
 
 (defn- add-project!
   [filename]
+  (log-info "adding project" filename)
   (add-project-as-loading! filename)
   (let [c (load-project-file filename)]
     (go
       (while-let [project (<! c)]
                  (on-project-load-update! filename project))
       (finish-project-load! filename))))
+
+(defn- refresh-project!
+  [filename]
+  (log-info "refreshing project" filename)
+  (add-project! filename))
 
 (defn- init-projects!
   [filenames]
@@ -201,6 +209,7 @@
 
 (defn- remove-project!
   [filename]
+  (log-info "removing project" filename)
   (when (contains? (:projects @state) filename)
     (let [new-order (->> @state :projects :order
                      (remove #(= % filename))
@@ -236,6 +245,7 @@
 
 (defn- try-remove-project!
   [prj-name filename]
+  (log-info "trying to remove project")
   (let [msg (replace delete-confirm-msg "%" prj-name)
         delete? (.confirm js/window msg)]
     (when delete?
@@ -319,6 +329,7 @@
   []
   (let [settings-file (str app-data-path path-separator "settings.json")]
     (when (file-exists? settings-file)
+      (log-info "loading settings" settings-file)
       (when-let [settings (-> (js/require settings-file)
                           js->clj
                           keywordize-keys)]
@@ -336,6 +347,7 @@
   (let [settings-file (str app-data-path path-separator "settings.json")
         settings (select-keys @state settings-keys)
         settings-json (.stringify js/JSON (clj->js settings))]
+    (log-info "saving settings" settings-file)
     (write-file-async! settings-file settings-json)))
 
 ;;------------------------------------------------------------------------------
@@ -435,6 +447,7 @@
 (defn- mark-missing!
   "Mark a build row as missing output if the compiler was halted before finishing."
   [prj-key bld-id]
+  (log-info "compiler output missing for" prj-key "-" bld-id)
   (let [state-path [:projects prj-key :builds bld-id :state]
         bld-state (get-in @state state-path)]
     (when (or (= bld-state :waiting)
@@ -444,6 +457,7 @@
 (defn- compiler-done!
   "Mark a project as being finished with compiling. ie: idle state"
   [prj-key bld-ids]
+  (log-info "done compiling " prj-key "-" (pr-str bld-ids))
   (swap! state assoc-in [:projects prj-key :state] :idle)
 
   ;; any build not marked as "done" at this point is due to compiler error
@@ -560,6 +574,7 @@
     (exec/clean-build! prj-key bld)))
 
 (defn- click-compile-btn [prj-key]
+  (log-info "clicked compile button for" prj-key)
   (let [prj (get-in @state [:projects prj-key])
         bld-ids (get-active-bld-ids prj)]
     ;; safeguard
@@ -577,6 +592,8 @@
       (compile-now! prj-key prj bld-ids))))
 
 (defn- click-stop-auto-btn [prj-key]
+  (log-info "clicked stop compile for" prj-key)
+
   ;; stop the process
   (exec/stop-auto! prj-key)
 
@@ -586,25 +603,31 @@
   (swap! state assoc-in [:projects prj-key :state] :idle))
 
 (defn- click-compile-options [js-evt prj-key]
+  (log-info "toggling compile option visibility for" prj-key)
   (.stopPropagation js-evt)
   (swap! state update-in [:projects prj-key :compile-menu-showing?] not))
 
 (defn- toggle-auto-compile [prj-key]
+  (log-info "toggling auto compile for" prj-key)
   (swap! state update-in [:projects prj-key :auto-compile?] not))
 
 (defn- toggle-build-active [prj-key bld-id]
+  (log-info "toggling build active for" bld-id "on" prj-key)
   (swap! state update-in [:projects prj-key :builds bld-id :active?] not))
 
 (defn- show-new-project-modal []
+  (log-info "showing add project modal")
   (swap! state assoc :add-project-modal-showing? true
                      :new-project-step 1))
 
 (defn- close-add-project-modal []
+  (log-info "closing add project modal")
   (swap! state assoc :add-project-modal-showing? false))
 
 ;; TODO: change the new-project-step's to keywords instead of magic numbers
 
 (defn- click-new-project-btn []
+  (log-info "starting new project dialog")
   (swap! state assoc :new-project-dir homedir
                      :new-project-error nil
                      :new-project-name ""
@@ -646,6 +669,7 @@
 
 (defn- click-open-project-folder!
   [filename]
+  (log-info "opening project folder for" filename)
   (let [dirname (.dirname path filename)]
     (open dirname)))
 
@@ -668,6 +692,7 @@
     (.focus el)))
 
 (defn- click-settings-link []
+  (log-info "opening settings modal")
   (swap! state assoc :settings-modal-showing? true))
 
 ;; TODO:
@@ -962,7 +987,7 @@
                   ;; [:i.fa.fa-edit.project-icon-1711d]
                   [:i.fa.fa-refresh.project-icon-1711d
                    {:title "Refresh the project.clj file"
-                    :on-click #(add-project! prj-key)}]
+                    :on-click #(refresh-project! prj-key)}]
                   [:i.fa.fa-times.project-icon-1711d
                     {:title "Remove"
                      :on-click #(try-remove-project! (:name prj) prj-key)}]))]]
