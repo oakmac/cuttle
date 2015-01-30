@@ -1,4 +1,4 @@
-(defproject cuttle "1.0"
+(defproject cuttle "1.1"
   :description "A user interface for the ClojureScript compiler."
   :url "https://github.com/oakmac/cuttle"
   :license {
