@@ -335,7 +335,13 @@
     (project-file->cwd cwd)
     cwd))
 
+;; NOTE: this function breaks on Windows when "cmd" has spaces: something to do
+;; with the weird rules for escaping when using "cmd /c"
+;; This is why we copy lein.bat and lein.jar to C:\cuttle-bin\ on app load
+;; and call them using windows-bin-dir
+;; more information:
 ;; https://github.com/joyent/node/issues/2318
+;; https://github.com/oakmac/cuttle/issues/73
 (defn- spawn [cmd cwd]
   (if on-windows?
     (js-spawn "cmd" (array "/c" cmd) (js-obj "cwd" cwd))
