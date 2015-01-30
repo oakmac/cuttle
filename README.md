@@ -21,6 +21,8 @@ platforms.
 
 ## Installation
 
+__Download Cuttle v1.1__:
+
 [<img src="readme-img/windows.png" height="16px"> Windows Installer](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-windows.exe)  
 [<img src="readme-img/apple.png"   height="16px"> Mac DMG](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-mac.dmg)  
 [<img src="readme-img/linux.png"   height="16px"> Linux zip](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-linux-x86_64.tar.gz)
