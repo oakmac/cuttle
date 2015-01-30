@@ -15,6 +15,7 @@ set -e
 # Generate clean build
 #----------------------------------------------------------------------
 
+echo; echo "Generating clean build..."
 grunt less
 lein cljsbuild clean
 lein cljsbuild once
@@ -53,12 +54,17 @@ fi
 # Determine release name and output location
 #----------------------------------------------------------------------
 
+echo; echo "Generating build meta data..."
 META=`head -n 1 project.clj`
 NAME=`echo $META | cut -d' ' -f2`
 VERSION=`echo $META | cut -d' ' -f3 | tr -d '"'`
 BUILD_COMMIT=`git rev-parse HEAD`
 BUILD_DATE=`date +'%F'`
+echo "VERSION:      $VERSION"
+echo "BUILD_DATE:   $BUILD_DATE"
+echo "BUILD_COMMIT: $BUILD_COMMIT"
 
+echo; echo "Creating builds/ directory..."
 BUILDS=builds
 mkdir -p $BUILDS
 
@@ -69,24 +75,27 @@ RELEASE_RSRC="$RELEASE_DIR/$RESOURCES"
 
 RELEASE_INSTALL="$BUILDS/$RELEASE.$INSTALL_EXT"
 
+echo; echo "Cleaning previous build directory, zip, and installer..."
 rm -rf $RELEASE_DIR $RELEASE_ZIP $RELEASE_INSTALL
 
 #----------------------------------------------------------------------
 # Copy Atom installation and app directory into output location
 #----------------------------------------------------------------------
 
-echo "Creating $RELEASE_DIR ..."
+echo; echo "Copying Atom Shell and app/ to build directory at $RELEASE_DIR ..."
 
 cp -R $ATOM_DIR $RELEASE_DIR
 cp -R app $RELEASE_RSRC
 
 # don't copy our development log file to release
+echo; echo "Removing dev log from build directory..."
 rm -f $RELEASE_RSRC/app/cuttle.log
 
 # We are storing production and development dependencies in Node's package.json.
 # Production dependencies must be copied to the release folder, so we do this
 # by swapping out the Atom Shell package.json for Node's package.json, then
 # `npm install` helps us copy the correct dependencies over.
+echo; echo "Installing node dependencies to build directory..."
 cp package.json $RELEASE_RSRC/app
 pushd $RELEASE_RSRC/app
 npm install --production
@@ -94,6 +103,7 @@ popd
 cp app/package.json $RELEASE_RSRC/app/
 
 # write build version, timestamp, and commit hash
+echo; echo "Adding build metadata to app's package.json..."
 json -I -f $RELEASE_RSRC/app/package.json \
   -e "this[\"version\"]=\"$VERSION\"" \
   -e "this[\"build-commit\"]=\"$BUILD_COMMIT\"" \
@@ -105,6 +115,7 @@ json -I -f $RELEASE_RSRC/app/package.json \
 
 CONFIG=$RELEASE_RSRC/app/config.json
 if [ -f $CONFIG ]; then
+  echo; echo "Removing app config from build directory to force default settings..."
   rm $CONFIG
 fi
 
@@ -116,6 +127,7 @@ if [ "$OS" == "mac" ]; then
 
   FULL_PLIST="$(pwd)/$RELEASE_DIR/$PLIST"
 
+  echo; echo "Customizing Atom Shell's app info with Cuttle's info..."
   defaults write $FULL_PLIST CFBundleIconFile 'app/img/cuttle-logo.icns'
   defaults write $FULL_PLIST CFBundleDisplayName 'Cuttle'
   defaults write $FULL_PLIST CFBundleName 'Cuttle'
@@ -128,6 +140,7 @@ if [ "$OS" == "mac" ]; then
   rm -rf $FINAL_APP
   mv $RELEASE_DIR/Atom.app $FINAL_APP
 
+  echo; echo "Creating Mac DMG..."
   appdmg scripts/dmg/appdmg.json $RELEASE_INSTALL
 
 
@@ -137,6 +150,7 @@ elif [ "$OS" == "linux" ]; then
 
 elif [ "$OS" == "windows" ]; then
 
+  echo; echo "Replacing Atom Shell's exe icon with Cuttle's icon..."
   winresourcer --operation=Update \
                --exeFile=$RELEASE_DIR/atom.exe \
                --resourceType=Icongroup \
@@ -147,6 +161,7 @@ elif [ "$OS" == "windows" ]; then
 
   NSI_FILE=scripts/build-windows-exe.nsi
 
+  echo; echo "Creating Windows installer..."
   makensis \
     //DPRODUCT_VERSION=$VERSION \
     $NSI_FILE
