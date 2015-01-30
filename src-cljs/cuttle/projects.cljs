@@ -7,6 +7,7 @@
     [clojure.string :refer [replace]]
     [cuttle.cljsbuild.config :refer [extract-options]]
     [cuttle.exec :refer [get-cljsbuild-with-profiles]]
+    [cuttle.log :refer [log-info]]
     [cuttle.util :refer [file-exists? js-log log path-join path-dirname]]))
 
 (def fs (js/require "fs"))
@@ -33,6 +34,7 @@
 (defn- parse-project-file
   "Parse the project file without considering profiles."
   [contents filename]
+  (log-info "parsing project:" filename)
   (let [contents (replace contents "#(" "(") ;; prevent "Could not find tag parser for" error
         prj1 (read-string contents)
         project (apply hash-map (drop 3 prj1))
@@ -47,6 +49,7 @@
 (defn- fix-project-with-profiles
   "Correct the given project file with cljsbuild options from profiles."
   [project]
+  (log-info "parsing project with :dev profile:" (:filename project))
   (go
     (let [filename (:filename project)
           path (path-dirname filename)
