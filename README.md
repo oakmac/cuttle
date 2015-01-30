@@ -1,4 +1,4 @@
-![Cuttle](cuttle-banner.png)
+![Cuttle](readme-img/cuttle-banner.png)
 
 Cuttle is a standalone application that aims to be __the simplest way to use
 ClojureScript__.  It provides a user-friendly interface, allowing you to build
@@ -21,11 +21,13 @@ platforms.
 
 ## Installation
 
-1. [Download and Install JRE >= 7](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
-1. Download and Install Cuttle:
-  - [Windows Installer](https://github.com/oakmac/cuttle/releases/download/v1.0/cuttle-1.0-windows.exe)
-  - [Mac DMG](https://github.com/oakmac/cuttle/releases/download/v1.0/cuttle-v1.0-mac.dmg)
-  - [Linux zip](https://github.com/oakmac/cuttle/releases/download/v1.0/cuttle-v1.0-linux-x86_64.tar.gz)
+Please make sure to install a [JRE >= 7](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
+
+Download Cuttle:
+
+![](readme-img/windows.png) [Windows Installer](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-windows.exe)  
+![](readme-img/apply.png) [Mac DMG](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-mac.dmg)  
+![](readme-img/linux.png) [Linux zip](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-linux-x86_64.tar.gz)
 
 ## User Guide
 
