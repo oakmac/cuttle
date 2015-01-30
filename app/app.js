@@ -18,13 +18,14 @@ var mainWindow = null;
 // Logging
 //------------------------------------------------------------------------------
 
+const onMac = (process.platform === 'darwin');
+
 function getLogPath() {
-  if (process.platform == "darwin") {
+  if (onMac) {
     return path.join(process.env['HOME'], "Library", "Logs");
   }
-  else {
-    return app.getDataPath();
-  }
+
+  return app.getDataPath();
 }
 
 const winstonFileOptions = {
