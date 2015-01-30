@@ -18,8 +18,17 @@ var mainWindow = null;
 // Logging
 //------------------------------------------------------------------------------
 
+function getLogPath() {
+  if (process.platform == "darwin") {
+    return path.join(process.env['HOME'], "Library", "Logs");
+  }
+  else {
+    return app.getDataPath();
+  }
+}
+
 const winstonFileOptions = {
-  filename: app.getDataPath() + path.sep + "cuttle.log",
+  filename: getLogPath() + path.sep + "cuttle.log",
   json: false,
   maxFiles: 10,
   maxsize: 10000000, // 10MB
