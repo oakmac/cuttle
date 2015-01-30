@@ -19,22 +19,22 @@ var mainWindow = null;
 // Logging
 //------------------------------------------------------------------------------
 
-const isDev = packageJson["version"] == "0.0-DEV";
-
+const isDev = (packageJson.version.indexOf("DEV") !== -1);
 const onMac = (process.platform === 'darwin');
 
 function getLogPath() {
+  // put cuttle.log in /app in the project folder if we're in dev mode
   if (isDev) {
     return __dirname;
   }
-  else {
-    if (onMac) {
-      return path.join(process.env['HOME'], "Library", "Logs");
-    }
-    else {
-      return app.getDataPath();
-    }
+
+  // cuttle.log goes here on a mac so it can be used by Console app
+  if (onMac) {
+    return path.join(process.env['HOME'], "Library", "Logs");
   }
+
+  // else use the app path folder
+  return app.getDataPath();
 }
 
 const winstonFileOptions = {
@@ -42,9 +42,9 @@ const winstonFileOptions = {
   json: false,
   maxFiles: 10,
   maxsize: 10000000, // 10MB
+  prettyPrint: true,
   tailable: true,
-  timestamp: true,
-  prettyPrint: true
+  timestamp: true
 };
 
 // add logger
