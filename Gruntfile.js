@@ -209,14 +209,14 @@ grunt.registerTask('release', function() {
   rm('-f', paths.releaseCfg);
   
   switch (os) {
-    case "mac":     finalizeMacRelease(paths); break;
-    case "linux":   finalizeLinuxRelease(paths); break;
-    case "windows": finalizeWindowsRelease(paths); break;
+    case "mac":     finalizeMacRelease(build, paths); break;
+    case "linux":   finalizeLinuxRelease(build, paths); break;
+    case "windows": finalizeWindowsRelease(build, paths); break;
   }
 
 });
 
-function finalizeMacRelease(paths) {
+function finalizeMacRelease(build, paths) {
   var plist = __dirname + "/" + paths.release + "/" + atomShell.plist;
   grunt.log.writeln(plist);
 
@@ -245,11 +245,11 @@ function finalizeMacRelease(paths) {
   grunt.task.run("appdmg");
 }
 
-function finalizeLinuxRelease(paths) {
+function finalizeLinuxRelease(build, paths) {
   mv(paths.exeToRename, paths.renamedExe);
 }
 
-function finalizeWindowsRelease(paths) {
+function finalizeWindowsRelease(build, paths) {
   mv(paths.exeToRename, paths.renamedExe);
   var app = paths.renamedExe;
 
@@ -265,8 +265,9 @@ function finalizeWindowsRelease(paths) {
   grunt.task.run("winresourcer");
 
   grunt.config.set("makensis", {
+    version:    build.version,
     releaseDir: paths.release,
-    outFile: paths.install
+    outFile:    paths.install
   });
   grunt.task.run("makensis");
 }
@@ -274,9 +275,9 @@ function finalizeWindowsRelease(paths) {
 grunt.registerTask('makensis', function() {
   var config = grunt.config.get("makensis");
   exec(["makensis",
-    "/DPRODUCT_VERSION=",
-    "/DRELEASE_DIR=../"+config.releaseDir,
-    "/DOUTFILE=../"+config.outFile,
+    "/DPRODUCT_VERSION=" + config.version,
+    "/DRELEASE_DIR=../" + config.releaseDir,
+    "/DOUTFILE=../" + config.outFile,
     "scripts/build-windows-exe.nsi"].join(" "));
 });
 
