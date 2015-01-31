@@ -3,7 +3,6 @@ module.exports = function(grunt) {
 
 var moment = require('moment');
 var path = require('path');
-require('shelljs/global');
 
 var os = (function(){
   var platform = process.platform;
@@ -12,6 +11,21 @@ var os = (function(){
   if (/^linux/.test(platform))  return "linux";
   return null;
 })();
+
+//------------------------------------------------------------------------------
+// ShellJS
+//------------------------------------------------------------------------------
+
+require('shelljs/global');
+// shelljs/global makes the following imports:
+//   cwd, pwd, ls, find, cp, rm, mv, mkdir, test, cat,
+//   str.to, str.toEnd, sed, grep, which, echo,
+//   pushd, popd, dirs, ln, exit, env, exec, chmod,
+//   tempdir, error
+
+var shellconfig = require('shelljs').config;
+shellconfig.silent = false; // hide shell cmd output?
+shellconfig.fatal = true;   // stop if cmd failed?
 
 //------------------------------------------------------------------------------
 // Grunt Config
@@ -60,23 +74,53 @@ grunt.initConfig({
 });
 
 //------------------------------------------------------------------------------
-// Load Tasks
+// Third-party tasks
 //------------------------------------------------------------------------------
 
-// load tasks from npm
 grunt.loadNpmTasks('grunt-contrib-less');
 grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-curl');
 grunt.loadNpmTasks('grunt-download-atom-shell');
-if (os == "mac") {
-  grunt.loadNpmTasks('grunt-appdmg');
-}
+if (os == "mac") grunt.loadNpmTasks('grunt-appdmg');
 grunt.loadNpmTasks('winresourcer');
 
-grunt.registerTask('default', ['watch']);
+//------------------------------------------------------------------------------
+// Setup Tasks
+//------------------------------------------------------------------------------
+
+grunt.registerTask('ensure-config-exists', function() {
+  pushd("app");
+  if (!test("-f", "config.json")) {
+    cp("example.config.json", "config.json");
+  }
+  popd();
+});
+
+grunt.registerTask('build-lein-profile-tool', function() {
+  pushd("scripts");
+  if (!test('-d', "add-lein-profile")) {
+    exec("git clone https://github.com/shaunlebron/add-lein-profile.git");
+  }
+  else {
+    pushd("add-lein-profile");
+    exec("git pull");
+    exec("lein clean");
+    exec("lein uberjar");
+    cp("-f", "target/add-lein-profile-*-standalone.jar", "../../app/bin/add-lein-profile.jar");
+    popd();
+  }
+  popd();
+});
+
+grunt.registerTask('setup', [
+  'curl',
+  'download-atom-shell',
+  'ensure-config-exists',
+  'build-lein-profile-tool'
+]);
 
 //------------------------------------------------------------------------------
-// Custom Tasks
+// Build/Release Tasks
 //------------------------------------------------------------------------------
 
 var atomShell = {
@@ -102,30 +146,6 @@ var atomShell = {
     resources:   "resources"
   }
 }[os];
-
-grunt.registerTask('ensure-config-exists', function() {
-  pushd("app");
-  if (!test("-f", "config.json")) {
-    cp("example.config.json", "config.json");
-  }
-  popd();
-});
-
-grunt.registerTask('build-lein-profile-tool', function() {
-  pushd("scripts");
-  if (!test('-d', "add-lein-profile")) {
-    exec("git clone https://github.com/shaunlebron/add-lein-profile.git");
-  }
-  else {
-    pushd("add-lein-profile");
-    exec("git pull");
-    exec("lein clean");
-    exec("lein uberjar");
-    cp("-f", "target/add-lein-profile-*-standalone.jar", "../../app/bin/add-lein-profile.jar");
-    popd();
-  }
-  popd();
-});
 
 grunt.registerTask('fresh-build', function() {
   exec("lein cljsbuild clean");
@@ -156,7 +176,6 @@ grunt.registerTask('release', function() {
     devApp: "app",
     rootPkg: "package.json",
   };
-  paths.staticRelease = paths.builds + "/latest-" + os;
   paths.release = paths.builds + '/' + build.releaseName;
   paths.resources = paths.release + '/' + atomShell.resources;
   paths.install = paths.release + "." + atomShell.installExt;
@@ -188,69 +207,69 @@ grunt.registerTask('release', function() {
   JSON.stringify(pkg, null, "  ").to(paths.releasePkg);
 
   rm('-f', paths.releaseCfg);
-
-  mkdir('-p', paths.staticRelease);
   
   switch (os) {
-    case "mac":
-      var plist = __dirname + "/" + paths.release + "/" + atomShell.plist;
-      grunt.log.writeln(plist);
-
-      exec("defaults write " + plist + " CFBundleIconFile app/img/cuttle-logo.icns");
-      exec("defaults write " + plist + " CFBundleDisplayName Cuttle");
-      exec("defaults write " + plist + " CFBundleName Cuttle");
-      exec("defaults write " + plist + " CFBundleIdentifier org.cuttle");
-
-      mv(paths.exeToRename, paths.renamedExe);
-      var app = paths.renamedExe;
-
-      grunt.config.set("appdmg", {
-        options: {
-          "title": "Cuttle",
-          "background": "scripts/dmg/background.png",
-          "icon-size": 80,
-          "contents": [
-            { "x": 448, "y": 344, "type": "link", "path": "/Applications" },
-            { "x": 192, "y": 344, "type": "file", "path": app }
-          ]
-        },
-        target: {
-          dest: paths.install
-        }
-      });
-      grunt.task.run("appdmg");
-      break;
-
-    case "linux":
-      mv(paths.exeToRename, paths.renamedExe);
-      break;
-
-    case "windows":
-      mv(paths.exeToRename, paths.renamedExe);
-      var app = paths.renamedExe;
-
-      grunt.config.set("winresourcer", {
-        main: {
-          operation: "Update",
-          exeFile: app,
-          resourceType: "Icongroup",
-          resourceName: "1",
-          resourceFile: "app/img/cuttle-logo.ico"
-	}
-      });
-      grunt.task.run("winresourcer");
-
-      grunt.config.set("makensis", {
-        releaseDir: paths.release,
-        outFile: paths.install
-      });
-      grunt.task.run("makensis");
-
-
-      break;
+    case "mac":     finalizeMacRelease(paths); break;
+    case "linux":   finalizeLinuxRelease(paths); break;
+    case "windows": finalizeWindowsRelease(paths); break;
   }
 
 });
+
+function finalizeMacRelease(paths) {
+  var plist = __dirname + "/" + paths.release + "/" + atomShell.plist;
+  grunt.log.writeln(plist);
+
+  exec("defaults write " + plist + " CFBundleIconFile app/img/cuttle-logo.icns");
+  exec("defaults write " + plist + " CFBundleDisplayName Cuttle");
+  exec("defaults write " + plist + " CFBundleName Cuttle");
+  exec("defaults write " + plist + " CFBundleIdentifier org.cuttle");
+
+  mv(paths.exeToRename, paths.renamedExe);
+  var app = paths.renamedExe;
+
+  grunt.config.set("appdmg", {
+    options: {
+      "title": "Cuttle",
+      "background": "scripts/dmg/background.png",
+      "icon-size": 80,
+      "contents": [
+        { "x": 448, "y": 344, "type": "link", "path": "/Applications" },
+        { "x": 192, "y": 344, "type": "file", "path": app }
+      ]
+    },
+    target: {
+      dest: paths.install
+    }
+  });
+  grunt.task.run("appdmg");
+}
+
+function finalizeLinuxRelease(paths) {
+  mv(paths.exeToRename, paths.renamedExe);
+}
+
+function finalizeWindowsRelease() {
+  mv(paths.exeToRename, paths.renamedExe);
+  var app = paths.renamedExe;
+
+  grunt.config.set("winresourcer", {
+    main: {
+      operation: "Update",
+      exeFile: app,
+      resourceType: "Icongroup",
+      resourceName: "1",
+      resourceFile: "app/img/cuttle-logo.ico"
+    }
+  });
+  grunt.task.run("winresourcer");
+
+  grunt.config.set("makensis", {
+    releaseDir: paths.release,
+    outFile: paths.install
+  });
+  grunt.task.run("makensis");
+}
 
 grunt.registerTask('makensis', function() {
   var config = grunt.config.get("makensis");
@@ -261,10 +280,11 @@ grunt.registerTask('makensis', function() {
     "scripts/build-windows-exe.nsi"].join(" "));
 });
 
-grunt.registerTask('setup', ['curl',
-                             'download-atom-shell',
-                             'ensure-config-exists',
-                             'build-lein-profile-tool']);
+//------------------------------------------------------------------------------
+// Default Task
+//------------------------------------------------------------------------------
+
+grunt.registerTask('default', ['watch']);
 
 // end module.exports
 };
