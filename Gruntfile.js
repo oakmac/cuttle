@@ -1,14 +1,14 @@
 module.exports = function(grunt) {
 'use strict';
 
-var moment = require('moment');
-var path = require('path');
+var moment = require('moment'),
+  path = require('path');
 
 var os = (function(){
   var platform = process.platform;
-  if (/^win/.test(platform))    return "windows";
-  if (/^darwin/.test(platform)) return "mac";
-  if (/^linux/.test(platform))  return "linux";
+  if (/^win/.test(platform))    { return "windows"; }
+  if (/^darwin/.test(platform)) { return "mac"; }
+  if (/^linux/.test(platform))  { return "linux"; }
   return null;
 })();
 
@@ -68,8 +68,7 @@ grunt.initConfig({
   'download-atom-shell': {
     version: '0.20.5',
     outputDir: 'atom-shell'
-  },
-
+  }
 
 });
 
@@ -81,7 +80,9 @@ grunt.loadNpmTasks('grunt-contrib-less');
 grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-curl');
 grunt.loadNpmTasks('grunt-download-atom-shell');
-if (os == "mac") grunt.loadNpmTasks('grunt-appdmg');
+if (os === "mac") {
+  grunt.loadNpmTasks('grunt-appdmg');
+}
 grunt.loadNpmTasks('winresourcer');
 
 //------------------------------------------------------------------------------
@@ -174,7 +175,7 @@ grunt.registerTask('release', function() {
     atom: "atom-shell",
     builds: "builds",
     devApp: "app",
-    rootPkg: "package.json",
+    rootPkg: "package.json"
   };
   paths.release = paths.builds + '/' + build.releaseName;
   paths.resources = paths.release + '/' + atomShell.resources;
@@ -207,7 +208,7 @@ grunt.registerTask('release', function() {
   JSON.stringify(pkg, null, "  ").to(paths.releasePkg);
 
   rm('-f', paths.releaseCfg);
-  
+
   switch (os) {
     case "mac":     finalizeMacRelease(build, paths); break;
     case "linux":   finalizeLinuxRelease(build, paths); break;
