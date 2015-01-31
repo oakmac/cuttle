@@ -17,6 +17,7 @@
     "grunt-contrib-watch": "0.6.1",
     "grunt-curl": "2.0.3",
     "grunt-download-atom-shell": "0.10.0",
+    "grunt-appdmg": "0.2.0",
     "shelljs": "0.3.0"
   }
 }

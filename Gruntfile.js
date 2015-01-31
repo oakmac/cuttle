@@ -44,7 +44,22 @@ grunt.initConfig({
   'download-atom-shell': {
     version: '0.20.5',
     outputDir: 'atom-shell'
-  }
+  },
+
+  appdmg: {
+    options: {
+      "title": "Cuttle",
+      "background": "scripts/dmg/background.png",
+      "icon-size": 80,
+      "contents": [
+        { "x": 448, "y": 344, "type": "link", "path": "/Applications" },
+        { "x": 192, "y": 344, "type": "file", "path": "builds/latest-mac/Cuttle.app" }
+      ]
+    },
+    target: {
+      dest: "builds/latest-mac/Cuttle.dmg"
+    }
+  },
 
 });
 
@@ -57,6 +72,7 @@ grunt.loadNpmTasks('grunt-contrib-less');
 grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-curl');
 grunt.loadNpmTasks('grunt-download-atom-shell');
+grunt.loadNpmTasks('grunt-appdmg');
 
 grunt.registerTask('default', ['watch']);
 
