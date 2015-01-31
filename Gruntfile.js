@@ -2,6 +2,7 @@ module.exports = function(grunt) {
 'use strict';
 
 var moment = require('moment');
+var path = require('path');
 require('shelljs/global');
 
 var os = (function(){
@@ -67,7 +68,9 @@ grunt.loadNpmTasks('grunt-contrib-less');
 grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-curl');
 grunt.loadNpmTasks('grunt-download-atom-shell');
-grunt.loadNpmTasks('grunt-appdmg');
+if (os == "mac") {
+  grunt.loadNpmTasks('grunt-appdmg');
+}
 grunt.loadNpmTasks('winresourcer');
 
 grunt.registerTask('default', ['watch']);
@@ -131,7 +134,7 @@ grunt.registerTask('fresh-build', function() {
 });
 
 grunt.registerTask('launch', function() {
-  exec("atom-shell/"+atomShell.cmdlineExe + " app");
+  exec(path.join("atom-shell", atomShell.cmdlineExe) + " app");
 });
 
 grunt.registerTask('release', function() {
@@ -227,11 +230,13 @@ grunt.registerTask('release', function() {
       var app = paths.renamedExe;
 
       grunt.config.set("winresourcer", {
-        operation: "Update",
-        exeFile: app,
-        resourceType: "Icongroup",
-        resourceName: "1",
-        resourceFile: "app/img/cuttle-logo.ico"
+        main: {
+          operation: "Update",
+          exeFile: app,
+          resourceType: "Icongroup",
+          resourceName: "1",
+          resourceFile: "app/img/cuttle-logo.ico"
+	}
       });
       grunt.task.run("winresourcer");
 
@@ -249,13 +254,10 @@ grunt.registerTask('release', function() {
 
 grunt.registerTask('makensis', function() {
   var config = grunt.config.get("makensis");
-  //
-  // TODO: see if the switch flags need double slashes
-  //       and if the paths need to have forward-slashes
   exec(["makensis",
-    "//DPRODUCT_VERSION=",
-    "//DRELEASE_DIR=../"+config.releaseDir,
-    "//DOUTFILE=../"+config.outFile,
+    "/DPRODUCT_VERSION=",
+    "/DRELEASE_DIR=../"+config.releaseDir,
+    "/DOUTFILE=../"+config.outFile,
     "scripts/build-windows-exe.nsi"].join(" "));
 });
 
