@@ -1,6 +1,8 @@
 module.exports = function(grunt) {
 'use strict';
 
+require('shelljs/global');
+
 //------------------------------------------------------------------------------
 // Grunt Config
 //------------------------------------------------------------------------------
@@ -57,6 +59,28 @@ grunt.loadNpmTasks('grunt-curl');
 grunt.loadNpmTasks('grunt-download-atom-shell');
 
 grunt.registerTask('default', ['watch']);
+
+//------------------------------------------------------------------------------
+// Custom Tasks
+//------------------------------------------------------------------------------
+
+grunt.registerTask('build-lein-profile-tool', function() {
+
+  pushd("scripts");
+  if (!test('-d', "add-lein-profile")) {
+    exec("git clone https://github.com/shaunlebron/add-lein-profile.git");
+  }
+  else {
+    pushd("add-lein-profile");
+    exec("git pull");
+    exec("lein clean");
+    exec("lein uberjar");
+    cp("-f", "target/add-lein-profile-*-standalone.jar", "../../app/bin/add-lein-profile.jar");
+    popd();
+  }
+  popd();
+
+});
 
 // end module.exports
 };
