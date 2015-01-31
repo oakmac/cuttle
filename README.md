@@ -79,48 +79,35 @@ its behavior simple and predictable.  Some ideas we are thinking about:
 
 ## Development Setup
 
-To setup a environment for building Cuttle:  (you can replace the `lein` bits
-with Cuttle :P)
+To setup a environment for building Cuttle:
 
 1. Install [Leiningen] and [Node.js].
 1. One-time setup. Run from the project directory:
 
     ```sh
-    # setup on linux/mac
+    # linux/mac
     scripts/setup.sh
 
-    # setup on windows
+    # windows
     scripts/setup.bat
     ```
 
-1. Compile when files change:
+1. Compile LESS and ClojureScript:
 
     ```sh
-    # compile LESS file
-    grunt less
-
-    # compile ClojureScript files (this may take a minute)
-    lein cljsbuild once
+    grunt build
     ```
 
 1. Launch to try it out:
 
     ```sh
-    # launch on Mac/Linux/Cygwin
-    scripts/launch.sh
-
-    # launch on Windows
-    scripts/launch.bat
+    grunt launch
     ```
 
-1. Assemble a release (can only do this for your OS):
+1. Assemble a release for your OS:
 
     ```sh
-    # Create a release folder
-    ./release.sh
-
-    # Create a release zip
-    ./release.sh -z
+    grunt release
     ```
 
 ## About the Name/Logo

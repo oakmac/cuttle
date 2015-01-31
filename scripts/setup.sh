@@ -11,4 +11,6 @@ npm install
 echo; echo "Installing grunt..."
 sudo npm install -g grunt-cli
 
+grunt setup
+
 echo; echo "Cuttle setup complete."

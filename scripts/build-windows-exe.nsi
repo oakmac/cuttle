@@ -47,14 +47,14 @@ var ICONS_GROUP
 !insertmacro MUI_LANGUAGE "English"
 
 ; Source directory
-!define BUILDS "..\builds"
-!define RELEASE "cuttle-v${PRODUCT_VERSION}-windows"
-!define RELEASE_DIR "${BUILDS}\${RELEASE}"
+; (auto-defined by the caller in the release script)
+;; !define OUTFILE
+;; !define RELEASE_DIR
 
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "${RELEASE}.exe"
+OutFile "${OUTFILE}"
 InstallDir "$PROGRAMFILES\Cuttle"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show

@@ -1,7 +1,16 @@
 module.exports = function(grunt) {
 'use strict';
 
+var moment = require('moment');
 require('shelljs/global');
+
+var os = (function(){
+  var platform = process.platform;
+  if (/^win/.test(platform))    return "windows";
+  if (/^darwin/.test(platform)) return "mac";
+  if (/^linux/.test(platform))  return "linux";
+  return null;
+})();
 
 //------------------------------------------------------------------------------
 // Grunt Config
@@ -46,28 +55,6 @@ grunt.initConfig({
     outputDir: 'atom-shell'
   },
 
-  appdmg: {
-    options: {
-      "title": "Cuttle",
-      "background": "scripts/dmg/background.png",
-      "icon-size": 80,
-      "contents": [
-        { "x": 448, "y": 344, "type": "link", "path": "/Applications" },
-        { "x": 192, "y": 344, "type": "file", "path": "builds/latest-mac/Cuttle.app" }
-      ]
-    },
-    target: {
-      dest: "builds/latest-mac/Cuttle.dmg"
-    }
-  },
-
-  winresourcer: {
-    operation: "Update",
-    exeFile: "builds/latest-windows/atom.exe", // TODO: make exe in static location
-    resourceType: "Icongroup",
-    resourceName: "1",
-    resourceFile: "app/img/cuttle-logo.ico"
-  },
 
 });
 
@@ -81,7 +68,7 @@ grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-curl');
 grunt.loadNpmTasks('grunt-download-atom-shell');
 grunt.loadNpmTasks('grunt-appdmg');
-grunt.loadNpmTasks('grunt-winresourcer');
+grunt.loadNpmTasks('winresourcer');
 
 grunt.registerTask('default', ['watch']);
 
@@ -89,13 +76,29 @@ grunt.registerTask('default', ['watch']);
 // Custom Tasks
 //------------------------------------------------------------------------------
 
-function getOS() {
-  var platform = process.platform;
-  if (/^win/.test(platform))    return "windows";
-  if (/^darwin/.test(platform)) return "mac";
-  if (/^linux/.test(platform))  return "linux";
-  return null;
-}
+var atomShell = {
+  windows: {
+    cmdlineExe:  "atom.exe",
+    exeToRename: "atom.exe",
+    renamedExe:  "Cuttle.exe",
+    resources:   "resources",
+    installExt:  "exe"
+  },
+  mac: {
+    cmdlineExe:  "Atom.app/Contents/MacOS/Atom",
+    exeToRename: "Atom.app",
+    renamedExe:  "Cuttle.app",
+    plist:       "Atom.app/Contents/Info.plist",
+    resources:   "Atom.app/Contents/Resources",
+    installExt:  "dmg"
+  },
+  linux: {
+    cmdlineExe:  "atom",
+    exeToRename: "atom",
+    renamedExe:  "Cuttle",
+    resources:   "resources"
+  }
+}[os];
 
 grunt.registerTask('ensure-config-exists', function() {
   pushd("app");
@@ -106,7 +109,6 @@ grunt.registerTask('ensure-config-exists', function() {
 });
 
 grunt.registerTask('build-lein-profile-tool', function() {
-
   pushd("scripts");
   if (!test('-d', "add-lein-profile")) {
     exec("git clone https://github.com/shaunlebron/add-lein-profile.git");
@@ -120,7 +122,6 @@ grunt.registerTask('build-lein-profile-tool', function() {
     popd();
   }
   popd();
-
 });
 
 grunt.registerTask('fresh-build', function() {
@@ -130,17 +131,138 @@ grunt.registerTask('fresh-build', function() {
 });
 
 grunt.registerTask('launch', function() {
-  var atom = {
-    "windows": "atom-shell/atom.exe",
-    "mac":     "atom-shell/Atom.app/Contents/MacOS/Atom",
-    "linux":   "atom-shell/atom"
-  }[getOS()];
-  if (atom == null) {
-    grunt.log.error("Cannot detect supported OS");
-    return;
-  }
-  exec(atom + " app");
+  exec("atom-shell/"+atomShell.cmdlineExe + " app");
 });
+
+grunt.registerTask('release', function() {
+
+  // setup build metadata
+  var tokens = cat("project.clj").split(" ");
+  var build = {
+    name:    tokens[1],
+    version: tokens[2].replace(/"/g, "").trim(),
+    date:    moment().format("YYYY-MM-DD"),
+    commit:  exec("git rev-parse HEAD", {silent:true}).output.trim()
+  };
+  build.releaseName = build.name + "-v" + build.version + "-" + os;
+
+  // determine build paths
+  var paths = {
+    atom: "atom-shell",
+    builds: "builds",
+    devApp: "app",
+    rootPkg: "package.json",
+  };
+  paths.staticRelease = paths.builds + "/latest-" + os;
+  paths.release = paths.builds + '/' + build.releaseName;
+  paths.resources = paths.release + '/' + atomShell.resources;
+  paths.install = paths.release + "." + atomShell.installExt;
+  paths.releaseApp = paths.resources + "/" + paths.devApp;
+  paths.devPkg = paths.devApp + "/package.json";
+  paths.releasePkg = paths.releaseApp + "/package.json";
+  paths.releaseCfg = paths.releaseApp + "/config.json";
+  paths.exeToRename = paths.release + "/" + atomShell.exeToRename;
+  paths.renamedExe = paths.release + "/" + atomShell.renamedExe;
+
+  mkdir('-p', paths.builds);
+  rm('-rf', paths.install, paths.release);
+
+  cp('-r', paths.atom+"/", paths.release);
+  cp('-r', paths.devApp, paths.resources);
+
+  rm('-f', paths.releaseApp + "/config.json");
+
+  cp('-f', paths.rootPkg, paths.releaseApp);
+  pushd(paths.releaseApp);
+  exec('npm install --production');
+  popd();
+  cp('-f', paths.devPkg, paths.releaseApp);
+
+  var pkg = grunt.file.readJSON(paths.releasePkg);
+  pkg["version"] = build.version;
+  pkg["build-commit"] = build.commit;
+  pkg["build-date"] = build.date;
+  JSON.stringify(pkg, null, "  ").to(paths.releasePkg);
+
+  rm('-f', paths.releaseCfg);
+
+  mkdir('-p', paths.staticRelease);
+  
+  switch (os) {
+    case "mac":
+      var plist = __dirname + "/" + paths.release + "/" + atomShell.plist;
+      grunt.log.writeln(plist);
+
+      exec("defaults write " + plist + " CFBundleIconFile app/img/cuttle-logo.icns");
+      exec("defaults write " + plist + " CFBundleDisplayName Cuttle");
+      exec("defaults write " + plist + " CFBundleName Cuttle");
+      exec("defaults write " + plist + " CFBundleIdentifier org.cuttle");
+
+      mv(paths.exeToRename, paths.renamedExe);
+      var app = paths.renamedExe;
+
+      grunt.config.set("appdmg", {
+        options: {
+          "title": "Cuttle",
+          "background": "scripts/dmg/background.png",
+          "icon-size": 80,
+          "contents": [
+            { "x": 448, "y": 344, "type": "link", "path": "/Applications" },
+            { "x": 192, "y": 344, "type": "file", "path": app }
+          ]
+        },
+        target: {
+          dest: paths.install
+        }
+      });
+      grunt.task.run("appdmg");
+      break;
+
+    case "linux":
+      mv(paths.exeToRename, paths.renamedExe);
+      break;
+
+    case "windows":
+      mv(paths.exeToRename, paths.renamedExe);
+      var app = paths.renamedExe;
+
+      grunt.config.set("winresourcer", {
+        operation: "Update",
+        exeFile: app,
+        resourceType: "Icongroup",
+        resourceName: "1",
+        resourceFile: "app/img/cuttle-logo.ico"
+      });
+      grunt.task.run("winresourcer");
+
+      grunt.config.set("makensis", {
+        releaseDir: paths.release,
+        outFile: paths.install
+      });
+      grunt.task.run("makensis");
+
+
+      break;
+  }
+
+});
+
+grunt.registerTask('makensis', function() {
+  var config = grunt.config.get("makensis");
+  //
+  // TODO: see if the switch flags need double slashes
+  //       and if the paths need to have forward-slashes
+  exec(["makensis",
+    "//DPRODUCT_VERSION=",
+    "//DRELEASE_DIR=../"+config.releaseDir,
+    "//DOUTFILE=../"+config.outFile,
+    "scripts/build-windows-exe.nsi"].join(" "));
+});
+
+grunt.registerTask('setup', ['curl',
+                             'download-atom-shell',
+                             'ensure-config-exists',
+                             'build-lein-profile-tool']);
 
 // end module.exports
 };

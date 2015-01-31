@@ -11,14 +11,6 @@
 
 set -e
 
-#----------------------------------------------------------------------
-# Generate clean build
-#----------------------------------------------------------------------
-
-echo; echo "Generating clean build..."
-grunt less
-lein cljsbuild clean
-lein cljsbuild once
 
 #----------------------------------------------------------------------
 # Get OS-specific Atom details
@@ -142,6 +134,8 @@ if [ "$OS" == "mac" ]; then
 
   echo; echo "Creating Mac DMG..."
   appdmg scripts/dmg/appdmg.json $RELEASE_INSTALL
+
+
 
 
 elif [ "$OS" == "linux" ]; then
