@@ -89,6 +89,14 @@ grunt.registerTask('default', ['watch']);
 // Custom Tasks
 //------------------------------------------------------------------------------
 
+function getOS() {
+  var platform = process.platform;
+  if (/^win/.test(platform))    return "windows";
+  if (/^darwin/.test(platform)) return "mac";
+  if (/^linux/.test(platform))  return "linux";
+  return null;
+}
+
 grunt.registerTask('ensure-config-exists', function() {
   pushd("app");
   if (!test("-f", "config.json")) {
@@ -119,6 +127,19 @@ grunt.registerTask('fresh-build', function() {
   exec("lein cljsbuild clean");
   exec("lein cljsbuild once");
   grunt.task.run("less");
+});
+
+grunt.registerTask('launch', function() {
+  var atom = {
+    "windows": "atom-shell/atom.exe",
+    "mac":     "atom-shell/Atom.app/Contents/MacOS/Atom",
+    "linux":   "atom-shell/atom"
+  }[getOS()];
+  if (atom == null) {
+    grunt.log.error("Cannot detect supported OS");
+    return;
+  }
+  exec(atom + " app");
 });
 
 // end module.exports
