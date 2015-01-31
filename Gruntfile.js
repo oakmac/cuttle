@@ -61,6 +61,14 @@ grunt.initConfig({
     }
   },
 
+  winresourcer: {
+    operation: "Update",
+    exeFile: "builds/latest-windows/atom.exe", // TODO: make exe in static location
+    resourceType: "Icongroup",
+    resourceName: "1",
+    resourceFile: "app/img/cuttle-logo.ico"
+  },
+
 });
 
 //------------------------------------------------------------------------------
@@ -73,6 +81,7 @@ grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-curl');
 grunt.loadNpmTasks('grunt-download-atom-shell');
 grunt.loadNpmTasks('grunt-appdmg');
+grunt.loadNpmTasks('grunt-winresourcer');
 
 grunt.registerTask('default', ['watch']);
 
