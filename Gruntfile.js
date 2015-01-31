@@ -249,7 +249,7 @@ function finalizeLinuxRelease(paths) {
   mv(paths.exeToRename, paths.renamedExe);
 }
 
-function finalizeWindowsRelease() {
+function finalizeWindowsRelease(paths) {
   mv(paths.exeToRename, paths.renamedExe);
   var app = paths.renamedExe;
 
