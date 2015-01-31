@@ -106,5 +106,11 @@ grunt.registerTask('build-lein-profile-tool', function() {
 
 });
 
+grunt.registerTask('fresh-build', function() {
+  exec("lein cljsbuild clean");
+  exec("lein cljsbuild once");
+  grunt.task.run("less");
+});
+
 // end module.exports
 };
