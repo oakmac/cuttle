@@ -64,6 +64,14 @@ grunt.registerTask('default', ['watch']);
 // Custom Tasks
 //------------------------------------------------------------------------------
 
+grunt.registerTask('ensure-config-exists', function() {
+  pushd("app");
+  if (!test("-f", "config.json")) {
+    cp("example.config.json", "config.json");
+  }
+  popd();
+});
+
 grunt.registerTask('build-lein-profile-tool', function() {
 
   pushd("scripts");
