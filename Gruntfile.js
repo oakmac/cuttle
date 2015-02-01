@@ -132,16 +132,19 @@ grunt.registerTask('build-lein-profile-tool', function() {
 });
 
 //------------------------------------------------------------------------------
-// Build/Release Tasks
+// Build/Launch Tasks
 //------------------------------------------------------------------------------
 
-grunt.registerTask('fresh-build', function() {
+grunt.registerTask('fresh-cljsbuild', function() {
+  grunt.log.writeln("\nCleaning and building ClojureScript files...");
   exec("lein cljsbuild clean");
   exec("lein cljsbuild once");
-  grunt.task.run("less");
 });
 
+grunt.registerTask('fresh-build', ['less', 'fresh-cljsbuild']);
+
 grunt.registerTask('launch', function() {
+  grunt.log.writeln("\nLaunching development version...");
   var exe = {
     windows:  "atom.exe",
     mac:  "Atom.app/Contents/MacOS/Atom",
@@ -173,6 +176,8 @@ grunt.registerTask('release', function() {
   }
 
 });
+
+grunt.registerTask('fresh-release', ['fresh-build', 'release']);
 
 //------------------------------------------------------------------------------
 // Release - config
