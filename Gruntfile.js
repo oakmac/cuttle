@@ -164,6 +164,7 @@ grunt.registerTask('release', function() {
   setReleaseConfig(             build, paths);
   installNodeDepsToRelease(     build, paths);
   stampRelease(                 build, paths);
+  updateVersionInReadme(        build, paths);
 
   switch (os) {
     case "mac":     finalizeMacRelease(     build, paths); break;
@@ -274,6 +275,11 @@ function stampRelease(build, paths) {
   pkg["build-commit"] = build.commit;
   pkg["build-date"] = build.date;
   JSON.stringify(pkg, null, "  ").to(paths.releasePkg);
+}
+
+function updateVersionInReadme(build, paths) {
+  grunt.log.writeln("\nUpdating version and download links in readme...");
+  sed('-i', /v\d+\.\d+/g, "v"+build.version, "README.md");
 }
 
 //------------------------------------------------------------------------------
