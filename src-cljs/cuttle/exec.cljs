@@ -66,7 +66,7 @@
         (fn [error stdout stderr]
           (if error
             (do
-              (log-info "couldn't run java -version")
+              (log-info "couldn't run java -version:" (.toString error))
               (put! out-chan false))
             (let [version (parse-java-version stderr)
                   valid? (>= version 7)]
