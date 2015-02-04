@@ -10,7 +10,7 @@
 
   :dependencies [
     [org.clojure/clojure "1.6.0"]
-    [org.clojure/clojurescript "0.0-2371"]
+    [org.clojure/clojurescript "0.0-2760"]
     [org.clojure/core.async "0.1.346.0-17112a-alpha"]
     [hiccups "0.3.0"]
     [quiescent "0.1.4"]
