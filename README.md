@@ -95,7 +95,7 @@ To setup a environment for building Cuttle:
 1. Compile LESS and ClojureScript:
 
     ```sh
-    grunt build
+    grunt fresh-build
     ```
 
 1. Launch to try it out:
