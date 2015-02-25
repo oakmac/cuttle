@@ -1,4 +1,5 @@
-(ns cuttle.util)
+(ns cuttle.util
+  (:require [cljs.reader :refer [read-string]]))
 
 ;;------------------------------------------------------------------------------
 ;; Node Modules
@@ -19,6 +20,9 @@
 ;;------------------------------------------------------------------------------
 ;; Util Functions
 ;;------------------------------------------------------------------------------
+(defn not-empty?
+  [col]
+  (some? (not-empty col)))
 
 (defn try-read-string
   [contents]

@@ -9,7 +9,7 @@
     [cuttle.exec :refer [get-cljsbuild-with-profiles]]
     [cuttle.log :refer [log-info]]
     [cuttle.util :refer [file-exists? js-log log path-join path-dirname
-                         try-read-string]]))
+                         try-read-string not-empty?]]))
 
 (def fs (js/require "fs"))
 
@@ -54,6 +54,26 @@
                    :name (name (nth prj1 1))
                    :version (nth prj1 2))))))
 
+;; TODO: Refactor this
+(defn- check-builds
+  [prj]
+  (let [builds (:builds (:cljsbuild prj))
+        out-dirs (map #(get-in % [:compiler :output-dir]) builds)
+        out-paths (map #(get-in % [:compiler :output-to]) builds)]
+    (if (and (not-empty? out-dirs) (not-empty? out-paths))
+      ;; then
+      (if-not (and (apply distinct? out-dirs)
+                 (apply distinct? out-paths))
+        ;; then
+        (assoc prj
+               :error (str "Error: "
+                           "output-to and output-dir must be distinct "
+                           "in the builds profile."))
+        ;; else
+        prj)
+      ;; else
+      prj)))
+
 (defn- fix-project-with-profiles
   "Correct the given project file with cljsbuild options from profiles."
   [project]
@@ -73,10 +93,9 @@
     (go
       (let [file-contents (.readFileSync fs filename (js-obj "encoding" "utf8"))
             project (parse-project-file file-contents filename)]
-        (println project)
-        (put! c project)
+        (put! c (check-builds project))
         (when-not (:cljsbuild project)
-          (put! c (<! (fix-project-with-profiles project))))
+          (put! c (<! (check-builds (fix-project-with-profiles project)))))
         (close! c)))
     c))
 

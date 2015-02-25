@@ -992,14 +992,15 @@
                   [:i.fa.fa-times.project-icon-1711d
                     {:title "Remove"
                      :on-click #(try-remove-project! prj-name prj-key)}]))]]
-          [:div.right-f5656
-            (case (:state prj)
-              :loading nil
-              :auto (auto-state prj-key)
-              :cleaning (cleaning-state prj-key)
-              :idle (idle-state prj-key prj)
-              :once (once-state prj-key)
-              "*unknown project state*")]]
+          (when-not (some? (:error prj))
+            [:div.right-f5656
+              (case (:state prj)
+                :loading nil
+                :auto (auto-state prj-key)
+                :cleaning (cleaning-state prj-key)
+                :idle (idle-state prj-key prj)
+                :once (once-state prj-key)
+                "*unknown project state*")])]
         [:table.tbl-bdf39
          (bld-tbl-hdr)
           (if (= (:state prj) :loading)
