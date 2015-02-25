@@ -8,7 +8,8 @@
     [cuttle.cljsbuild.config :refer [extract-options]]
     [cuttle.exec :refer [get-cljsbuild-with-profiles]]
     [cuttle.log :refer [log-info]]
-    [cuttle.util :refer [file-exists? js-log log path-join path-dirname]]))
+    [cuttle.util :refer [file-exists? js-log log path-join path-dirname
+                         try-read-string]]))
 
 (def fs (js/require "fs"))
 
@@ -30,13 +31,6 @@
         builds (->> (:builds opts)
                     (map-indexed add-default-id-to-build))]
     (assoc opts :builds builds)))
-
-(defn- try-read-string
-  [contents]
-  (try
-    (read-string contents)
-    (catch :default e
-         {:error (str e ". Failed to read project.clj." )})))
 
 (defn- parse-project-file
   "Parse the project file without considering profiles."
@@ -79,6 +73,7 @@
     (go
       (let [file-contents (.readFileSync fs filename (js-obj "encoding" "utf8"))
             project (parse-project-file file-contents filename)]
+        (println project)
         (put! c project)
         (when-not (:cljsbuild project)
           (put! c (<! (fix-project-with-profiles project))))
