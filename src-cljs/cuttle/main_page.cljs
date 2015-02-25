@@ -147,7 +147,7 @@
   (merge initial-project-build-state
     (select-keys bld build-keys)))
 
-(def project-keys [:filename :name :version :license :dependencies :plugins])
+(def project-keys [:filename :name :version :license :dependencies :plugins :error])
 
 (defn- get-project-build-states
   [prj]
@@ -804,11 +804,11 @@
     [:i.fa.fa-cog] ;; can't add ".fa-spin" without a weird border bug occurring
     "Loading builds..."]])
 
-(sablono/defhtml no-builds-row []
+(sablono/defhtml prj-clj-err [msg]
   [:tr
    [:td.no-builds-2295f {:col-span 6}
     [:i.fa.fa-exclamation-triangle]
-    "No builds found in this project."]])
+    msg]])
 
 (defn- build-row-class [{:keys [idx active?]}]
   (str "build-row-fdd97 "
@@ -971,12 +971,13 @@
         (map warning-row (:warnings bld)))]))
 
 (quiescent/defcomponent Project [prj]
-  (let [prj-key (:filename prj)]
+  (let [prj-key (:filename prj)
+        prj-name (:name prj)]
     (sablono/html
       [:div.project-1b83a
         [:div.wrapper-714e4
           [:div.left-ba9e7
-            (:name prj)
+            prj-name
             [:span.project-icons-dd1bb
               [:i.fa.fa-folder-open-o.project-icon-1711d
                 {:title "Open Folder"
@@ -990,7 +991,7 @@
                     :on-click #(refresh-project! prj-key)}]
                   [:i.fa.fa-times.project-icon-1711d
                     {:title "Remove"
-                     :on-click #(try-remove-project! (:name prj) prj-key)}]))]]
+                     :on-click #(try-remove-project! prj-name prj-key)}]))]]
           [:div.right-f5656
             (case (:state prj)
               :loading nil
@@ -1003,14 +1004,20 @@
          (bld-tbl-hdr)
           (if (= (:state prj) :loading)
             (loading-builds-row)
-            (if (empty? (:builds prj))
-              (no-builds-row)
-              (map-indexed
+            (if (some? (:error prj))
+              ;; then
+              (prj-clj-err (:error prj))
+              ;;else
+              (if (empty? (:builds prj))
+                ;; then
+                (prj-clj-err "No builds found in this project.")
+                ;; else
+                (map-indexed
                 (fn [idx bld-id]
                   (let [bld (get-in prj [:builds bld-id])]
                     (BuildRow (assoc bld :idx idx
                                      :prj-key prj-key))))
-                (:builds-order prj))))]])))
+                (:builds-order prj)))))]])))
 
 (quiescent/defcomponent NewProjectForm [modal-state]
   (quiescent/on-mount

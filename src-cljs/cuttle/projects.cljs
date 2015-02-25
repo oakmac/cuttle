@@ -31,20 +31,34 @@
                     (map-indexed add-default-id-to-build))]
     (assoc opts :builds builds)))
 
+(defn- try-read-string
+  [contents]
+  (try
+    (read-string contents)
+    (catch :default e
+         {:error (str e ". Failed to read project.clj." )})))
+
 (defn- parse-project-file
   "Parse the project file without considering profiles."
   [contents filename]
   (log-info "parsing project:" filename)
   (let [contents (replace contents "#(" "(") ;; prevent "Could not find tag parser for" error
-        prj1 (read-string contents)
-        project (apply hash-map (drop 3 prj1))
-        cljsbuild (when-let [opts (:cljsbuild project)]
-                    (normalize-cljsbuild-opts opts))]
-    (assoc project
-           :cljsbuild cljsbuild
-           :filename filename
-           :name (name (nth prj1 1))
-           :version (nth prj1 2))))
+        prj1 (try-read-string contents)]
+        (if (contains? prj1 :error)
+          ;; then
+          (assoc prj1
+                 :filename filename
+                 :name filename
+                 :cljsbuild {})
+          ;; else
+          (let [project (apply hash-map (drop 3 prj1))
+                cljsbuild (when-let [opts (:cljsbuild project)]
+                            (normalize-cljsbuild-opts opts))]
+            (assoc project
+                   :cljsbuild cljsbuild
+                   :filename filename
+                   :name (name (nth prj1 1))
+                   :version (nth prj1 2))))))
 
 (defn- fix-project-with-profiles
   "Correct the given project file with cljsbuild options from profiles."
@@ -55,7 +69,7 @@
           path (path-dirname filename)
           cljsbuild (<! (get-cljsbuild-with-profiles path))
           cljsbuild2 (normalize-cljsbuild-opts cljsbuild)]
-      (assoc project :cljsbuild cljsbuild2))))
+            (assoc project :cljsbuild cljsbuild2))))
 
 ;; TODO:
 ;; - need to do some quick validation of project.clj
