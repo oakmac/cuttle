@@ -132,10 +132,7 @@
              build
              (assoc-in build output-dir-key
                (str (compiler-output-dir-base target-path) counter))))]
-    (if (or (empty? builds)
-            (apply distinct? (map #(get-in % output-dir-key) builds)))
-      (assoc options :builds builds)
-      (throw (str "All " output-dir-key " options must be distinct.")))))
+    (assoc options :builds builds)))
 
 (defn set-default-options [target-path options]
   (set-default-output-dirs target-path

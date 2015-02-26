@@ -7,7 +7,7 @@
     [cljs.core.async :refer [chan close! put!]]
     [cuttle.config :refer [config]]
     [cuttle.util :refer [file-exists? js-log log on-windows? path-join
-                         windows-bin-dir uuid]]
+                         windows-bin-dir uuid try-read-string]]
     [cuttle.log :refer [log-info log-warn log-error]]))
 
 (declare extract-target-from-start-msg parse-java-version)
@@ -102,7 +102,7 @@
         cmd (lein "pprint :cljsbuild")
         js-options (js-obj "cwd" profile-path)
         callback (fn [error stdout stderr]
-                   (let [project (read-string stdout)]
+                   (let [project (try-read-string stdout)]
                      (put! out-chan (or project {}))))]
     (js-exec cmd js-options callback)
     out-chan))

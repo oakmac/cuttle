@@ -1,4 +1,5 @@
-(ns cuttle.util)
+(ns cuttle.util
+  (:require [cljs.reader :refer [read-string]]))
 
 ;;------------------------------------------------------------------------------
 ;; Node Modules
@@ -19,6 +20,16 @@
 ;;------------------------------------------------------------------------------
 ;; Util Functions
 ;;------------------------------------------------------------------------------
+(defn not-empty?
+  [col]
+  (some? (not-empty col)))
+
+(defn try-read-string
+  [contents]
+  (try
+    (read-string contents)
+    (catch :default e
+         {:error (str e ". Failed to read project.clj." )})))
 
 (defn path-join
   "Create a path string from given args with OS-specific path separators"

@@ -8,7 +8,8 @@
     [cuttle.cljsbuild.config :refer [extract-options]]
     [cuttle.exec :refer [get-cljsbuild-with-profiles]]
     [cuttle.log :refer [log-info]]
-    [cuttle.util :refer [file-exists? js-log log path-join path-dirname]]))
+    [cuttle.util :refer [file-exists? js-log log path-join path-dirname
+                         try-read-string not-empty?]]))
 
 (def fs (js/require "fs"))
 
@@ -36,15 +37,42 @@
   [contents filename]
   (log-info "parsing project:" filename)
   (let [contents (replace contents "#(" "(") ;; prevent "Could not find tag parser for" error
-        prj1 (read-string contents)
-        project (apply hash-map (drop 3 prj1))
-        cljsbuild (when-let [opts (:cljsbuild project)]
-                    (normalize-cljsbuild-opts opts))]
-    (assoc project
-           :cljsbuild cljsbuild
-           :filename filename
-           :name (name (nth prj1 1))
-           :version (nth prj1 2))))
+        prj1 (try-read-string contents)]
+        (if (contains? prj1 :error)
+          ;; then
+          (assoc prj1
+                 :filename filename
+                 :name filename
+                 :cljsbuild {})
+          ;; else
+          (let [project (apply hash-map (drop 3 prj1))
+                cljsbuild (when-let [opts (:cljsbuild project)]
+                            (normalize-cljsbuild-opts opts))]
+            (assoc project
+                   :cljsbuild cljsbuild
+                   :filename filename
+                   :name (name (nth prj1 1))
+                   :version (nth prj1 2))))))
+
+;; TODO: Refactor this
+(defn- check-builds
+  [prj]
+  (let [builds (:builds (:cljsbuild prj))
+        out-dirs (map #(get-in % [:compiler :output-dir]) builds)
+        out-paths (map #(get-in % [:compiler :output-to]) builds)]
+    (if (and (not-empty? out-dirs) (not-empty? out-paths))
+      ;; then
+      (if-not (and (apply distinct? out-dirs)
+                 (apply distinct? out-paths))
+        ;; then
+        (assoc prj
+               :error (str "Error: "
+                           "output-to and output-dir must be distinct "
+                           "in the builds profile."))
+        ;; else
+        prj)
+      ;; else
+      prj)))
 
 (defn- fix-project-with-profiles
   "Correct the given project file with cljsbuild options from profiles."
@@ -55,7 +83,7 @@
           path (path-dirname filename)
           cljsbuild (<! (get-cljsbuild-with-profiles path))
           cljsbuild2 (normalize-cljsbuild-opts cljsbuild)]
-      (assoc project :cljsbuild cljsbuild2))))
+            (assoc project :cljsbuild cljsbuild2))))
 
 ;; TODO:
 ;; - need to do some quick validation of project.clj
@@ -65,9 +93,9 @@
     (go
       (let [file-contents (.readFileSync fs filename (js-obj "encoding" "utf8"))
             project (parse-project-file file-contents filename)]
-        (put! c project)
+        (put! c (check-builds project))
         (when-not (:cljsbuild project)
-          (put! c (<! (fix-project-with-profiles project))))
+          (put! c (<! (check-builds (fix-project-with-profiles project)))))
         (close! c)))
     c))
 
