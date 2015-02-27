@@ -9,7 +9,7 @@
     [cuttle.exec :refer [get-cljsbuild-with-profiles]]
     [cuttle.log :refer [log-info]]
     [cuttle.util :refer [file-exists? js-log log path-join path-dirname
-                         try-read-string not-empty?]]))
+                         try-read-string]]))
 
 (def fs (js/require "fs"))
 
@@ -60,7 +60,7 @@
   (let [builds (:builds (:cljsbuild prj))
         out-dirs (map #(get-in % [:compiler :output-dir]) builds)
         out-paths (map #(get-in % [:compiler :output-to]) builds)]
-    (if (and (not-empty? out-dirs) (not-empty? out-paths))
+    (if (and (not (empty? my-coll)) (not (empty? my-coll)))
       ;; then
       (if-not (and (apply distinct? out-dirs)
                  (apply distinct? out-paths))
