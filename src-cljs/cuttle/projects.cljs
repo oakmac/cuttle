@@ -60,7 +60,7 @@
   (let [builds (:builds (:cljsbuild prj))
         out-dirs (map #(get-in % [:compiler :output-dir]) builds)
         out-paths (map #(get-in % [:compiler :output-to]) builds)]
-    (if (and (not (empty? my-coll)) (not (empty? my-coll)))
+    (if (and (not (empty? out-dirs)) (not (empty? out-paths)))
       ;; then
       (if-not (and (apply distinct? out-dirs)
                  (apply distinct? out-paths))
