@@ -6,7 +6,7 @@ projects by clicking a button, and to see meaningful warnings and errors at a
 glance.  In a way, it provides the "builder" parts of an IDE without making you
 leave your favorite editor.
 
-<img src="readme-img/screenshots/2015-01-27-init.png" width="350px"> <img src="readme-img/screenshots/2015-01-27-errors.png" width="350px">
+<a href="https://raw.githubusercontent.com/oakmac/cuttle/master/readme-img/screenshots/2015-01-27-init.png"><img src="readme-img/screenshots/2015-01-27-init.png" width="350px"></a> <a href="https://raw.githubusercontent.com/oakmac/cuttle/master/readme-img/screenshots/2015-01-27-errors.png"><img src="readme-img/screenshots/2015-01-27-errors.png" width="350px"></a>
 
 Under the hood, Cuttle is not hiding a lot of magic from you.  It uses standard
 ClojureScript workflow tools to perform its operations.  It uses Leiningen with
