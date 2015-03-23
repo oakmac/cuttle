@@ -268,7 +268,7 @@ function installNodeDepsToRelease(build, paths) {
   grunt.log.writeln("\nCopying node dependencies to release...");
   cp('-f', paths.rootPkg, paths.releaseApp);
   pushd(paths.releaseApp);
-  exec('npm install --production');
+  exec('npm install --no-optional --production');
   popd();
   cp('-f', paths.devPkg, paths.releaseApp);
 }
