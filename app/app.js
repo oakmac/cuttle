@@ -1,7 +1,7 @@
 var app = require('app'),
   BrowserWindow = require('browser-window'),
   dialog = require('dialog'),
-  fs = require('fs')
+  fs = require('fs-extra'),
   ipc = require('ipc'),
   Menu = require('menu'),
   path = require('path'),
@@ -14,6 +14,10 @@ require('crash-reporter').start();
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the javascript object is GCed.
 var mainWindow = null;
+
+// make sure app.getDataPath() exists
+// https://github.com/oakmac/cuttle/issues/92
+fs.ensureDirSync(app.getDataPath());
 
 //------------------------------------------------------------------------------
 // Logging
