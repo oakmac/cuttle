@@ -32,8 +32,10 @@ __Download Cuttle v1.1__:
 
 __Homebrew Cask__
 
-`brew install caskroom/cask/brew-cask`
-`brew cask install cuttle`
+```
+$ brew install caskroom/cask/brew-cask
+$ brew cask install cuttle
+```
 
 Homebrew-cask provides a friendly homebrew-style CLI workflow for the administration of Mac applications distributed as binaries.
 
