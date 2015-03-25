@@ -23,12 +23,21 @@ platforms.
 
 __Download Cuttle v1.1__:
 
-[<img src="readme-img/windows.png" height="16px"> Windows Installer](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-windows.exe)  
-[<img src="readme-img/apple.png"   height="16px"> Mac DMG](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-mac.dmg)  
+[<img src="readme-img/windows.png" height="16px"> Windows Installer](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-windows.exe)<br/>
+[<img src="readme-img/apple.png"   height="16px"> Mac DMG](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-mac.dmg)<br/>
 [<img src="readme-img/linux.png"   height="16px"> Linux zip](https://github.com/oakmac/cuttle/releases/download/v1.1/cuttle-v1.1-linux-x86_64.tar.gz)
 
 
 (Please make sure to install a [JRE >= 7](http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html))
+
+__Homebrew Cask__
+
+`brew install caskroom/cask/brew-cask`
+`brew cask install cuttle`
+
+Homebrew-cask provides a friendly homebrew-style CLI workflow for the administration of Mac applications distributed as binaries.
+
+It's implemented as a `homebrew` [external command](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/External-Commands.md) called `cask`.
 
 ## User Guide
 
