@@ -24,6 +24,6 @@ pom.xml
 
 *.diff
 
-/atom-shell
+/electron
 
 /scripts/add-lein-profile

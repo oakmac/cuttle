@@ -65,9 +65,9 @@ grunt.initConfig({
     'app/bin/lein.jar': leinJarUrl
   },
 
-  'download-atom-shell': {
+  'download-electron': {
     version: '0.20.5',
-    outputDir: 'atom-shell'
+    outputDir: 'electron'
   }
 
 });
@@ -79,7 +79,7 @@ grunt.initConfig({
 grunt.loadNpmTasks('grunt-contrib-less');
 grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-curl');
-grunt.loadNpmTasks('grunt-download-atom-shell');
+grunt.loadNpmTasks('grunt-download-electron');
 if (os === "mac") {
   grunt.loadNpmTasks('grunt-appdmg');
 }
@@ -91,7 +91,7 @@ grunt.loadNpmTasks('winresourcer');
 
 grunt.registerTask('setup', [
   'curl',
-  'download-atom-shell',
+  'download-electron',
   'ensure-config-exists',
   'build-lein-profile-tool'
 ]);
@@ -150,7 +150,7 @@ grunt.registerTask('launch', function() {
     mac:  "Atom.app/Contents/MacOS/Atom",
     linux:  "atom"
   }[os];
-  exec(path.join("atom-shell", exe) + " app");
+  exec(path.join("electron", exe) + " app");
 });
 
 //------------------------------------------------------------------------------
@@ -224,7 +224,7 @@ function getBuildMeta() {
 
 function getReleasePaths(build) {
   var paths = {
-    atom: "atom-shell",
+    atom: "electron",
     builds: "builds",
     devApp: "app",
     rootPkg: "package.json"
