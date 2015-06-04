@@ -1,5 +1,7 @@
 ![Cuttle](readme-img/cuttle-banner.png)
 
+__NOTE: project on hold while we finish [cljs.info](https://github.com/cljsinfo)__
+
 Cuttle is a standalone application that aims to be __the simplest way to use
 ClojureScript__.  It provides a user-friendly interface, allowing you to build
 projects by clicking a button, and to see meaningful warnings and errors at a
