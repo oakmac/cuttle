@@ -65,9 +65,8 @@
         callback-fn
         (fn [error stdout stderr]
           (if error
-            (do
-              (log-info "couldn't run java -version:" (.toString error))
-              (put! out-chan false))
+            (do (log-info "couldn't run java -version:" (.toString error))
+                (put! out-chan false))
             (let [version (parse-java-version stderr)
                   valid? (>= version 7)]
               (log-info "found java version:" version "from" stderr)
@@ -187,9 +186,9 @@
   "Returns the file that has the error (or nil) from error lines."
   [lines]
   (reduce (fn [v l]
-    (if (has-file-info? l)
-      (extract-file-from-error-line l)
-      v))
+            (if (has-file-info? l)
+              (extract-file-from-error-line l)
+              v))
     nil lines))
 
 (defn- extract-human-error* [s]
@@ -201,9 +200,9 @@
   "Returns a human-readable error message (or nil) from error lines."
   [lines]
   (reduce (fn [v l]
-    (if (caused-by-line? l)
-      (extract-human-error* l)
-      v))
+            (if (caused-by-line? l)
+              (extract-human-error* l)
+              v))
     nil lines))
 
 (defn- has-line-info? [s]
@@ -220,10 +219,10 @@
 
 (defn- extract-line-number [lines]
   (reduce (fn [v l]
-    (if (and (has-line-info? l)
-             (nil? v))
-      (extract-line-number* l)
-      v))
+            (if (and (has-line-info? l)
+                     (nil? v))
+              (extract-line-number* l)
+              v))
     nil lines))
 
 (defn- extract-error-info
@@ -232,7 +231,7 @@
   {:file (extract-error-file lines)
    :line (extract-line-number lines)
    :human-msg (extract-human-error lines)
-   :raw-lines lines })
+   :raw-lines lines})
 
 (defn- clean-line
   "Clean bash escape characters from a console output line."
@@ -407,17 +406,15 @@
 
 (defn stop-auto!
   "Kill an auto-compile process."
-  ([prj-key]
-    (stop-auto! prj-key (fn [] nil)))
+  ([prj-key] (stop-auto! prj-key (constantly nil)))
   ([prj-key callback-fn]
-    (let [main-pid (get @auto-pids prj-key)]
-      (log-info "trying to stop auto-compile for" prj-key "at pid" main-pid)
-      (if on-windows?
-        (js-exec (str "taskkill /pid " main-pid " /T /F") callback-fn)
-        (kill-auto-on-unix main-pid callback-fn))
-
+   (let [main-pid (get @auto-pids prj-key)]
+     (log-info "trying to stop auto-compile for" prj-key "at pid" main-pid)
+     (if on-windows?
+       (js-exec (str "taskkill /pid " main-pid " /T /F") callback-fn)
+       (kill-auto-on-unix main-pid callback-fn))
       ;; remove the pid from the atom
-      (swap! auto-pids dissoc prj-key))))
+     (swap! auto-pids dissoc prj-key))))
 
 (defn kill-all-leiningen-instances! []
   (let [currently-running-prj-keys (keys @auto-pids)
@@ -479,12 +476,12 @@
   (let [lein-cmd (lein (str "new mies " project-name))]
     (js-exec lein-cmd (js-obj "cwd" folder-name) callback-fn)))
 
-(def cuttle-icon (str
-  (aget js/global "__dirname")
-  path-separator
-  "img"
-  path-separator
-  "cuttle-logo.png"))
+(def cuttle-icon
+  (str (aget js/global "__dirname")
+       path-separator
+       "img"
+       path-separator
+       "cuttle-logo.png"))
 
 (defn linux-notify! [title message]
   (log-info "trying to notify linux" title "-" message)
