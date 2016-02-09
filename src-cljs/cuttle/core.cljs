@@ -37,13 +37,14 @@
 ;; TODO: we need to handle when there is a permission error here
 (defn- copy-lein-files! [next-fn]
   (log-info "copying lein.bat to our windows bin dir")
-  (.ensureDir fs windows-bin-dir (fn []
-    (.copy fs (path-join js/__dirname "bin" "lein.bat")
-              (str windows-bin-dir "lein.bat")
-              (fn []
-                (.copy fs (path-join js/__dirname "bin" "lein.jar")
-                          (str windows-bin-dir "lein.jar")
-                          next-fn))))))
+  (.ensureDir fs windows-bin-dir
+    (fn []
+      (.copy fs (path-join js/__dirname "bin" "lein.bat")
+                (str windows-bin-dir "lein.bat")
+                (fn []
+                  (.copy fs (path-join js/__dirname "bin" "lein.jar")
+                            (str windows-bin-dir "lein.jar")
+                            next-fn))))))
 
 ;;------------------------------------------------------------------------------
 ;; Loading / Shutting Down Pages
