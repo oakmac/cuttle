@@ -25,7 +25,7 @@
   (try
     (read-string contents)
     (catch :default e
-         {:error (str e ". Failed to read project.clj." )})))
+         {:error (str e ". Failed to read project.clj.")})))
 
 (defn path-join
   "Create a path string from given args with OS-specific path separators"
