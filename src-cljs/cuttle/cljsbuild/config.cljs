@@ -1,7 +1,7 @@
 (ns cuttle.cljsbuild.config
   "Utilities for parsing the cljsbuild config."
   #_(:require
-    [clojure.pprint :as pprint]))
+      [clojure.pprint :as pprint]))
 
 ;;; Taken from "lein-cljsbuild" for retrieving normalized cljsbuild configs.
 ;;;
@@ -57,11 +57,12 @@
 (defn- backwards-compat-builds [options]
   (cond
     (and (map? options) (some #{:compiler :source-path :source-paths} (keys options)))
-      {:builds [options]}
+    {:builds [options]}
+
     (vector? options)
-      {:builds options}
-    :else
-      options))
+    {:builds options}
+
+    :else options))
 
 (defn- backwards-compat-source-path [{:keys [builds] :as options}]
   (assoc options :builds
