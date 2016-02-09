@@ -38,21 +38,19 @@
   (log-info "parsing project:" filename)
   (let [contents (replace contents "#(" "(") ;; prevent "Could not find tag parser for" error
         prj1 (try-read-string contents)]
-        (if (contains? prj1 :error)
-          ;; then
-          (assoc prj1
-                 :filename filename
-                 :name filename
-                 :cljsbuild {})
-          ;; else
-          (let [project (apply hash-map (drop 3 prj1))
-                cljsbuild (when-let [opts (:cljsbuild project)]
-                            (normalize-cljsbuild-opts opts))]
-            (assoc project
-                   :cljsbuild cljsbuild
-                   :filename filename
-                   :name (name (nth prj1 1))
-                   :version (nth prj1 2))))))
+    (if (contains? prj1 :error)
+      ;; then
+      (assoc prj1 :filename filename
+                  :name filename
+                  :cljsbuild {})
+      ;; else
+      (let [project (apply hash-map (drop 3 prj1))
+            cljsbuild (when-let [opts (:cljsbuild project)]
+                        (normalize-cljsbuild-opts opts))]
+        (assoc project :cljsbuild cljsbuild
+                       :filename filename
+                       :name (name (nth prj1 1))
+                       :version (nth prj1 2))))))
 
 ;; TODO: Refactor this
 (defn- check-builds
@@ -63,12 +61,11 @@
     (if (and (not (empty? out-dirs)) (not (empty? out-paths)))
       ;; then
       (if-not (and (apply distinct? out-dirs)
-                 (apply distinct? out-paths))
+                   (apply distinct? out-paths))
         ;; then
-        (assoc prj
-               :error (str "Error: "
-                           "output-to and output-dir must be distinct "
-                           "in the builds profile."))
+        (assoc prj :error (str "Error: "
+                               "output-to and output-dir must be distinct "
+                               "in the builds profile."))
         ;; else
         prj)
       ;; else
@@ -83,7 +80,7 @@
           path (path-dirname filename)
           cljsbuild (<! (get-cljsbuild-with-profiles path))
           cljsbuild2 (normalize-cljsbuild-opts cljsbuild)]
-            (assoc project :cljsbuild cljsbuild2))))
+      (assoc project :cljsbuild cljsbuild2))))
 
 ;; TODO:
 ;; - need to do some quick validation of project.clj
